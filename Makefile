@@ -4,10 +4,11 @@ CC = c++
 
 C_FLAGS = -Wall -Wextra -Werror -std=c++98
 
-SRCS =		main.cpp 
+SRCS =		src/main.cpp
 
 RED =		\033[0;35m
 BLUE =		\033[0;34m
+RESET =		\033[0m
 
 OBJS =		${SRCS:.cpp=.o}
 
