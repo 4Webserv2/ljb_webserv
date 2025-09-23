@@ -2,6 +2,8 @@
 
 # include <string>
 # include <map>
+# include <cstdlib>
+# include <cstring>
 
 typedef struct HttpRequest {
     std::string	method;

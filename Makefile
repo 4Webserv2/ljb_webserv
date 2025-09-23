@@ -5,7 +5,8 @@ CC = c++
 C_FLAGS = -Wall -Wextra -Werror -std=c++98
 
 SRCS =		src/main.cpp \
-			src/HttpParser.cpp
+			src/HttpParser.cpp \
+			src/HttpResponse.cpp
 
 RED =		\033[0;35m
 BLUE =		\033[0;34m
