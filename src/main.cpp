@@ -3,14 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/09/14 20:37:14 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/09/23 16:37:45 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
+#include "HttpParser.hpp"
+#include "HttpRequest.hpp"
+
 
 int	clientLoop(const int& clientFd) {
 	char	buffer[BUFFER_SIZE];
@@ -54,6 +57,58 @@ int	serverLoop(const int& serverFd) {
 }
 
 int	main() {
+	// Teste do HttpParser
+    // std::string rawRequest =
+    //     "GET /index.html HTTP/1.1\r\n"
+    //     "Host: localhost:8080\r\n"
+    //     "User-Agent: TestClient/1.0\r\n"
+    //     "\r\n"
+    //     "corpo do request";
+
+    // HttpParser parser;
+    // HttpRequest req = parser.httpParser(rawRequest);
+
+    // std::cout << "Método: " << req.method << std::endl;
+    // std::cout << "URI: " << req.uri << std::endl;
+    // std::cout << "Versão: " << req.version << std::endl;
+    // for (std::map<std::string, std::string>::iterator it = req.headers.begin(); it != req.headers.end(); ++it) {
+    //     std::cout << "Header: " << it->first << " => " << it->second << std::endl;
+    // }
+    // std::cout << "Body: " << req.body << std::endl;
+	// std::string postRequest =
+    //     "POST /api/data HTTP/1.1\r\n"
+    //     "Host: localhost:8080\r\n"
+    //     "Content-Type: application/json\r\n"
+    //     "Content-Length: 17\r\n"
+    //     "\r\n"
+    //     "{\"key\":\"value\"}";
+
+    // HttpRequest postReq = parser.httpParser(postRequest);
+    // std::cout << "Método: " << postReq.method << std::endl;
+    // std::cout << "URI: " << postReq.uri << std::endl;
+    // std::cout << "Versão: " << postReq.version << std::endl;
+    // for (std::map<std::string, std::string>::iterator it = postReq.headers.begin(); it != postReq.headers.end(); ++it) {
+    //     std::cout << "Header: " << it->first << " => " << it->second << std::endl;
+    // }
+    // std::cout << "Body: " << postReq.body << std::endl;
+
+    // // Teste com DELETE
+    // std::string deleteRequest =
+    //     "DELETE /api/item/1 HTTP/1.1\r\n"
+    //     "Host: localhost:8080\r\n"
+    //     "\r\n";
+
+    // HttpRequest deleteReq = parser.httpParser(deleteRequest);
+    // std::cout << "Método: " << deleteReq.method << std::endl;
+    // std::cout << "URI: " << deleteReq.uri << std::endl;
+    // std::cout << "Versão: " << deleteReq.version << std::endl;
+    // for (std::map<std::string, std::string>::iterator it = deleteReq.headers.begin(); it != deleteReq.headers.end(); ++it) {
+    //     std::cout << "Header: " << it->first << " => " << it->second << std::endl;
+    // }
+    // std::cout << "Body: " << deleteReq.body << std::endl;
+	////////////////////////////////////////////////////////////////
+
+	
 	int serverFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (serverFd == -1) {
 		std::cout << "Erro ao criar socket" << std::endl;
