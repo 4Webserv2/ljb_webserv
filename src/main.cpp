@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.fr>          +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/09/23 16:37:45 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/10/03 11:56:59 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,59 +56,103 @@ int	serverLoop(const int& serverFd) {
 	return (0);
 }
 
+void testHttpParserRobusto() {
+	std::cout << "\n==== Teste Robusto do HttpParser ====\n" << std::endl;
+	HttpParser parser;
+
+	// 1. Request válido
+	try {
+		std::string req1 =
+			"GET /ok HTTP/1.1\r\n"
+			"Host: test\r\n"
+			"\r\n"
+			"body";
+		HttpRequest r = parser.httpParser(req1);
+		std::cout << "[OK] Request válido passou." << std::endl;
+	} catch (std::exception &e) {
+		std::cout << "[ERRO] Request válido falhou: " << e.what() << std::endl;
+	}
+
+	// 2. Método não permitido
+	try {
+		std::string req2 =
+			"PUT /fail HTTP/1.1\r\n"
+			"Host: test\r\n"
+			"\r\n";
+		parser.httpParser(req2);
+		std::cout << "[ERRO] Método não permitido NÃO lançou exceção!" << std::endl;
+	} catch (std::exception &e) {
+		std::cout << "[OK] Método não permitido lançou exceção: " << e.what() << std::endl;
+	}
+
+	// 3. Request line malformada (faltando versão)
+	try {
+		std::string req3 =
+			"GET /semversao\r\n"
+			"Host: test\r\n"
+			"\r\n";
+		parser.httpParser(req3);
+		std::cout << "[ERRO] Request line malformada NÃO lançou exceção!" << std::endl;
+	} catch (std::exception &e) {
+		std::cout << "[OK] Request line malformada lançou exceção: " << e.what() << std::endl;
+	}
+
+	// 4. Header malformado (sem dois pontos)
+	try {
+		std::string req4 =
+			"GET / HTTP/1.1\r\n"
+			"Host test\r\n"
+			"\r\n";
+		HttpRequest r = parser.httpParser(req4);
+		if (r.headers.find("Host") == r.headers.end())
+			std::cout << "[OK] Header malformado ignorado." << std::endl;
+		else
+			std::cout << "[ERRO] Header malformado foi aceito!" << std::endl;
+	} catch (std::exception &e) {
+		std::cout << "[ERRO] Header malformado lançou exceção: " << e.what() << std::endl;
+	}
+
+	// 5. Request vazio
+	try {
+		std::string req5 = "";
+		parser.httpParser(req5);
+		std::cout << "[ERRO] Request vazio NÃO lançou exceção!" << std::endl;
+	} catch (std::exception &e) {
+		std::cout << "[OK] Request vazio lançou exceção: " << e.what() << std::endl;
+	}
+
+	// 6. Request line só com método
+	try {
+		std::string req6 = "GET\r\n\r\n";
+		parser.httpParser(req6);
+		std::cout << "[ERRO] Request line incompleta NÃO lançou exceção!" << std::endl;
+	} catch (std::exception &e) {
+		std::cout << "[OK] Request line incompleta lançou exceção: " << e.what() << std::endl;
+	}
+
+	// 7. Request com múltiplos headers e body
+	try {
+		std::string req7 =
+			"POST /multi HTTP/1.1\r\n"
+			"Host: test\r\n"
+			"X-Test: 123\r\n"
+			"\r\n"
+			"linha1\nlinha2";
+		HttpRequest r = parser.httpParser(req7);
+		if (r.headers["Host"] == "test" && r.headers["X-Test"] == "123" && r.body.find("linha2") != std::string::npos)
+			std::cout << "[OK] Request com múltiplos headers e body passou." << std::endl;
+		else
+			std::cout << "[ERRO] Falha ao processar múltiplos headers/body." << std::endl;
+	} catch (std::exception &e) {
+		std::cout << "[ERRO] Request com múltiplos headers/body lançou exceção: " << e.what() << std::endl;
+	}
+	std::cout << "==== Fim dos testes robustos ====\n" << std::endl;
+}
+
 int	main() {
-	// Teste do HttpParser
-    // std::string rawRequest =
-    //     "GET /index.html HTTP/1.1\r\n"
-    //     "Host: localhost:8080\r\n"
-    //     "User-Agent: TestClient/1.0\r\n"
-    //     "\r\n"
-    //     "corpo do request";
-
-    // HttpParser parser;
-    // HttpRequest req = parser.httpParser(rawRequest);
-
-    // std::cout << "Método: " << req.method << std::endl;
-    // std::cout << "URI: " << req.uri << std::endl;
-    // std::cout << "Versão: " << req.version << std::endl;
-    // for (std::map<std::string, std::string>::iterator it = req.headers.begin(); it != req.headers.end(); ++it) {
-    //     std::cout << "Header: " << it->first << " => " << it->second << std::endl;
-    // }
-    // std::cout << "Body: " << req.body << std::endl;
-	// std::string postRequest =
-    //     "POST /api/data HTTP/1.1\r\n"
-    //     "Host: localhost:8080\r\n"
-    //     "Content-Type: application/json\r\n"
-    //     "Content-Length: 17\r\n"
-    //     "\r\n"
-    //     "{\"key\":\"value\"}";
-
-    // HttpRequest postReq = parser.httpParser(postRequest);
-    // std::cout << "Método: " << postReq.method << std::endl;
-    // std::cout << "URI: " << postReq.uri << std::endl;
-    // std::cout << "Versão: " << postReq.version << std::endl;
-    // for (std::map<std::string, std::string>::iterator it = postReq.headers.begin(); it != postReq.headers.end(); ++it) {
-    //     std::cout << "Header: " << it->first << " => " << it->second << std::endl;
-    // }
-    // std::cout << "Body: " << postReq.body << std::endl;
-
-    // // Teste com DELETE
-    // std::string deleteRequest =
-    //     "DELETE /api/item/1 HTTP/1.1\r\n"
-    //     "Host: localhost:8080\r\n"
-    //     "\r\n";
-
-    // HttpRequest deleteReq = parser.httpParser(deleteRequest);
-    // std::cout << "Método: " << deleteReq.method << std::endl;
-    // std::cout << "URI: " << deleteReq.uri << std::endl;
-    // std::cout << "Versão: " << deleteReq.version << std::endl;
-    // for (std::map<std::string, std::string>::iterator it = deleteReq.headers.begin(); it != deleteReq.headers.end(); ++it) {
-    //     std::cout << "Header: " << it->first << " => " << it->second << std::endl;
-    // }
-    // std::cout << "Body: " << deleteReq.body << std::endl;
+	testHttpParserRobusto();
 	////////////////////////////////////////////////////////////////
 
-	
 	int serverFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (serverFd == -1) {
 		std::cout << "Erro ao criar socket" << std::endl;
