@@ -4,6 +4,7 @@
 # include <map>
 # include <cstdlib>
 # include <cstring>
+# include "Webserv.hpp"
 
 typedef struct HttpRequest {
 	std::string	method;

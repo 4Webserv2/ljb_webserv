@@ -1,7 +1,16 @@
-#include "../includes/Webserv.hpp"
-#include "../includes/HttpParser.hpp"
-#include "../includes/HttpRequest.hpp"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.cpp                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
+/*   Updated: 2025/10/05 20:27:34 by jbergfel         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
+#include "include/Webserv.hpp"
 
 int	clientLoop(const int& clientFd) {
 	char	buffer[BUFFER_SIZE];
