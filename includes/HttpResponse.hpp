@@ -1,6 +1,7 @@
 # pragma once
 
 # include "Webserv.hpp"
+# include "HttpParser.hpp"
 
 class HttpResponse{
 	private:

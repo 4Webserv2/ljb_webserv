@@ -3,14 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/10/06 19:16:38 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/10/07 12:29:53 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "includes/Webserv.hpp"
+#include "includes/HttpParser.hpp"
 
 int	clientLoop(const int& clientFd) {
 	char	buffer[BUFFER_SIZE];

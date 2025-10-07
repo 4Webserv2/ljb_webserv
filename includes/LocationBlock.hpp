@@ -1,6 +1,7 @@
 #pragma once
 
 # include "Webserv.hpp"
+# include "ServerConfig.hpp"
 
 class ServerConfig;
 

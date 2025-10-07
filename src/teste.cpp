@@ -1,4 +1,5 @@
 #include "../includes/Webserv.hpp"
+#include "../includes/Client.hpp"
 
 int MAX_EVENTS = 10;
 

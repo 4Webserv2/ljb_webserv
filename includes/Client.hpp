@@ -1,6 +1,8 @@
 #pragma once
 
 # include "Webserv.hpp"
+# include "HttpParser.hpp"
+# include "HttpResponse.hpp"
 
 class HttpResponse;
 class HttpParser;

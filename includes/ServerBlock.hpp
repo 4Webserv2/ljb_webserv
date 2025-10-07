@@ -1,6 +1,8 @@
 # pragma once
 
 # include "Webserv.hpp"
+# include "ServerConfig.hpp"
+# include "LocationBlock.hpp"
 
 class ServerConfig;
 class LocationBlock;
