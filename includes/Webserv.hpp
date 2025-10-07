@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:50:29 by lraggio           #+#    #+#             */
-/*   Updated: 2025/10/05 20:51:00 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/10/06 19:49:26 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 # define WEBSERV_HPP
 
 # include <sys/socket.h>
+# include <sys/epoll.h>
 # include <iostream>
 # include <netinet/in.h>
 # include <cstdlib>
@@ -25,9 +26,13 @@
 # include <iostream>
 # include <fstream>
 # include <sstream>
+# include <cstring>
+# include <fcntl.h>
+# include <stdio.h>
+# include <utility>
+
 
 # include "HttpParser.hpp"
-# include "HttpRequest.hpp"
 # include "HttpResponse.hpp"
 # include "Client.hpp"
 # include "EpollInstance.hpp"
@@ -35,6 +40,8 @@
 # include "Runtime.hpp"
 # include "ServerInstance.hpp"
 # include "ServerBlock.hpp"
+# include "ServerConfig.hpp"
+# include "LocationBlock.hpp"
 
 # define PORT 8080
 # define BACKLOG 10
@@ -44,6 +51,8 @@ enum e_erros {
 	ERROR = -1,
 	NO_ERROR = 0
 };
+
+int test();
 
 #endif
 

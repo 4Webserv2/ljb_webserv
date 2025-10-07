@@ -1,17 +1,6 @@
-#include <iostream>
-#include <string>
-#include <cstring>
-#include <unistd.h>
-#include <fcntl.h>
-#include <cstdlib>
-#include <stdio.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/epoll.h>
+#include "../includes/Webserv.hpp"
 
-int PORT = 8080;
 int MAX_EVENTS = 10;
-int BUFFER_SIZE = 1024;
 
 int make_nonblocking(int fd)
 {
@@ -65,24 +54,24 @@ int create_server_socket()
 	return sockfd;
 }
 
-void handle_new_connection(int server_fd, int epfd)
+void handle_new_connection(int server_fd, int epfd, Client &client)
 {
-	int client_fd = accept(server_fd, NULL, NULL);
-	if (client_fd == -1)
+	client = accept(server_fd, NULL, NULL);
+	if (client.getClientFd() == -1)
 	{
 		perror("accept");
 		return;
 	}
 
-	make_nonblocking(client_fd);
+	make_nonblocking(client.getClientFd());
 
 	struct epoll_event ev;
 	memset(&ev, 0, sizeof(ev));
 	ev.events = EPOLLIN;
-	ev.data.fd = client_fd;
-	epoll_ctl(epfd, EPOLL_CTL_ADD, client_fd, &ev);
+	ev.data.fd = client.getClientFd();
+	epoll_ctl(epfd, EPOLL_CTL_ADD, client.getClientFd(), &ev);
 
-	std::cout << "Novo cliente conectado (fd=" << client_fd << ")\n";
+	std::cout << "Novo cliente conectado (fd=" << client.getClientFd() << ")\n";
 }
 
 void handle_client_request(int client_fd)
@@ -99,8 +88,10 @@ void handle_client_request(int client_fd)
 		send(client_fd, http_response, sizeof(http_response) - 1, MSG_NOSIGNAL);
 }
 
-int main()
+int test()
 {
+	Client client;
+
 	int server_fd = create_server_socket();
 
 	int epfd = epoll_create1(0);
@@ -132,7 +123,7 @@ int main()
 		for (int i = 0; i < n; i++)
 		{
 			if (events[i].data.fd == server_fd)
-				handle_new_connection(server_fd, epfd);
+				handle_new_connection(server_fd, epfd, client);
 			else if (events[i].events & EPOLLIN)
 				handle_client_request(events[i].data.fd);
 		}

@@ -6,11 +6,11 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/10/05 20:27:34 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/10/06 19:16:38 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "include/Webserv.hpp"
+#include "includes/Webserv.hpp"
 
 int	clientLoop(const int& clientFd) {
 	char	buffer[BUFFER_SIZE];
@@ -150,7 +150,8 @@ int	main() {
 	testHttpParserRobusto();
 	////////////////////////////////////////////////////////////////
 
-	int serverFd = socket(AF_INET, SOCK_STREAM, 0);
+	test();
+	/*int serverFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (serverFd == -1) {
 		std::cout << "Erro ao criar socket" << std::endl;
 		exit(EXIT_FAILURE);
@@ -176,6 +177,6 @@ int	main() {
 		exit(EXIT_FAILURE);
 	}
 	std::cout << "Servidor ouvindo na porta " << PORT << std::endl;
-	serverLoop(serverFd);
+	serverLoop(serverFd);*/
 	return (0);
 }
