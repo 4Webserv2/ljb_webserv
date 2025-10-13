@@ -1,18 +1,6 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   main.cpp                                           :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/10/03 11:56:59 by btaveira         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
-#include "Webserv.hpp"
-#include "HttpParser.hpp"
-#include "HttpRequest.hpp"
+#include "../includes/Webserv.hpp"
+#include "../includes/HttpParser.hpp"
+#include "../includes/HttpRequest.hpp"
 
 
 int	clientLoop(const int& clientFd) {
