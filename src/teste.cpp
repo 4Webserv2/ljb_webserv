@@ -1,7 +1,6 @@
 #include "../includes/Webserv.hpp"
 #include "../includes/Client.hpp"
-
-int MAX_EVENTS = 10;
+#include "../includes/EpollInstance.hpp"
 
 int make_nonblocking(int fd)
 {
@@ -92,6 +91,7 @@ void handle_client_request(int client_fd)
 int test()
 {
 	Client client;
+	EpollInstance epolls;
 
 	int server_fd = create_server_socket();
 
@@ -103,18 +103,16 @@ int test()
 		exit(EXIT_FAILURE);
 	}
 
-	struct epoll_event ev;
-	struct epoll_event events[10];
-	memset(&ev, 0, sizeof(ev));
-	memset(events, 0, sizeof(events));
-	ev.events = EPOLLIN;
-	ev.data.fd = server_fd;
-	epoll_ctl(epfd, EPOLL_CTL_ADD, server_fd, &ev);
+	memset(&epolls._epollEvents, 0, sizeof(epolls._epollEvents));
+	memset(epolls._eventsList, 0, sizeof(epolls._eventsList));
+	epolls._epollEvents.events = EPOLLIN;
+	epolls._epollEvents.data.fd = server_fd;
+	epoll_ctl(epfd, EPOLL_CTL_ADD, server_fd, &epolls._epollEvents);
 
 	std::cout << "Servidor rodando em http://localhost:" << PORT << "\n";
 	while (true)
 	{
-		int n = epoll_wait(epfd, events, MAX_EVENTS, -1);
+		int n = epoll_wait(epfd, epolls._eventsList, MAX_EVENTS, -1);
 		if (n == -1)
 		{
 			perror("epoll_wait");
@@ -123,10 +121,10 @@ int test()
 
 		for (int i = 0; i < n; i++)
 		{
-			if (events[i].data.fd == server_fd)
+			if (epolls._eventsList[i].data.fd == server_fd)
 				handle_new_connection(server_fd, epfd, client);
-			else if (events[i].events & EPOLLIN)
-				handle_client_request(events[i].data.fd);
+			else if (epolls._eventsList[i].events & EPOLLIN)
+				handle_client_request(epolls._eventsList[i].data.fd);
 		}
 	}
 	close(server_fd);
