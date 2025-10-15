@@ -63,3 +63,22 @@ HttpResponse &Client::getResponse(void)
 {
 	return (this->_response);
 }
+
+void	Client::processRequest(){
+	try{
+		HttpRequest req = this->_request.httpParser(this->_rawRequest);
+		if(req.uri.empty() || req.uri[0] != '/'){
+			this->_response.setErrorPage(404);
+			return;
+		}
+
+		if(req.method != "GET" && req.method != "POST" && req.method != "DELETE"){
+			this->_response.setErrorPage(405);
+			return;
+		}
+
+		this->_response = this->_response.dispatchRequest(req);
+	} catch(std::exception &error){
+		this->_response.setErrorPage(400);
+	}
+}
