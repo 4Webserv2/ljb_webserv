@@ -22,6 +22,7 @@ class HttpResponse{
 		void			setStatus(int code, const std::string &message);
 		void			setHeader(const std::string &key, const std::string &value);
 		void			setBody(const std::string &b, const std::string &contentType);
+		void			setErrorPage(int code);
 
 		std::string		toString() const;
 		std::string		intToString(int n) const;

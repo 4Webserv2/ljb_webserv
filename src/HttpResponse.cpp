@@ -64,9 +64,7 @@ HttpResponse	HttpResponse::dispatchRequest(const HttpRequest &req){
 		return handleDelete(req);
 	}else{
 		HttpResponse res;
-		res.setStatus(405, "Method not allowed");
-		res.setHeader("Content-type", "text/html");
-		res.setBody("<h1>405: Method not allowed</h1>","text/plain");
+		setErrorPage(405);
 		return res;
 	}
 }
@@ -84,6 +82,20 @@ void		HttpResponse::setBody(const std::string &b, const std::string &contentType
 	body = b;
 	this->headers["Content-Type"] = contentType;
 	this->headers["Content-Length"] = intToString(body.size());
+}
+
+void		HttpResponse::setErrorPage(int code){
+	std::string path = "./error_pages/" + intToString(code) + ".html";
+	std::ifstream file(path.c_str());
+	if(!file){
+		setStatus(code, "Error");
+		setBody("<h1>"+ intToString(code) + "Error</h1>","text/html");
+		return;
+	}
+	std::ostringstream buffer;
+	buffer << file.rdbuf();
+	setStatus(code, "Error");
+	setBody(buffer.str(),"text/html");
 }
 
 std::string	HttpResponse::toString() const{
