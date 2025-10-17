@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:50:29 by lraggio           #+#    #+#             */
-/*   Updated: 2025/10/10 20:28:25 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/10/17 10:41:56 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@
 # include <fcntl.h>
 # include <stdio.h>
 # include <utility>
+# include <sys/wait.h>
 
 
 // # include "HttpParser.hpp"
