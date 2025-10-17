@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/13 20:46:14 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/10/13 21:05:49 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/10/17 16:45:43 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,3 +72,9 @@ struct epoll_event &EpollInstance::getEpollEventsList()
 {
 	return (*this->_eventsList);
 }
+
+struct epoll_event &EpollInstance::getElementFromEventsList(int i)
+{
+	return (this->_eventsList[i]);
+}
+

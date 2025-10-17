@@ -18,6 +18,7 @@ class EpollInstance
 		int getEpollFd() const;
 		struct epoll_event getEpollEvents() const;
 		struct epoll_event &getEpollEventsList();
+		struct epoll_event &getElementFromEventsList(int i);
 
 		void initEpoll();
 
