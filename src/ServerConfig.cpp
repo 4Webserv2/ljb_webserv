@@ -4,6 +4,13 @@ ServerConfig::ServerConfig(void) {}
 
 ServerConfig::~ServerConfig(void) {}
 
+ServerConfig::ServerConfig(int ac, char **av) {
+	if (ac == 2)
+		this->parser(av[1]);
+	else
+		this->parser("config/default.conf");
+}
+
 void ServerConfig::readFile(const std::string &filename, std::string &content)
 {
 	std::ifstream file(filename.c_str());
@@ -21,9 +28,9 @@ void ServerConfig::trim(std::string &content)
 		content.clear();
 		return;
 	}
-	
+
 	size_t end = content.find_last_not_of(" \t\n\r\f\v");
-	
+
 	content = content.substr(start, end - start + 1);
 }
 
@@ -32,20 +39,20 @@ void ServerConfig::removeComments(std::string &content)
 	std::string result;
 	std::istringstream iss(content);
 	std::string line;
-	
+
 	while (std::getline(iss, line))
 	{
 		size_t commentPos = line.find('#');
-		
+
 		if (commentPos != std::string::npos)
 			line = line.substr(0, commentPos);
-		
+
 		result += line + "\n";
 	}
-	
+
 	if (!result.empty() && result[result.length() - 1] == '\n')
 		result.erase(result.length() - 1);
-	
+
 	content = result;
 }
 
@@ -62,7 +69,7 @@ std::vector<std::string> ServerConfig::tokenizeContent(const std::string &conten
 	bool inQuotes = false;
 	char quoteChar = '\0';
 	int braceCount = 0;
-	
+
 	for (size_t i = 0; i < content.length(); ++i)
 	{
 		char c = content[i];
@@ -115,13 +122,13 @@ std::vector<std::string> ServerConfig::tokenizeContent(const std::string &conten
 		else //| Se não for um espaço, adiciona o caractere ao token atual
 			currentToken += c;
 	}
-	
+
 	if (!currentToken.empty()) //| Adiciona o token atual ao vetor de tokens
 		this->_tokens.push_back(currentToken);
-	
+
 	if (braceCount != 0) //| Verifica se as chaves estão balanceadas
 		throw std::runtime_error("Configuração inválida: chaves não balanceadas");
-	
+
 	return this->_tokens;
 }
 

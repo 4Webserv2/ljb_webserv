@@ -19,6 +19,7 @@ class ServerConfig {
 		std::vector<ServerBlock>	 _serverBlocks;
 	public:
 		ServerConfig(void);
+		ServerConfig(int ac, char **av);
 		~ServerConfig(void);
 
 		std::vector<std::string> tokenizeContent(const std::string &content);
