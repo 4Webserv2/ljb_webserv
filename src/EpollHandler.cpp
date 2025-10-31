@@ -1,20 +1,14 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   EpollHandler.hpp                                   :+:      :+:    :+:   */
+/*   EpollHandler.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/28 18:37:48 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/10/31 07:48:42 by jbergfel         ###   ########.fr       */
+/*   Created: 2025/10/31 07:47:56 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/10/31 07:48:33 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#include "../includes/EpollHandler.hpp"
 
-class EpollHandler
-{
-	private:
-
-	public:
-};

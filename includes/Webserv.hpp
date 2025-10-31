@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   Webserv.hpp                                        :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/14 16:50:29 by lraggio           #+#    #+#             */
-/*   Updated: 2025/10/10 20:28:25 by jbergfel         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef WEBSERV_HPP
 # define WEBSERV_HPP
 
@@ -48,7 +36,7 @@
 # define MAX_EVENTS 10
 # define BUFFER_SIZE 4096
 
-enum e_erros {
+enum e_status {
 	ERROR = -1,
 	NO_ERROR = 0
 };
