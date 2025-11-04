@@ -1,7 +1,17 @@
-#include "../includes/Webserv.hpp"
-#include "../includes/HttpParser.hpp"
-#include "../includes/HttpRequest.hpp"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.cpp                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
+/*   Updated: 2025/10/07 12:29:53 by btaveira         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
+#include "includes/Webserv.hpp"
+#include "includes/HttpParser.hpp"
 
 int	clientLoop(const int& clientFd) {
 	char	buffer[BUFFER_SIZE];
@@ -141,7 +151,8 @@ int	main() {
 	testHttpParserRobusto();
 	////////////////////////////////////////////////////////////////
 
-	int serverFd = socket(AF_INET, SOCK_STREAM, 0);
+	test();
+	/*int serverFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (serverFd == -1) {
 		std::cout << "Erro ao criar socket" << std::endl;
 		exit(EXIT_FAILURE);
@@ -167,6 +178,6 @@ int	main() {
 		exit(EXIT_FAILURE);
 	}
 	std::cout << "Servidor ouvindo na porta " << PORT << std::endl;
-	serverLoop(serverFd);
+	serverLoop(serverFd);*/
 	return (0);
 }

@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   StdLogHandler.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/10 23:10:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/10/11 20:50:58 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/11/04 18:40:40 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../include/StdLogHandler.hpp"
+#include "../includes/StdLogHandler.hpp"
 
 StdLogHandler::StdLogHandler() : LogHandler() {}
 

@@ -3,7 +3,6 @@
 # include "Webserv.hpp"
 # include "ServerConfig.hpp"
 
-
 class ServerConfig;
 
 class LocationBlock {
@@ -18,7 +17,6 @@ class LocationBlock {
 		std::vector<std::string> _cgiExtensions;
 		std::vector<std::string> _allowMethods;
 
-		
 		void addAutoIndex(ServerConfig &config);
 		void addCanUpload(ServerConfig &config);
 		void addUri(ServerConfig &config);
@@ -28,11 +26,11 @@ class LocationBlock {
 		void addIndex(ServerConfig &config);
 		void addCgiExtensions(ServerConfig &config);
 		void addAllowMethods(ServerConfig &config);
-		
+
 	public:
 		LocationBlock();
 		~LocationBlock();
-		
+
 		void printLocationBlock();
 		void addLocationBlock(ServerConfig &config);
 

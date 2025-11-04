@@ -4,9 +4,11 @@ CC = c++
 
 C_FLAGS = -Wall -Wextra -Werror -std=c++98
 
-SRCS =		src/main.cpp \
-			src/HttpParser.cpp \
-			src/HttpResponse.cpp
+SRC_DIR = src/
+
+FIND = $(shell find $(SRC_DIR))
+
+SRCS = $(filter %.cpp, $(FIND))
 
 RED =		\033[0;35m
 BLUE =		\033[0;34m
@@ -17,11 +19,13 @@ OBJS =		${SRCS:.cpp=.o}
 .cpp.o:
 			$(CC) $(C_FLAGS) -c $< -o $@
 
+
 all:		$(NAME)
 			@echo "$(RED)$(NAME) is ready!$(RESET)"
 
 $(NAME):	$(OBJS)
-			@$(CC) $(C_FLAGS) $(SRCS) -o $(NAME)
+			ar -rcs webserv.a $(OBJS)
+			@$(CC) $(C_FLAGS) main.cpp webserv.a -o $(NAME)
 
 clean:
 			@rm -f $(OBJS)

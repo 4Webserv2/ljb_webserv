@@ -3,17 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   Logger.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/10 17:07:18 by lraggio           #+#    #+#             */
-/*   Updated: 2025/10/11 20:51:15 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/11/04 18:40:02 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // debug, info, error e warning emitem eventos,
-// logger filtra e strategy implementa
+// logger filtra e strategy implementar
 
-#include "../include/Logger.hpp"
+#include "../includes/Logger.hpp"
 
 Logger *Logger::_instance = NULL;
 

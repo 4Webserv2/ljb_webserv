@@ -1,8 +1,8 @@
 # pragma once
 
-#include "Webserv.hpp"
-#include "ServerConfig.hpp"
-#include "LocationBlock.hpp"
+# include "Webserv.hpp"
+# include "ServerConfig.hpp"
+# include "LocationBlock.hpp"
 
 class ServerConfig;
 class LocationBlock;
@@ -26,7 +26,7 @@ class ServerBlock
 	public:
 		ServerBlock(ServerConfig &config);
 		~ServerBlock();
-		
+
 		void printServerBlock();
 
 		void addListens(ServerConfig &config);

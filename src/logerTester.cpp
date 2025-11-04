@@ -1,5 +1,5 @@
-#include "../include/Logger.hpp"
-#include "../include/StdLogHandler.hpp"
+#include "../includes/Logger.hpp"
+#include "../includes/StdLogHandler.hpp"
 
 int main() {
 	Logger::initializeLogger(ERROR, new StdLogHandler());
