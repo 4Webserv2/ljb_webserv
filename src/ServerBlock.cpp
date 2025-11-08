@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   ServerBlock.cpp                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/11/08 20:39:59 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/11/08 20:40:00 by jbergfel         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../includes/ServerBlock.hpp"
 
 
@@ -163,7 +175,7 @@ void ServerBlock::addServerNames(ServerConfig &config)
 	}
 
 	for (std::vector<std::string>::iterator it = names.begin(); it != names.end(); ++it)
-		this->_serverNames.push_back(*it);        
+		this->_serverNames.push_back(*it);
 
 	for (std::vector<std::string>::iterator it = this->_serverNames.begin(); it != this->_serverNames.end(); ++it) //| Removendo duplicatas
 	{

@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 07:47:56 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/10/31 13:48:32 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/08 13:01:04 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,12 +48,12 @@ void EpollHandler::setSocketFd(int socketFd)
 	this->_socketFd = socketFd;
 }
 
-int EpollHandler::getSocketFd(void)
+int EpollHandler::getSocketFd(void) const
 {
 	return (this->_socketFd);
 }
 
-uint32_t EpollHandler::getActiveEvents(void)
+uint32_t EpollHandler::getActiveEvents(void) const
 {
 	return (this->_activeEvents);
 }

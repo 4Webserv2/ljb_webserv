@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   ServerBlock.hpp                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/11/08 20:38:08 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/11/08 20:38:09 by jbergfel         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 # pragma once
 
 # include "Webserv.hpp"
@@ -9,8 +21,8 @@ class LocationBlock;
 
 typedef struct s_listen
 {
-	unsigned int    host;
-	int             port;
+	unsigned int	host;
+	int				port;
 } t_listen;
 
 class ServerBlock

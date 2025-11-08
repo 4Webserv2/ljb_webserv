@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   LocationBlock.cpp                                  :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/11/08 20:39:40 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/11/08 20:39:41 by jbergfel         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../includes/LocationBlock.hpp"
 
 LocationBlock::LocationBlock(): _autoIndex(false), _canUpload(false), _uploadPath("./") { this->_index.push_back("index.html"); }
@@ -7,10 +19,10 @@ LocationBlock::~LocationBlock() {}
 void LocationBlock::addLocationBlock(ServerConfig &config)
 {
 	this->_uri = config.getTokens()[0];
-	
+
 	config.removeTokens(2); //| Remove o token de URI e '{'
 	config.verifyToken(EMPTY, "Configuração inválida: location: não foi encontrado nenhum location");
-	
+
 	while (config.getTokens().size() > 0)
 	{
 		std::vector<std::string> tokens = config.getTokens();
