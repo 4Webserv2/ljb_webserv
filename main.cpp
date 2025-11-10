@@ -6,34 +6,62 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/10/07 12:29:53 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/10/17 13:00:46 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "includes/Webserv.hpp"
 #include "includes/HttpParser.hpp"
+#include "includes/HttpResponse.hpp"
 
 int	clientLoop(const int& clientFd) {
 	char	buffer[BUFFER_SIZE];
+	HttpParser parser;
+	std::string rawRequest;
 
-	while (42) {
-		int	bytesRead = recv(clientFd, buffer, BUFFER_SIZE -1 , 0);
-		if (bytesRead == -1) {
-			std::cout << "Erro na leitura do cliente" << std::endl;
+	int bytesRead;
+	do {
+		bytesRead = recv(clientFd, buffer, BUFFER_SIZE - 1, 0);
+		if (bytesRead <= 0) {
+			if (bytesRead == 0)
+				std::cout << "Cliente desconectou" << std::endl;
+			else
+				std::cout << "Erro na leitura do cliente" << std::endl;
 			close(clientFd);
-			return (ERROR);
+			return (bytesRead == 0 ? NO_ERROR : ERROR);
 		}
-		if (bytesRead == 0) {
-			std::cout << "Cliente desconectou" << std::endl;
-			close(clientFd);
-			return (NO_ERROR);
-		}
+		
 		buffer[bytesRead] = '\0';
-		std::cout << "Recebido (" << bytesRead << " bytes): " << buffer << std::endl;
+		rawRequest += buffer;
+		
+		if (rawRequest.find("\r\n\r\n") != std::string::npos) {
+			break;
+		}
+	} while (bytesRead == BUFFER_SIZE - 1);
+	
+	std::cout << "Requisição recebida, processando..." << std::endl;
 
-		send(clientFd, buffer, bytesRead, 0);
+	try {
+		HttpRequest req = parser.httpParser(rawRequest);
+		HttpResponse response;
+		response = response.dispatchRequest(req);
+		
+		std::string responseStr = response.toString();
+		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
+		
+		std::cout << "Resposta enviada com sucesso (status " << response.intToString(response.status_code) << ")" << std::endl;
+	} catch (std::exception& e) {
+		HttpResponse errorResponse;
+		errorResponse.setErrorPage(400);
+		std::string responseStr = errorResponse.toString();
+		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
+		
+		std::cout << "Erro ao processar requisição: " << e.what() << std::endl;
 	}
-	return (0);
+
+	// Fechar a conexão após enviar resposta (keep-alive não implementado)
+	close(clientFd);
+	return NO_ERROR;
 }
 
 int	serverLoop(const int& serverFd) {
@@ -44,115 +72,114 @@ int	serverLoop(const int& serverFd) {
 		int clientFd = accept(serverFd, (struct sockaddr *)&clientAddr, &clientAddrLen);
 		if (clientFd == -1) {
 			std::cout << "Erro ao aceitar conexão do cliente" << std::endl;
-			//Não precisa parar/ sair do loop!
+			continue; // Continuar esperando novas conexões
 		}
+		
 		std::cout << "Cliente conectado: " << inet_ntoa(clientAddr.sin_addr) << ":" << ntohs(clientAddr.sin_port) << std::endl;
-
-		send(clientFd, "Olá do lado do servidor!\n", 27, 0);
 		clientLoop(clientFd);
 	}
-	return (0);
+	return 0;
 }
 
-void testHttpParserRobusto() {
-	std::cout << "\n==== Teste Robusto do HttpParser ====\n" << std::endl;
-	HttpParser parser;
+// void testHttpParserRobusto() {
+// 	std::cout << "\n==== Teste Robusto do HttpParser ====\n" << std::endl;
+// 	HttpParser parser;
 
-	// 1. Request válido
-	try {
-		std::string req1 =
-			"GET /ok HTTP/1.1\r\n"
-			"Host: test\r\n"
-			"\r\n"
-			"body";
-		HttpRequest r = parser.httpParser(req1);
-		std::cout << "[OK] Request válido passou." << std::endl;
-	} catch (std::exception &e) {
-		std::cout << "[ERRO] Request válido falhou: " << e.what() << std::endl;
-	}
+// 	// 1. Request válido
+// 	try {
+// 		std::string req1 =
+// 			"GET /ok HTTP/1.1\r\n"
+// 			"Host: test\r\n"
+// 			"\r\n"
+// 			"body";
+// 		HttpRequest r = parser.httpParser(req1);
+// 		std::cout << "[OK] Request válido passou." << std::endl;
+// 	} catch (std::exception &e) {
+// 		std::cout << "[ERRO] Request válido falhou: " << e.what() << std::endl;
+// 	}
 
-	// 2. Método não permitido
-	try {
-		std::string req2 =
-			"PUT /fail HTTP/1.1\r\n"
-			"Host: test\r\n"
-			"\r\n";
-		parser.httpParser(req2);
-		std::cout << "[ERRO] Método não permitido NÃO lançou exceção!" << std::endl;
-	} catch (std::exception &e) {
-		std::cout << "[OK] Método não permitido lançou exceção: " << e.what() << std::endl;
-	}
+// 	// 2. Método não permitido
+// 	try {
+// 		std::string req2 =
+// 			"PUT /fail HTTP/1.1\r\n"
+// 			"Host: test\r\n"
+// 			"\r\n";
+// 		parser.httpParser(req2);
+// 		std::cout << "[ERRO] Método não permitido NÃO lançou exceção!" << std::endl;
+// 	} catch (std::exception &e) {
+// 		std::cout << "[OK] Método não permitido lançou exceção: " << e.what() << std::endl;
+// 	}
 
-	// 3. Request line malformada (faltando versão)
-	try {
-		std::string req3 =
-			"GET /semversao\r\n"
-			"Host: test\r\n"
-			"\r\n";
-		parser.httpParser(req3);
-		std::cout << "[ERRO] Request line malformada NÃO lançou exceção!" << std::endl;
-	} catch (std::exception &e) {
-		std::cout << "[OK] Request line malformada lançou exceção: " << e.what() << std::endl;
-	}
+// 	// 3. Request line malformada (faltando versão)
+// 	try {
+// 		std::string req3 =
+// 			"GET /semversao\r\n"
+// 			"Host: test\r\n"
+// 			"\r\n";
+// 		parser.httpParser(req3);
+// 		std::cout << "[ERRO] Request line malformada NÃO lançou exceção!" << std::endl;
+// 	} catch (std::exception &e) {
+// 		std::cout << "[OK] Request line malformada lançou exceção: " << e.what() << std::endl;
+// 	}
 
-	// 4. Header malformado (sem dois pontos)
-	try {
-		std::string req4 =
-			"GET / HTTP/1.1\r\n"
-			"Host test\r\n"
-			"\r\n";
-		HttpRequest r = parser.httpParser(req4);
-		if (r.headers.find("Host") == r.headers.end())
-			std::cout << "[OK] Header malformado ignorado." << std::endl;
-		else
-			std::cout << "[ERRO] Header malformado foi aceito!" << std::endl;
-	} catch (std::exception &e) {
-		std::cout << "[ERRO] Header malformado lançou exceção: " << e.what() << std::endl;
-	}
+// 	// 4. Header malformado (sem dois pontos)
+// 	try {
+// 		std::string req4 =
+// 			"GET / HTTP/1.1\r\n"
+// 			"Host test\r\n"
+// 			"\r\n";
+// 		HttpRequest r = parser.httpParser(req4);
+// 		if (r.headers.find("Host") == r.headers.end())
+// 			std::cout << "[OK] Header malformado ignorado." << std::endl;
+// 		else
+// 			std::cout << "[ERRO] Header malformado foi aceito!" << std::endl;
+// 	} catch (std::exception &e) {
+// 		std::cout << "[ERRO] Header malformado lançou exceção: " << e.what() << std::endl;
+// 	}
 
-	// 5. Request vazio
-	try {
-		std::string req5 = "";
-		parser.httpParser(req5);
-		std::cout << "[ERRO] Request vazio NÃO lançou exceção!" << std::endl;
-	} catch (std::exception &e) {
-		std::cout << "[OK] Request vazio lançou exceção: " << e.what() << std::endl;
-	}
+// 	// 5. Request vazio
+// 	try {
+// 		std::string req5 = "";
+// 		parser.httpParser(req5);
+// 		std::cout << "[ERRO] Request vazio NÃO lançou exceção!" << std::endl;
+// 	} catch (std::exception &e) {
+// 		std::cout << "[OK] Request vazio lançou exceção: " << e.what() << std::endl;
+// 	}
 
-	// 6. Request line só com método
-	try {
-		std::string req6 = "GET\r\n\r\n";
-		parser.httpParser(req6);
-		std::cout << "[ERRO] Request line incompleta NÃO lançou exceção!" << std::endl;
-	} catch (std::exception &e) {
-		std::cout << "[OK] Request line incompleta lançou exceção: " << e.what() << std::endl;
-	}
+// 	// 6. Request line só com método
+// 	try {
+// 		std::string req6 = "GET\r\n\r\n";
+// 		parser.httpParser(req6);
+// 		std::cout << "[ERRO] Request line incompleta NÃO lançou exceção!" << std::endl;
+// 	} catch (std::exception &e) {
+// 		std::cout << "[OK] Request line incompleta lançou exceção: " << e.what() << std::endl;
+// 	}
 
-	// 7. Request com múltiplos headers e body
-	try {
-		std::string req7 =
-			"POST /multi HTTP/1.1\r\n"
-			"Host: test\r\n"
-			"X-Test: 123\r\n"
-			"\r\n"
-			"linha1\nlinha2";
-		HttpRequest r = parser.httpParser(req7);
-		if (r.headers["Host"] == "test" && r.headers["X-Test"] == "123" && r.body.find("linha2") != std::string::npos)
-			std::cout << "[OK] Request com múltiplos headers e body passou." << std::endl;
-		else
-			std::cout << "[ERRO] Falha ao processar múltiplos headers/body." << std::endl;
-	} catch (std::exception &e) {
-		std::cout << "[ERRO] Request com múltiplos headers/body lançou exceção: " << e.what() << std::endl;
-	}
-	std::cout << "==== Fim dos testes robustos ====\n" << std::endl;
-}
+// 	// 7. Request com múltiplos headers e body
+// 	try {
+// 		std::string req7 =
+// 			"POST /multi HTTP/1.1\r\n"
+// 			"Host: test\r\n"
+// 			"X-Test: 123\r\n"
+// 			"\r\n"
+// 			"linha1\nlinha2";
+// 		HttpRequest r = parser.httpParser(req7);
+// 		if (r.headers["Host"] == "test" && r.headers["X-Test"] == "123" && r.body.find("linha2") != std::string::npos)
+// 			std::cout << "[OK] Request com múltiplos headers e body passou." << std::endl;
+// 		else
+// 			std::cout << "[ERRO] Falha ao processar múltiplos headers/body." << std::endl;
+// 	} catch (std::exception &e) {
+// 		std::cout << "[ERRO] Request com múltiplos headers/body lançou exceção: " << e.what() << std::endl;
+// 	}
+// 	std::cout << "==== Fim dos testes robustos ====\n" << std::endl;
+// }
 
 int	main() {
-	testHttpParserRobusto();
+	//testHttpParserRobusto();
 	////////////////////////////////////////////////////////////////
 
-	test();
-	/*int serverFd = socket(AF_INET, SOCK_STREAM, 0);
+	//test();
+	int serverFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (serverFd == -1) {
 		std::cout << "Erro ao criar socket" << std::endl;
 		exit(EXIT_FAILURE);
@@ -178,6 +205,6 @@ int	main() {
 		exit(EXIT_FAILURE);
 	}
 	std::cout << "Servidor ouvindo na porta " << PORT << std::endl;
-	serverLoop(serverFd);*/
+	serverLoop(serverFd);
 	return (0);
 }

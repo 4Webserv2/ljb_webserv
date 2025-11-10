@@ -43,4 +43,6 @@ class Client
 		std::string &getRawRequest(void);
 		HttpParser &getRequest(void);
 		HttpResponse &getResponse(void);
+
+		void	processRequest();
 };

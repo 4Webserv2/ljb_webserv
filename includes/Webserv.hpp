@@ -5,8 +5,8 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 20:38:22 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/08 20:38:23 by jbergfel         ###   ########.fr       */
+/*   Created: 2025/09/14 16:50:29 by lraggio           #+#    #+#             */
+/*   Updated: 2025/11/10 18:12:34 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@
 # include <fcntl.h>
 # include <stdio.h>
 # include <utility>
+# include <sys/wait.h>
 
 
 // # include "HttpParser.hpp"
