@@ -1,16 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Webserv.hpp                                        :+:      :+:    :+:   */
+/*   oldWebserv.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/14 16:50:29 by lraggio           #+#    #+#             */
-<<<<<<<< HEAD:includes/Webserv.hpp
-/*   Updated: 2025/10/05 20:43:24 by btaveira         ###   ########.fr       */
-========
-/*   Updated: 2025/10/11 20:49:46 by lraggio          ###   ########.fr       */
->>>>>>>> feat/3:include/oldWebserv.hpp
+/*   Created: 2025/11/08 20:38:44 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/11/08 20:39:00 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +29,6 @@
 #include "ServerBlock.hpp"
 #include "ServerConfig.hpp"
 #include "HttpParser.hpp"
-#include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
 #include "LocationBlock.hpp"
 
