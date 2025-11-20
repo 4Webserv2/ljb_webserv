@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:45:55 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/10 18:26:31 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/20 15:33:58 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,9 +36,9 @@ class RunTime {
 		~RunTime();
 		static void createRuntime(int ac, char **av);
 		static void destroyRuntime(void);
-		
+
 		static void initListeners(void);
-		static void initSockets(void);
+		static void initSockets(int domain, int type);
 		static void deleteClient(int client_fd);
 
 		static RunTime &getRuntime();

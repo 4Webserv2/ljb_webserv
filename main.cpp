@@ -6,13 +6,15 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/11/20 14:55:11 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/20 16:43:23 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "includes/Webserv.hpp"
+#include "includes/Runtime.hpp"
 #include "includes/HttpParser.hpp"
 #include "includes/HttpResponse.hpp"
+#include "includes/ServerInstance.hpp"
 
 int	clientLoop(const int& clientFd) {
 	char	buffer[BUFFER_SIZE];
@@ -60,7 +62,8 @@ int	clientLoop(const int& clientFd) {
 	return NO_ERROR;
 }
 
-int	serverLoop(const int& serverFd) {
+int	serverLoop(const int &serverFd)
+{
 	while (42)
 	{
 		struct sockaddr_in clientAddr;
@@ -170,8 +173,21 @@ int	serverLoop(const int& serverFd) {
 // 	std::cout << "==== Fim dos testes robustos ====\n" << std::endl;
 // }
 
-int	main() {
-	int serverFd = socket(AF_INET, SOCK_STREAM, 0);
+int	main(int ac, char **av)
+{
+	(void) ac;
+	(void) av;
+
+	ServerInstance server;
+
+	server.startSocket(AF_INET, SOCK_STREAM);
+
+	std::cout << "Server FD -> " << server.getServerFd() << std::endl;
+
+	server.setAddr(AF_INET, PORT, INADDR_ANY);
+	server.bindSocket();
+	server.listenSocket();
+	/*int serverFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (serverFd == -1)
 	{
 		std::cout << "Erro ao criar socket" << std::endl;
@@ -197,7 +213,8 @@ int	main() {
 		close(serverFd);
 		exit(EXIT_FAILURE);
 	}
-	std::cout << "Servidor ouvindo na porta " << PORT << std::endl;
-	serverLoop(serverFd);
+	std::cout << "Servidor ouvindo na porta " << PORT << std::endl;*/
+
+	serverLoop(server.getServerFd());
 	return (0);
 }

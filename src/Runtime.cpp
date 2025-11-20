@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:32:41 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/20 15:07:22 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/20 16:28:14 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,8 +39,9 @@ void RunTime::createRuntime(int ac, char **av)
 	if (_runtime == NULL)
 	{
 		_runtime = new RunTime(ac, av);
-		//init listners
-		//init sockets
+		//Init Epoll Instance
+		_runtime->initListeners();
+		_runtime->initSockets(AF_INET, SOCK_STREAM);
 	}
 }
 
@@ -62,6 +63,15 @@ void RunTime::initListeners(void)
 	}
 }
 
+void RunTime::initSockets(int domain, int type)
+{
+	for (unsigned int i = 0; i < _runtime->_sListeners.size(); i++)
+	{
+		_runtime->_sListeners[i].startSocket(domain, type);
+		//EpollInstance::manipInterestList(EPOLL_CTL_ADD, &_runtime->_sListeners[i]);
+	}
+}
+
 void RunTime::destroyRuntime(void)
 {
 	if (_runtime != NULL)
@@ -70,7 +80,6 @@ void RunTime::destroyRuntime(void)
 		_runtime = NULL;
 	}
 }
-
 
 RunTime &RunTime::getRuntime(void)
 {

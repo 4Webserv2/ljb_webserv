@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:38:16 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/08 20:38:17 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/20 16:41:36 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,17 +21,16 @@ class ServerInstance
 		struct sockaddr_in	_addr;
 
 	public:
+		~ServerInstance();
+		ServerInstance();
+		ServerInstance(const ServerInstance &src);
+		ServerInstance &operator=(const ServerInstance &src);
 
-	~ServerInstance();
-	ServerInstance();
-	ServerInstance(const ServerInstance &src);
-	ServerInstance &operator=(const ServerInstance &src);
+		int getServerFd() const;
+		void copyAddr(const struct sockaddr_in& addr);
 
-	int getServerFd() const;
-	void setAddr(const struct sockaddr_in& addr);
-
-	void setAddr(int domain, int port, int addr);
-	void startSocket(int domain, int socketType);
-	void bindSocket();
-	void listenSocket();
+		void setAddr(int domain, int port, int addr);
+		void startSocket(int domain, int socketType);
+		void bindSocket();
+		void listenSocket();
 };
