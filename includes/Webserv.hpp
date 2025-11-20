@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:50:29 by lraggio           #+#    #+#             */
-/*   Updated: 2025/11/10 18:12:34 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/10 18:27:42 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,8 @@
 # include <stdio.h>
 # include <utility>
 # include <sys/wait.h>
+#include <set>
+#include <utility>
 
 
 // # include "HttpParser.hpp"

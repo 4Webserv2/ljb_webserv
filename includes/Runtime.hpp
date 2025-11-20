@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:45:55 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/10/28 20:08:52 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/10 18:26:31 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,14 +34,14 @@ class RunTime {
 
 	public:
 		~RunTime();
-		static void createInstance(int ac, char **av);
-		static void destroyInstance(void);
-
+		static void createRuntime(int ac, char **av);
+		static void destroyRuntime(void);
+		
 		static void initListeners(void);
 		static void initSockets(void);
 		static void deleteClient(int client_fd);
 
-		static RunTime &getInstance();
+		static RunTime &getRuntime();
 		static EpollInstance &getEpoll();
 		static ServerConfig &getServerConfig();
 		static std::vector<ServerListen> &getListeners();

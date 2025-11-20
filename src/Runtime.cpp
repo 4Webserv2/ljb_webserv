@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:32:41 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/10/28 20:07:15 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/10 18:33:09 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ RunTime &RunTime::operator=(const RunTime &src)
 	return (*this);
 }
 
-void RunTime::createInstance(int ac, char **av)
+void RunTime::createRuntime(int ac, char **av)
 {
 	if (_runtime == NULL)
 	{
@@ -44,7 +44,25 @@ void RunTime::createInstance(int ac, char **av)
 	}
 }
 
-void RunTime::destroyInstance(void)
+void RunTime::initListeners(void)
+{
+	std::cout << "Loading server listeners..." << std::endl;
+	std::set<std::pair<unsigned int, int> > uniqueListens;
+	for (size_t i = 0; i < _runtime->_config.getServerBlocks().size(); i++)
+	{
+		std::cout << "Loading server block " << i + 1 << "..." << std::endl;
+		std::vector<t_listen> listens = _runtime->_config.getServerBlocks()[i].getListen();
+
+		for (size_t j = 0; j < listens.size(); j++)
+		{
+			std::pair<unsigned int, int> key(listens[j].host, listens[j].port);
+			if (uniqueListens.insert(key).second)
+				_runtime->_sListeners.push_back(ServerListen(listens[j].host, listens[j].port, _runtime->_config.getServerBlocks()[i]));
+		}
+	}
+}
+
+void RunTime::destroyRuntime(void)
 {
 	if (_runtime != NULL)
 	{
@@ -54,7 +72,7 @@ void RunTime::destroyInstance(void)
 }
 
 
-RunTime &RunTime::getInstance(void)
+RunTime &RunTime::getRuntime(void)
 {
 	return (*_runtime);
 }
@@ -81,5 +99,5 @@ std::map<int, Client> &RunTime::getClients(void)
 
 Client &RunTime::getClient(int client_fd)
 {
-	
+
 }
