@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:32:41 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/10 18:33:09 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/20 15:07:22 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,5 +99,11 @@ std::map<int, Client> &RunTime::getClients(void)
 
 Client &RunTime::getClient(int client_fd)
 {
-
+	std::map<int, Client>::iterator clients = _runtime->_clients.find(client_fd);
+	if (clients == _runtime->_clients.end())
+	{
+		std::cout << "Cannot find client!" << std::endl;
+		return (clients->second);
+	}
+	return (clients->second);
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/10/17 13:00:46 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/11/20 14:55:11 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,11 +18,13 @@ int	clientLoop(const int& clientFd) {
 	char	buffer[BUFFER_SIZE];
 	HttpParser parser;
 	std::string rawRequest;
-
 	int bytesRead;
-	do {
+
+	do
+	{
 		bytesRead = recv(clientFd, buffer, BUFFER_SIZE - 1, 0);
-		if (bytesRead <= 0) {
+		if (bytesRead <= 0)
+		{
 			if (bytesRead == 0)
 				std::cout << "Cliente desconectou" << std::endl;
 			else
@@ -30,51 +32,45 @@ int	clientLoop(const int& clientFd) {
 			close(clientFd);
 			return (bytesRead == 0 ? NO_ERROR : ERROR);
 		}
-		
 		buffer[bytesRead] = '\0';
 		rawRequest += buffer;
-		
 		if (rawRequest.find("\r\n\r\n") != std::string::npos) {
 			break;
 		}
 	} while (bytesRead == BUFFER_SIZE - 1);
-	
 	std::cout << "Requisição recebida, processando..." << std::endl;
-
-	try {
+	try
+	{
 		HttpRequest req = parser.httpParser(rawRequest);
 		HttpResponse response;
 		response = response.dispatchRequest(req);
-		
 		std::string responseStr = response.toString();
 		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
-		
 		std::cout << "Resposta enviada com sucesso (status " << response.intToString(response.status_code) << ")" << std::endl;
-	} catch (std::exception& e) {
+	}
+	catch (std::exception& e)
+	{
 		HttpResponse errorResponse;
 		errorResponse.setErrorPage(400);
 		std::string responseStr = errorResponse.toString();
 		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
-		
 		std::cout << "Erro ao processar requisição: " << e.what() << std::endl;
 	}
-
-	// Fechar a conexão após enviar resposta (keep-alive não implementado)
 	close(clientFd);
 	return NO_ERROR;
 }
 
 int	serverLoop(const int& serverFd) {
-	while (42) {
+	while (42)
+	{
 		struct sockaddr_in clientAddr;
 		socklen_t	clientAddrLen = sizeof(clientAddr);
-
 		int clientFd = accept(serverFd, (struct sockaddr *)&clientAddr, &clientAddrLen);
-		if (clientFd == -1) {
+		if (clientFd == -1)
+		{
 			std::cout << "Erro ao aceitar conexão do cliente" << std::endl;
 			continue; // Continuar esperando novas conexões
 		}
-		
 		std::cout << "Cliente conectado: " << inet_ntoa(clientAddr.sin_addr) << ":" << ntohs(clientAddr.sin_port) << std::endl;
 		clientLoop(clientFd);
 	}
@@ -175,12 +171,9 @@ int	serverLoop(const int& serverFd) {
 // }
 
 int	main() {
-	//testHttpParserRobusto();
-	////////////////////////////////////////////////////////////////
-
-	//test();
 	int serverFd = socket(AF_INET, SOCK_STREAM, 0);
-	if (serverFd == -1) {
+	if (serverFd == -1)
+	{
 		std::cout << "Erro ao criar socket" << std::endl;
 		exit(EXIT_FAILURE);
 	}
