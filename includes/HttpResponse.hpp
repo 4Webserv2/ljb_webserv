@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:08 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/08 20:39:09 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/20 16:01:51 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,9 @@
 
 # include "Webserv.hpp"
 # include "HttpParser.hpp"
+# include <sys/stat.h>
+# include <sys/types.h>
+# include <ctime>
 
 class HttpResponse{
 	private:
