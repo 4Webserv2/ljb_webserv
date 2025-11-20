@@ -28,6 +28,7 @@ $(NAME):	$(OBJS)
 			@$(CC) $(C_FLAGS) main.cpp webserv.a -o $(NAME)
 
 clean:
+			@rm -rf uploads/
 			@rm -f $(OBJS)
 			@echo "$(BLUE) 📤 Objects deleted$(RESET)"
 

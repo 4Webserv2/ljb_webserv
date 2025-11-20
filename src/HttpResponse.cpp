@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/08 20:39:37 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/20 16:01:01 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -194,12 +194,36 @@ HttpResponse	HttpResponse::handleGet(const HttpRequest &req){
 
 HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
 	HttpResponse res;
-	std::string path = "./uploads/upload.txt";
+	
+	// Verificar se há corpo na requisição
+	if (req.body.empty()) {
+		res.setStatus(400, "Bad Request");
+		res.setBody("<h1>400 Bad Request</h1><p>No data to upload</p>", "text/html");
+		return res;
+	}
+	
+	// Criar diretório uploads se não existir
+	std::string uploadDir = "./uploads";
+	struct stat st;
+	if (stat(uploadDir.c_str(), &st) == -1) {
+		if (mkdir(uploadDir.c_str(), 0755) != 0) {
+			res.setStatus(500, "Internal Server Error");
+			res.setBody("<h1>500 Internal Server Error</h1><p>Could not create uploads directory</p>", "text/html");
+			return res;
+		}
+	}
+	
+	// Gerar nome de arquivo único (timestamp)
+	std::time_t now = std::time(0);
+	std::ostringstream filename;
+	filename << "./uploads/upload_" << now << ".txt";
+	
+	std::string path = filename.str();
 
 	std::ofstream file(path.c_str());
 	if (!file) {
 		res.setStatus(500, "Internal Server Error");
-		res.setBody("<h1>500 Internal Server Error</h1>", "text/html");
+		res.setBody("<h1>500 Internal Server Error</h1><p>Could not create file</p>", "text/html");
 		return res;
 	}
 
@@ -207,9 +231,13 @@ HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
 	file.close();
 
 	res.setStatus(201, "Created");
-	res.setBody("<h1>File uploaded successfully!</h1>", "text/html");
+	std::ostringstream bodyMsg;
+	bodyMsg << "<h1>File uploaded successfully!</h1>"
+			<< "<p>File saved to: " << path << "</p>"
+			<< "<p>Size: " << req.body.size() << " bytes</p>";
+	res.setBody(bodyMsg.str(), "text/html");
 	return res;
-};
+}
 
 HttpResponse	HttpResponse::handleDelete(const HttpRequest &req){
 		HttpResponse res;
