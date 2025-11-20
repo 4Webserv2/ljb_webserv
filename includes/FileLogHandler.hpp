@@ -1,37 +1,29 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   StdLogHandler.hpp                                  :+:      :+:    :+:   */
+/*   FileLogHandler.hpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/10 23:03:49 by lraggio           #+#    #+#             */
-/*   Updated: 2025/11/19 22:13:06 by lraggio          ###   ########.fr       */
+/*   Created: 2025/11/19 22:16:07 by lraggio           #+#    #+#             */
+/*   Updated: 2025/11/19 22:16:14 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef STDLOGHANDLER_HPP
-# define STDLOGHANDLER_HPP
+#ifndef FILELOGHANDLER_HPP
+#define FILELOGHANDLER_HPP
 
-# include "Logger.hpp"
+#include "Logger.hpp"
+#include <fstream>
 
-/**
- * @file StdLogHandler.cpp
- * @brief Implements the standard output logging strategy.
- *
- * Each log level is printed to std::cout with a readable prefix. This class
- * provides a simple and direct logging backend suited for debugging.
- *
- * Responsibilities:
- *  - Format messages consistently
- *  - Write log events to stdout
- */
-
-class StdLogHandler : public LogHandler
+class FileLogHandler : public LogHandler
 {
-  public:
-	StdLogHandler();
-	virtual ~StdLogHandler();
+private:
+	std::ofstream _file;
+
+public:
+	FileLogHandler(const std::string &filename);
+	virtual ~FileLogHandler();
 
 	virtual void handleDebug(t_event event);
 	virtual void handleInfo(t_event event);

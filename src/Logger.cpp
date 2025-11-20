@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Logger.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/10 17:07:18 by lraggio           #+#    #+#             */
-/*   Updated: 2025/11/04 18:40:02 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/19 22:31:39 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,8 +17,7 @@
 
 Logger *Logger::_instance = NULL;
 
-Logger::Logger(enum LogLevel level, LogHandler *handler) : _level(level),
-	_handler(handler) {}
+Logger::Logger(enum LogLevel level, LogHandler *handler) : _handler(handler), _level(level) {}
 
 Logger::~Logger() {}
 

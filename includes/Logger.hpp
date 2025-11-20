@@ -6,16 +6,27 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/10 17:00:17 by lraggio           #+#    #+#             */
-/*   Updated: 2025/10/11 20:45:54 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/11/19 22:11:14 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef LOGGER_HPP
 # define LOGGER_HPP
 
-# include <iostream>
+/**
+ * @file Logger.hpp
+ * @brief Defines a basic logging system using Singleton and Strategy patterns.
+ */
 
-enum				LogLevel
+# include <iostream>
+# include <string>
+
+/**
+ * @enum LogLevel
+ * @brief Defines the available logging severity levels.
+ */
+
+enum LogLevel
 {
 	DEBUG,
 	INFO,
@@ -25,30 +36,38 @@ enum				LogLevel
 
 typedef struct s_event
 {
-	enum LogLevel	level;
+	enum LogLevel level;
 	std::string message;
-}					t_event;
+} t_event;
 
-// Define o que a classe concreta tem que saber consumir
-// "Eu não me importo como vc vai fazer, eu só quero que vc saiba consumir
-// um evento de debug, de info, de warn ou de erro."
+/**
+ * @class LogHandler
+ * @brief Abstract interface for log consumers.
+ *
+ * Conventional order: DEBUG < INFO < WARNING < ERROR
+ */
 class LogHandler
 {
   public:
-	LogHandler() = default;
-	virtual ~LogHandler() = default;
+	LogHandler() {}
+	virtual ~LogHandler() {}
+
 	virtual void handleDebug(t_event event) = 0;
 	virtual void handleInfo(t_event event) = 0;
 	virtual void handleWarning(t_event event) = 0;
 	virtual void handleError(t_event event) = 0;
 };
 
+/**
+ * @class Logger
+ * @brief Singleton logger that delegates messages to a LogHandler.
+ */
 class Logger
 {
   private:
 	Logger(enum LogLevel level, LogHandler *handler);
-	Logger(const Logger &) = delete;
-	Logger &operator=(const Logger &) = delete;
+	Logger(const Logger &);
+	Logger &operator=(const Logger &);
 
 	static Logger *_instance;
 	LogHandler *_handler;
@@ -56,6 +75,7 @@ class Logger
 
   public:
 	~Logger();
+
 	static int initializeLogger(enum LogLevel level, LogHandler *handler);
 	static void debug(std::string message);
 	static void info(std::string message);
