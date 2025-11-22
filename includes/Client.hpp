@@ -6,42 +6,43 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:18 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/08 20:39:19 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/21 15:22:54 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 # include "Webserv.hpp"
-# include "HttpParser.hpp"
+# include "HttpRequest.hpp"
 # include "HttpResponse.hpp"
+# include "ServerManage.hpp"
+# include "EpollHandler.hpp"
 
 class HttpResponse;
-class HttpParser;
+class HttpRequest;
 
-class Client
+class Client: public EpollHandler
 {
 	private:
-		std::string	_rawRequest;
-		int	_clientFd;
-		int	_state;
+		int _state;
+		std::string _rawRequest;
+		ServerManage &_server;
+		std::string _pendingResponse;
+		size_t _responseOffset;
 
 	public:
 		HttpResponse	_response;
-		HttpParser		_request;
+		HttpRequest		_request;
 
 		~Client();
-		Client();
-		Client(int clientFd);
-		Client(int clientFd, int state, HttpParser request, HttpResponse response);
+		Client(int clientFd, ServerManage &server);
 		Client(const Client &src);
 		Client &operator=(const Client &src);
 
 		//Getters
 		int getState(void);
-		int getClientFd(void);
 		std::string &getRawRequest(void);
-		HttpParser &getRequest(void);
+		HttpRequest &getRequest(void);
 		HttpResponse &getResponse(void);
 
 		void	processRequest();

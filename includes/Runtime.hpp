@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:45:55 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/20 15:33:58 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/21 22:18:15 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,16 +15,15 @@
 # include "Webserv.hpp"
 # include "EpollInstance.hpp"
 # include "Client.hpp"
-# include "ServerListen.hpp"
+# include "ServerManage.hpp"
 # include "ServerConfig.hpp"
 
 class RunTime {
 	private:
 		static RunTime *_runtime;
 		ServerConfig _config;
-		EpollInstance _epoll;
 		std::map<int, Client> _clients;
-		std::vector<ServerListen> _sListeners;
+		std::vector<ServerManage> _sListeners;
 		bool _running;
 
 		RunTime();
@@ -42,9 +41,9 @@ class RunTime {
 		static void deleteClient(int client_fd);
 
 		static RunTime &getRuntime();
-		static EpollInstance &getEpoll();
 		static ServerConfig &getServerConfig();
-		static std::vector<ServerListen> &getListeners();
+		static std::vector<ServerManage> &getListeners();
 		static std::map<int, Client> &getClients();
 		static Client &getClient(int client_fd);
+		static ServerManage &getElementInServerList(int serverSocketFd);
 };

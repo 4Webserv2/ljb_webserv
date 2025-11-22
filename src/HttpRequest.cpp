@@ -1,22 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   HttpParser.cpp                                     :+:      :+:    :+:   */
+/*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:32 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/08 20:39:33 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/21 15:36:24 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-# include "../includes/HttpParser.hpp"
+# include "../includes/HttpRequest.hpp"
 
-HttpParser::HttpParser(){}
+HttpRequest::HttpRequest(){}
 
-HttpParser::~HttpParser(){}
+HttpRequest::~HttpRequest(){}
 
-void HttpParser::parseRequestLine(std::istringstream &stream, HttpRequest &req) {
+void HttpRequest::parseRequestLine(std::istringstream &stream, HttpParse &req) {
 	std::string line;
 	if (std::getline(stream, line)) {
 		if (!line.empty() && line[line.size() - 1] == '\r')
@@ -32,7 +32,7 @@ void HttpParser::parseRequestLine(std::istringstream &stream, HttpRequest &req) 
 	}
 }
 
-void HttpParser::parseHeaders(std::istringstream &stream, HttpRequest &req) {
+void HttpRequest::parseHeaders(std::istringstream &stream, HttpParse &req) {
 	std::string line;
 	while (std::getline(stream, line)) {
 		if (line == "\r" || line == "") break;
@@ -49,7 +49,7 @@ void HttpParser::parseHeaders(std::istringstream &stream, HttpRequest &req) {
 	}
 }
 
-void HttpParser::parseBody(std::istringstream &stream, HttpRequest &req) {
+void HttpRequest::parseBody(std::istringstream &stream, HttpParse &req) {
 	std::string line, body;
 	while (std::getline(stream, line)) {
 		body += line + "\n";
@@ -57,8 +57,8 @@ void HttpParser::parseBody(std::istringstream &stream, HttpRequest &req) {
 	req.body = body;
 }
 
-HttpRequest HttpParser::httpParser(const std::string &rawRequest) {
-	HttpRequest req;
+HttpParse HttpRequest::httpParse(const std::string &rawRequest) {
+	HttpParse req;
 	std::istringstream stream(rawRequest);
 	parseRequestLine(stream, req);
 	parseHeaders(stream, req);

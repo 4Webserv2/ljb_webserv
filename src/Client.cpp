@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/08 20:39:25 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/21 15:38:11 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,25 +14,17 @@
 
 Client::~Client() {}
 
-Client::Client() {}
-
-Client::Client(int clientFd)
+Client::Client(int clientFd, ServerManage &server): EpollHandler(EPOLLIN, clientFd, 30), _server(server)
 {
-	this->_state = 0;
-	this->_clientFd = clientFd;
+	this->_state = 9;
 	this->_rawRequest = "";
-	this->_request = HttpParser();
+	this->_request = HttpRequest();
+	this->_response = HttpResponse();
+	this->_pendingResponse = "";
+	this->_responseOffset = 0;
 }
 
-Client::Client(int clientFd, int state, HttpParser request, HttpResponse response)
-{
-	this->_clientFd = clientFd;
-	this->_state = state;
-	this->_request = request;
-	this->_response = response;
-}
-
-Client::Client(const Client &src)
+Client::Client(const Client &src): EpollHandler(src.getActiveEvents(), src.getSocketFd(), src.getEventsTimeout()), _server(src._server)
 {
 	*this = src;
 }
@@ -41,13 +33,14 @@ Client &Client::operator=(const Client &src)
 {
 	if (this != &src)
 	{
-		this->_state = src._state;
 		this->_request = src._request;
 		this->_response = src._response;
+		this->_state = src._state;
+		this->_pendingResponse = src._pendingResponse;
+		this->_responseOffset = src._responseOffset;
 	}
 	return (*this);
 }
-
 
 // GETTERS
 
@@ -56,17 +49,12 @@ int Client::getState(void)
 	return (this->_state);
 }
 
-int Client::getClientFd(void)
-{
-	return (this->_clientFd);
-}
-
 std::string &Client::getRawRequest(void)
 {
 	return (this->_rawRequest);
 }
 
-HttpParser &Client::getRequest(void)
+HttpRequest &Client::getRequest(void)
 {
 	return (this->_request);
 }
@@ -78,7 +66,7 @@ HttpResponse &Client::getResponse(void)
 
 void	Client::processRequest(){
 	try{
-		HttpRequest req = this->_request.httpParser(this->_rawRequest);
+		HttpParse req = this->_request.httpParse(this->_rawRequest);
 		if(req.uri.empty() || req.uri[0] != '/'){
 			this->_response.setErrorPage(404);
 			return;

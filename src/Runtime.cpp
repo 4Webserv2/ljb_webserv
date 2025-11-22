@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:32:41 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/20 16:28:14 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/21 22:18:08 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@ RunTime::~RunTime(void) {}
 
 RunTime::RunTime(void) {}
 
-RunTime::RunTime(int ac, char **av): _config(ac, av), _epoll() {}
+RunTime::RunTime(int ac, char **av): _config(ac, av) {}
 
 RunTime::RunTime(const RunTime &src)
 {
@@ -27,10 +27,7 @@ RunTime::RunTime(const RunTime &src)
 RunTime &RunTime::operator=(const RunTime &src)
 {
 	if (this != &src)
-	{
-		this->_epoll = src._epoll;
 		this->_config = src._config;
-	}
 	return (*this);
 }
 
@@ -39,7 +36,7 @@ void RunTime::createRuntime(int ac, char **av)
 	if (_runtime == NULL)
 	{
 		_runtime = new RunTime(ac, av);
-		//Init Epoll Instance
+		EpollInstance::initEpollRun();
 		_runtime->initListeners();
 		_runtime->initSockets(AF_INET, SOCK_STREAM);
 	}
@@ -58,7 +55,7 @@ void RunTime::initListeners(void)
 		{
 			std::pair<unsigned int, int> key(listens[j].host, listens[j].port);
 			if (uniqueListens.insert(key).second)
-				_runtime->_sListeners.push_back(ServerListen(listens[j].host, listens[j].port, _runtime->_config.getServerBlocks()[i]));
+				_runtime->_sListeners.push_back(ServerManage(listens[j].host, listens[j].port, _runtime->_config.getServerBlocks()[i]));
 		}
 	}
 }
@@ -91,12 +88,7 @@ ServerConfig &RunTime::getServerConfig(void)
 	return (_runtime->_config);
 }
 
-EpollInstance &RunTime::getEpoll(void)
-{
-	return (_runtime->_epoll);
-}
-
-std::vector<ServerListen> &RunTime::getListeners(void)
+std::vector<ServerManage> &RunTime::getListeners(void)
 {
 	return (_runtime->_sListeners);
 }
@@ -115,4 +107,14 @@ Client &RunTime::getClient(int client_fd)
 		return (clients->second);
 	}
 	return (clients->second);
+}
+
+ServerManage &RunTime::getElementInServerList(int serverSocketFd)
+{
+	for (size_t i = 0; i < _runtime->_sListeners.size(); i++)
+	{
+		if (_runtime->_sListeners[i].getSocketFd() == serverSocketFd)
+			return (_runtime->_sListeners[i]);
+	}
+	return (_runtime->_sListeners[0]);;
 }

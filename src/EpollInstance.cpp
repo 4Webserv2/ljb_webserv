@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/13 20:46:14 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/10/17 16:45:43 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/21 22:30:53 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,31 +50,72 @@ EpollInstance &EpollInstance::operator=(const EpollInstance &src)
 	return (*this);
 }
 
-
 void EpollInstance::initEpoll(void)
 {
-	this->_epollFd = epoll_create1(1);
-	if (this->_epollFd == -1)
-	throw(EpollInstance::CannotInitEpoll());
+	_run->_epollFd = epoll_create1(1);
+	if (_run->_epollFd == -1)
+		std::cout << "Epoll error" << std::endl; return ;
 }
 
-int EpollInstance::getEpollFd(void) const
+void EpollInstance::initEpollRun(void)
 {
-	return (this->_epollFd);
+	if (_run == NULL)
+	{
+		_run = new EpollInstance();
+		_run->_epollFd = epoll_create(1);
+		if (_run->_epollFd == -1)
+		{
+			std::cout << "Epoll error" << std::endl;
+			return ;
+		}
+		std::cout << "Epoll created!" << std::endl;
+	}
 }
 
-struct epoll_event EpollInstance::getEpollEvents() const
+void EpollInstance::deleteElementFromHandlers(int socketFd)
 {
-	return (this->_epollEvents);
+	std::map<int, EpollHandler *>::iterator it = _run->_epollHandlers.find(socketFd);
+	if (it != _run->_epollHandlers.end())
+	{
+		it->second->deleteHandler();
+		_run->_epollHandlers.erase(it);
+	}
+}
+
+int EpollInstance::manipEpollWait(void)
+{
+	if (_run == NULL)
+	{
+		throw std::runtime_error("EpollInstance is not initialized.");
+	}
+
+	int numberOfReadyFds = 0;
+	numberOfReadyFds = epoll_wait(_run->_epollFd, _run->_eventsList, MAX_EVENTS, -1);
+	return (numberOfReadyFds);
+}
+
+int EpollInstance::getEpollFd(void)
+{
+	return (_run->_epollFd);
+}
+
+std::map<int, EpollHandler*> &EpollInstance::getEpollHandlers(void)
+{
+	return (_run->_epollHandlers);
+}
+
+struct epoll_event EpollInstance::getEpollEvents()
+{
+	return (_run->_epollEvents);
 }
 
 struct epoll_event &EpollInstance::getEpollEventsList()
 {
-	return (*this->_eventsList);
+	return (*_run->_eventsList);
 }
 
 struct epoll_event &EpollInstance::getElementFromEventsList(int i)
 {
-	return (this->_eventsList[i]);
+	return (_run->_eventsList[i]);
 }
 
