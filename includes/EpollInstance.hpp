@@ -3,17 +3,19 @@
 /*                                                        :::      ::::::::   */
 /*   EpollInstance.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:15 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/21 22:28:11 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/27 09:26:55 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 # include "Webserv.hpp"
-# include "EpollHandler.hpp"
+// # include "EpollHandler.hpp"
+
+class EpollHandler;
 
 class EpollInstance
 {

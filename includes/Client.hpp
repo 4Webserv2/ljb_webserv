@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:18 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/21 15:22:54 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/27 09:37:43 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,35 +15,52 @@
 # include "Webserv.hpp"
 # include "HttpRequest.hpp"
 # include "HttpResponse.hpp"
-# include "ServerManage.hpp"
 # include "EpollHandler.hpp"
 
-class HttpResponse;
-class HttpRequest;
+class ServerManage;
+
+// Estados do cliente
+enum ClientState {
+    STATE_READING_HEADER = 0,
+    STATE_READING_BODY = 1,
+    STATE_COMPLETE = 2
+};
 
 class Client: public EpollHandler
 {
-	private:
-		int _state;
-		std::string _rawRequest;
-		ServerManage &_server;
-		std::string _pendingResponse;
-		size_t _responseOffset;
+    private:
+        int _state;
+        std::string _rawRequest;
+        ServerManage &_server;
+        std::string _pendingResponse;
+        size_t _responseOffset;
 
-	public:
-		HttpResponse	_response;
-		HttpRequest		_request;
+    public:
+        HttpResponse    _response;
+        HttpRequest     _request;
 
-		~Client();
-		Client(int clientFd, ServerManage &server);
-		Client(const Client &src);
-		Client &operator=(const Client &src);
+        ~Client();
+        Client(int clientFd, ServerManage &server);
+        Client(const Client &src);
+        Client &operator=(const Client &src);
 
-		//Getters
-		int getState(void);
-		std::string &getRawRequest(void);
-		HttpRequest &getRequest(void);
-		HttpResponse &getResponse(void);
+        // Métodos herdados de EpollHandler
+        virtual void EpollInHandler(void);
+        virtual void EpollOutHandler(void);
+        virtual void deleteHandler(void);
 
-		void	processRequest();
+        // Métodos auxiliares
+        void concatenateRequestData(const std::string &data);
+        bool isRequestComplete(void);
+        bool sendResponse(const std::string &responseStr);
+        void processRequest(void);
+
+        // Getters
+        int getState(void) const;
+        std::string &getRawRequest(void);
+        HttpRequest &getRequest(void);
+        HttpResponse &getResponse(void);
+
+        // Setters
+        void setState(int state);
 };

@@ -3,15 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   Runtime.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:32:41 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/21 22:18:08 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/27 09:55:16 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/Runtime.hpp"
+#include "../includes/ServerManage.hpp"
 
+RunTime *RunTime::_runtime = NULL;
 
 RunTime::~RunTime(void) {}
 

@@ -3,34 +3,45 @@
 /*                                                        :::      ::::::::   */
 /*   ServerManage.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 20:58:51 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/21 14:56:31 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/27 09:39:24 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/ServerManage.hpp"
+#include "../includes/Client.hpp"
+#include "../includes/Runtime.hpp"
+#include "../includes/EpollInstance.hpp"
 
 ServerManage::~ServerManage(){}
 
 ServerManage::ServerManage(unsigned int host, int port, const ServerBlock &block)
-	: EpollHandler(EPOLLIN | EPOLLRDHUP),
-	_host(host), _port(port), _block(block) {}
+    : EpollHandler(EPOLLIN | EPOLLRDHUP), _block(block)
+{
+    this->_host = host;
+    this->_port = port;
+    memset(&this->_serverAddr, 0, sizeof(this->_serverAddr));
+}
 
 ServerManage::ServerManage(const ServerManage &src)
-	: EpollHandler(src.getSocketFd(), src.getActiveEvents()),
-	_host(src._host), _port(src._port), _block(src._block) {}
+    : EpollHandler(src.getSocketFd(), src.getActiveEvents(), src.getEventsTimeout()), 
+      _block(src._block)
+{
+    *this = src;
+}
 
 ServerManage &ServerManage::operator=(const ServerManage &src)
 {
-	if (this != &src)
-	{
-		this->_host = src._host;
-		this->_port = src._port;
-		this->setSocketFd(src.getSocketFd());
-	}
-	return (*this);
+    if (this != &src)
+    {
+        this->_host = src._host;
+        this->_port = src._port;
+        this->_serverAddr = src._serverAddr;
+        this->setSocketFd(src.getSocketFd());
+    }
+    return (*this);
 }
 
 void ServerManage::startSocket(int domain, int type)
@@ -96,4 +107,37 @@ ServerBlock ServerManage::getBlock() const
 int ServerManage::getFd() const
 {
 	return (this->getSocketFd());
+}
+
+void ServerManage::EpollInHandler(void)
+{
+    // Aceitar nova conexão
+    struct sockaddr_in clientAddr;
+    socklen_t clientAddrLen = sizeof(clientAddr);
+    
+    int clientFd = accept(this->getSocketFd(), (struct sockaddr *)&clientAddr, &clientAddrLen);
+    
+    if (clientFd < 0)
+    {
+        std::cerr << "Erro ao aceitar conexão" << std::endl;
+        return;
+    }
+    
+    // Tornar o socket não-bloqueante
+    int flags = fcntl(clientFd, F_GETFL, 0);
+    fcntl(clientFd, F_SETFL, flags | O_NONBLOCK);
+    
+    std::cout << "Nova conexão aceita (fd=" << clientFd << " de " 
+              << inet_ntoa(clientAddr.sin_addr) << ":" << ntohs(clientAddr.sin_port) << ")" << std::endl;
+    
+    // Criar novo cliente e adicionar ao mapa
+    RunTime::getClients().insert(
+        std::make_pair(clientFd, Client(clientFd, *this))
+    );
+    
+    // Adicionar ao epoll
+    struct epoll_event ev;
+    ev.events = EPOLLIN | EPOLLRDHUP;
+    ev.data.ptr = &RunTime::getClient(clientFd);
+    epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_ADD, clientFd, &ev);
 }

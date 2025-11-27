@@ -3,17 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   ServerBlock.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:38:08 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/08 20:38:09 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/27 11:42:26 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 # pragma once
 
 # include "Webserv.hpp"
-# include "ServerConfig.hpp"
 # include "LocationBlock.hpp"
 
 class ServerConfig;
@@ -28,6 +27,7 @@ typedef struct s_listen
 class ServerBlock
 {
 	private:
+		ServerConfig&							_config;
 		std::vector<std::string>                _serverNames;
 		std::vector<t_listen>                   _listen;
 		std::pair<bool, size_t>                 _maxBodySize;
@@ -37,16 +37,21 @@ class ServerBlock
 
 	public:
 		ServerBlock(ServerConfig &config);
+		ServerBlock(const ServerBlock &src);
+		ServerBlock &operator=(const ServerBlock &src); 
 		~ServerBlock();
 
 		void printServerBlock();
 
-		void addListens(ServerConfig &config);
-		void addServerNames(ServerConfig &config);
-		void addMaxBodySize(ServerConfig &config);
-		void addRoot(ServerConfig &config);
-		void addErrorPages(ServerConfig &config);
-		void addLocation(ServerConfig &config);
+		bool isUriValid(const std::string uri);
+		bool isLocationValid(const std::string uri, const std::string method);
+
+		void addListens();
+		void addServerNames();
+		void addMaxBodySize();
+		void addRoot();
+		void addErrorPages();
+		void addLocation();
 
 		//| Getters
 		std::vector<std::string> getServerNames() const;

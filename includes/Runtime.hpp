@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Runtime.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:45:55 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/21 22:18:15 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/27 09:55:05 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,9 @@
 # include "Webserv.hpp"
 # include "EpollInstance.hpp"
 # include "Client.hpp"
-# include "ServerManage.hpp"
 # include "ServerConfig.hpp"
+
+class ServerManage;
 
 class RunTime {
 	private:

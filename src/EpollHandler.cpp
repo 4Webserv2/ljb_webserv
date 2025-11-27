@@ -3,14 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   EpollHandler.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 07:47:56 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/21 22:33:18 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/27 09:56:07 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/EpollHandler.hpp"
+#include "../includes/EpollInstance.hpp"
 
 EpollHandler::~EpollHandler(void) {}
 
@@ -43,6 +44,16 @@ int EpollHandler::EpollEventHandler(struct epoll_event &event)
 	else
 		return (-1);
 	return (0);
+}
+
+void EpollHandler::deleteHandler(void)
+{
+    // Implementação padrão: apenas fecha o socket
+    if (this->_socketFd != -1)
+    {
+        close(this->_socketFd);
+        this->_socketFd = -1;
+    }
 }
 
 void EpollHandler::handleTimeout(void)

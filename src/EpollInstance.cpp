@@ -3,14 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   EpollInstance.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/13 20:46:14 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/21 22:30:53 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/27 09:55:35 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/EpollInstance.hpp"
+#include "../includes/EpollHandler.hpp"
+
+EpollInstance *EpollInstance::_run = NULL;
 
 EpollInstance::~EpollInstance()
 {
@@ -54,7 +57,11 @@ void EpollInstance::initEpoll(void)
 {
 	_run->_epollFd = epoll_create1(1);
 	if (_run->_epollFd == -1)
-		std::cout << "Epoll error" << std::endl; return ;
+	{
+		std::cout << "Epoll error" << std::endl; 
+		return ;
+	}
+		
 }
 
 void EpollInstance::initEpollRun(void)
