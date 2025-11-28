@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   EpollInstance.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/13 20:46:14 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/27 09:55:35 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/11/27 22:48:04 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,17 +21,7 @@ EpollInstance::~EpollInstance()
 }
 
 EpollInstance::EpollInstance()
-{
-	try
-	{
-		std::cout << "Try to create new Epoll" << std::endl;
-		initEpoll();
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << '\n';
-	}
-}
+{}
 
 EpollInstance::EpollInstance(const EpollInstance &src)
 {
@@ -53,17 +43,6 @@ EpollInstance &EpollInstance::operator=(const EpollInstance &src)
 	return (*this);
 }
 
-void EpollInstance::initEpoll(void)
-{
-	_run->_epollFd = epoll_create1(1);
-	if (_run->_epollFd == -1)
-	{
-		std::cout << "Epoll error" << std::endl; 
-		return ;
-	}
-		
-}
-
 void EpollInstance::initEpollRun(void)
 {
 	if (_run == NULL)
@@ -71,10 +50,7 @@ void EpollInstance::initEpollRun(void)
 		_run = new EpollInstance();
 		_run->_epollFd = epoll_create(1);
 		if (_run->_epollFd == -1)
-		{
-			std::cout << "Epoll error" << std::endl;
-			return ;
-		}
+			throw (std::runtime_error("Cannot Init Epoll!"));
 		std::cout << "Epoll created!" << std::endl;
 	}
 }

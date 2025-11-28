@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationBlock.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:40 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/27 11:32:37 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/11/27 22:04:16 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,10 +14,10 @@
 
 LocationBlock::LocationBlock(ServerConfig &config) : _config(config), _autoIndex(false), _canUpload(false), _uploadPath("./") {
     this->_uri = this->_config.getTokens()[0];
-    
+
     this->_config.removeTokens(2); //| Remove o token de URI e '{'
     this->_config.verifyToken(EMPTY, "Configuração inválida: location: não foi encontrado nenhum location");
-    
+
     while (this->_config.getTokens().size() > 0)
     {
         std::vector<std::string> tokens = this->_config.getTokens();

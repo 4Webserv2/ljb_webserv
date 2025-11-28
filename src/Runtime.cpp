@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Runtime.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:32:41 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/27 09:55:16 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/11/28 00:19:00 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,7 @@ RunTime &RunTime::operator=(const RunTime &src)
 	return (*this);
 }
 
-void RunTime::createRuntime(int ac, char **av)
+int RunTime::createRuntime(int ac, char **av)
 {
 	if (_runtime == NULL)
 	{
@@ -41,7 +41,9 @@ void RunTime::createRuntime(int ac, char **av)
 		EpollInstance::initEpollRun();
 		_runtime->initListeners();
 		_runtime->initSockets(AF_INET, SOCK_STREAM);
+		return (0);
 	}
+	return (1);
 }
 
 void RunTime::initListeners(void)

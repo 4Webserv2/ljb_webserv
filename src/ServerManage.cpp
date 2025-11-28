@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerManage.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 20:58:51 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/27 09:39:24 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/11/27 22:11:59 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@ ServerManage::ServerManage(unsigned int host, int port, const ServerBlock &block
 }
 
 ServerManage::ServerManage(const ServerManage &src)
-    : EpollHandler(src.getSocketFd(), src.getActiveEvents(), src.getEventsTimeout()), 
+    : EpollHandler(src.getSocketFd(), src.getActiveEvents(), src.getEventsTimeout()),
       _block(src._block)
 {
     *this = src;
@@ -114,27 +114,26 @@ void ServerManage::EpollInHandler(void)
     // Aceitar nova conexão
     struct sockaddr_in clientAddr;
     socklen_t clientAddrLen = sizeof(clientAddr);
-    
+
     int clientFd = accept(this->getSocketFd(), (struct sockaddr *)&clientAddr, &clientAddrLen);
-    
+
     if (clientFd < 0)
     {
         std::cerr << "Erro ao aceitar conexão" << std::endl;
         return;
     }
-    
+
     // Tornar o socket não-bloqueante
     int flags = fcntl(clientFd, F_GETFL, 0);
     fcntl(clientFd, F_SETFL, flags | O_NONBLOCK);
-    
-    std::cout << "Nova conexão aceita (fd=" << clientFd << " de " 
+
+    std::cout << "Nova conexão aceita (fd=" << clientFd << " de "
               << inet_ntoa(clientAddr.sin_addr) << ":" << ntohs(clientAddr.sin_port) << ")" << std::endl;
-    
+
     // Criar novo cliente e adicionar ao mapa
     RunTime::getClients().insert(
-        std::make_pair(clientFd, Client(clientFd, *this))
-    );
-    
+        std::make_pair(clientFd, Client(clientFd, *this)));
+
     // Adicionar ao epoll
     struct epoll_event ev;
     ev.events = EPOLLIN | EPOLLRDHUP;

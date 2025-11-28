@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   EpollInstance.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:15 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/27 09:26:55 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/11/27 22:34:25 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,6 @@ class EpollInstance
 		static struct epoll_event &getElementFromEventsList(int i);
 
 		static void deleteElementFromHandlers(int socketFd);
-		static void initEpoll();
 		static void initEpollRun();
 		static int manipEpollWait();
 

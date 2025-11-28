@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/11/21 22:24:42 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/28 00:20:42 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,7 +89,7 @@ void epollReadyListLoop(int numberOfReadySockets)
 	}
 }
 
-int	serverLoop()
+void	serverLoop()
 {
 	while (42)
 	{
@@ -101,46 +101,49 @@ int	serverLoop()
 		}
 		else
 		{
-
+			epollReadyListLoop(sockets);
+			epollValidationLoop();
 		}
 	}
-	return 0;
 }
+
+/*void	printBlock(std::vector<ServerBlock> serverBlocks, std::vector<ServerManage> serverListens)
+{
+	serverListens;
+    for (size_t i = 0; i < serverBlocks.size(); i++)
+    {
+        std::cout << "==================== SERVER BLOCK " << i + 1 << " ====================" << std::endl;
+        serverBlocks[i].printServerBlock();
+        std::cout << "Listens: " << std::endl;
+        for (size_t j = 0; j < serverListens.size(); j++)
+        {
+            if (serverListens[j].getBlock() == serverBlocks[i])
+            {
+                std::cout << "Host[" << j << "]: " << serverListens[j].getHost() << " Port[" << j << "]: " << serverListens[j].getPort() << std::endl;
+            }
+        }
+        std::map<std::string, LocationBlock> locations = serverBlocks[i].getLocations();
+        for (std::map<std::string, LocationBlock>::iterator it = locations.begin(); it != locations.end(); it++)
+        {
+            std::cout << "------------------ LOCATION BLOCK ------------------" << std::endl;
+            it->second.printLocationBlock();
+            std::cout << "----------------------------------------------------" << std::endl;
+        }
+        std::cout << "========================================================" << std::endl;
+    }
+}*/
 
 int	main(int ac, char **av)
 {
-	(void) ac;
-	(void) av;
-
-	RunTime::createRuntime(ac, av);
-	/*int serverFd = socket(AF_INET, SOCK_STREAM, 0);
-	if (serverFd == -1)
+	if (RunTime::createRuntime(ac, av) == 0)
 	{
-		std::cout << "Erro ao criar socket" << std::endl;
-		exit(EXIT_FAILURE);
+		//printBlock(RunTime::getServerConfig().getServerBlocks(), RunTime::getListeners());
+		serverLoop();
 	}
-	std::cout << "Socket criado" << std::endl;
-	struct sockaddr_in serverAddr;
-	socklen_t	serverAddrLen = sizeof(serverAddr);
-
-	bzero(&serverAddr, serverAddrLen);
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_port = htons(PORT);
-	serverAddr.sin_addr.s_addr = INADDR_ANY;
-
-	if (bind(serverFd, (const struct sockaddr *)&serverAddr, serverAddrLen) == -1) {
-		std::cout << "Erro ao bindar socket" << std::endl;
-		close(serverFd);
-		exit(EXIT_FAILURE);
+	else
+	{
+		std::cout << "Error" << std::endl;
+		return (1);
 	}
-	std::cout << "Socket bindado" << std::endl;
-	if (listen(serverFd, BACKLOG) == -1) {
-		std::cout << "Erro ao colocar socket em modo passivo" << std::endl;
-		close(serverFd);
-		exit(EXIT_FAILURE);
-	}
-	std::cout << "Servidor ouvindo na porta " << PORT << std::endl;*/
-
-	serverLoop();
 	return (0);
 }

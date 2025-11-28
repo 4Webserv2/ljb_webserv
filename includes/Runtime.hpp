@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Runtime.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:45:55 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/27 09:55:05 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/11/28 00:18:44 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ class RunTime {
 
 	public:
 		~RunTime();
-		static void createRuntime(int ac, char **av);
+		static int createRuntime(int ac, char **av);
 		static void destroyRuntime(void);
 
 		static void initListeners(void);
