@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/27 09:40:57 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/11/28 09:09:25 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ Client::Client(int clientFd, ServerManage &server)
 }
 
 Client::Client(const Client &src)
-	: EpollHandler(src.getActiveEvents(), src.getSocketFd(), src.getEventsTimeout()), 
+	: EpollHandler(src.getActiveEvents(), src.getSocketFd(), src.getEventsTimeout()),
 	  _server(src._server)
 {
 	*this = src;
@@ -81,7 +81,7 @@ void Client::setState(int state)
 void Client::concatenateRequestData(const std::string &data)
 {
 	this->_rawRequest += data;
-	
+
 	// Se ainda está lendo headers
 	if (this->_state == STATE_READING_HEADER)
 	{
@@ -90,7 +90,7 @@ void Client::concatenateRequestData(const std::string &data)
 		{
 			// Headers completos, muda para leitura de body
 			this->setState(STATE_READING_BODY);
-			
+
 			// Verifica se há Content-Length
 			size_t contentLengthPos = this->_rawRequest.find("Content-Length:");
 			if (contentLengthPos != std::string::npos)
@@ -99,15 +99,15 @@ void Client::concatenateRequestData(const std::string &data)
 				size_t valueStart = contentLengthPos + 15;
 				size_t lineEnd = this->_rawRequest.find("\r\n", valueStart);
 				std::string lengthStr = this->_rawRequest.substr(valueStart, lineEnd - valueStart);
-				
+
 				// Remove espaços
 				while (!lengthStr.empty() && isspace(lengthStr[0]))
 					lengthStr.erase(0, 1);
-				
+
 				int contentLength = std::atoi(lengthStr.c_str());
 				size_t bodyStart = headerEnd + 4;
 				size_t currentBodySize = this->_rawRequest.size() - bodyStart;
-				
+
 				// Verifica se recebeu todo o body
 				if (currentBodySize >= static_cast<size_t>(contentLength))
 					this->setState(STATE_COMPLETE);
@@ -133,7 +133,7 @@ void Client::processRequest(void)
 	try
 	{
 		HttpParse req = this->_request.httpParse(this->_rawRequest);
-		
+
 		if (req.uri.empty() || req.uri[0] != '/')
 		{
 			this->_response.setErrorPage(404);
@@ -155,7 +155,6 @@ void Client::processRequest(void)
 	}
 }
 
-// Envia a resposta HTTP (com suporte a envio parcial)
 bool Client::sendResponse(const std::string &responseStr)
 {
 	if (this->_pendingResponse.empty())
@@ -175,29 +174,23 @@ bool Client::sendResponse(const std::string &responseStr)
 	{
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
 		{
-			// Socket não está pronto, adicionar EPOLLOUT
 			struct epoll_event ev;
 			ev.events = EPOLLOUT | EPOLLRDHUP;
 			ev.data.ptr = this;
 			epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_MOD, this->getSocketFd(), &ev);
 			return false;
 		}
-		// Erro real
 		std::cerr << "Erro ao enviar resposta: " << strerror(errno) << std::endl;
 		return false;
 	}
 
 	this->_responseOffset += bytesSent;
-
-	// Verifica se enviou tudo
 	if (this->_responseOffset >= this->_pendingResponse.size())
 	{
 		this->_pendingResponse.clear();
 		this->_responseOffset = 0;
 		return true;
 	}
-
-	// Ainda há dados pendentes, precisa de EPOLLOUT
 	struct epoll_event ev;
 	ev.events = EPOLLOUT | EPOLLRDHUP;
 	ev.data.ptr = this;
@@ -205,7 +198,6 @@ bool Client::sendResponse(const std::string &responseStr)
 	return false;
 }
 
-// Handler para eventos EPOLLIN (dados disponíveis para leitura)
 void Client::EpollInHandler(void)
 {
 	char buffer[BUFFER_SIZE];
@@ -217,7 +209,7 @@ void Client::EpollInHandler(void)
 			std::cout << "Cliente desconectou (fd=" << this->getSocketFd() << ")" << std::endl;
 		else
 			std::cout << "Erro na leitura do cliente (fd=" << this->getSocketFd() << ")" << std::endl;
-		
+
 		this->deleteHandler();
 		return;
 	}
@@ -225,29 +217,20 @@ void Client::EpollInHandler(void)
 	buffer[bytesRead] = '\0';
 	this->concatenateRequestData(std::string(buffer));
 
-	// Verifica se a requisição está completa
 	if (this->isRequestComplete())
 	{
 		std::cout << "Requisição completa recebida (fd=" << this->getSocketFd() << ")" << std::endl;
-		
-		// Processa a requisição
 		this->processRequest();
-		
-		// Tenta enviar resposta
 		std::string responseStr = this->_response.toString();
-		
 		if (this->sendResponse(responseStr))
 		{
-			// Resposta enviada completamente
-			std::cout << "Resposta enviada com sucesso (fd=" << this->getSocketFd() 
+			std::cout << "Resposta enviada com sucesso (fd=" << this->getSocketFd()
 					  << ", status=" << this->_response.status_code << ")" << std::endl;
 			this->deleteHandler();
 		}
-		// Se não enviou tudo, EPOLLOUT foi configurado em sendResponse()
 	}
 }
 
-// Handler para eventos EPOLLOUT (socket pronto para escrita)
 void Client::EpollOutHandler(void)
 {
 	if (this->_pendingResponse.empty())
@@ -255,22 +238,16 @@ void Client::EpollOutHandler(void)
 
 	if (this->sendResponse(this->_pendingResponse))
 	{
-		// Resposta enviada completamente
-		std::cout << "Resposta enviada com sucesso (fd=" << this->getSocketFd() 
-				  << ", status=" << this->_response.status_code << ")" << std::endl;
+		std::cout << "Resposta enviada com sucesso (fd=" << this->getSocketFd() << ", status=" << this->_response.status_code << ")" << std::endl;
 		this->deleteHandler();
 	}
-	// Se ainda há dados pendentes, EPOLLOUT permanece ativo
 }
 
-// Limpa e remove o handler do epoll
 void Client::deleteHandler(void)
 {
 	std::cout << "Removendo cliente (fd=" << this->getSocketFd() << ")" << std::endl;
-	
+
 	epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_DEL, this->getSocketFd(), NULL);
 	close(this->getSocketFd());
-	
-	// Remove do mapa de clientes no Runtime
 	RunTime::getClients().erase(this->getSocketFd());
 }

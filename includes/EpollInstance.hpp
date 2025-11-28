@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:15 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/27 22:34:25 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/28 09:14:20 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,12 +38,18 @@ class EpollInstance
 		static struct epoll_event getEpollEvents();
 		static struct epoll_event &getEpollEventsList();
 		static struct epoll_event &getElementFromEventsList(int i);
-
+		static void manipInterestList(int operation, EpollHandler *handler);
 		static void deleteElementFromHandlers(int socketFd);
 		static void initEpollRun();
 		static int manipEpollWait();
 
 		class CannotInitEpoll : public std::exception
+		{
+			public:
+				virtual const char *what() const throw();
+		};
+
+		class CannotManipulate : public std::exception
 		{
 			public:
 				virtual const char *what() const throw();

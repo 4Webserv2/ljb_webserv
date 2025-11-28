@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/11/28 00:20:42 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/28 09:25:29 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,6 +69,7 @@ void epollValidationLoop()
 	{
 		std::cout << "Checking timeout for FD: " << it->first << std::endl;
 		it->second->handleTimeout();
+		std::cout << "Timeout Ok" << std::endl;
 	}
 }
 
@@ -103,6 +104,7 @@ void	serverLoop()
 		{
 			epollReadyListLoop(sockets);
 			epollValidationLoop();
+			std::cout << "Teste" << std::endl;
 		}
 	}
 }

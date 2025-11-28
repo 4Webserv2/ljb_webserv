@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:32:41 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/28 00:19:00 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/28 09:21:39 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,7 @@ int RunTime::createRuntime(int ac, char **av)
 		EpollInstance::initEpollRun();
 		_runtime->initListeners();
 		_runtime->initSockets(AF_INET, SOCK_STREAM);
+		std::cout << "Runtime Initiated" << std::endl;
 		return (0);
 	}
 	return (1);
@@ -69,7 +70,7 @@ void RunTime::initSockets(int domain, int type)
 	for (unsigned int i = 0; i < _runtime->_sListeners.size(); i++)
 	{
 		_runtime->_sListeners[i].startSocket(domain, type);
-		//EpollInstance::manipInterestList(EPOLL_CTL_ADD, &_runtime->_sListeners[i]);
+		EpollInstance::manipInterestList(EPOLL_CTL_ADD, &_runtime->_sListeners[i]);
 	}
 }
 
