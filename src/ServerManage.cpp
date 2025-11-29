@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 20:58:51 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 08:13:56 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/29 15:13:18 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,16 +16,13 @@
 #include "../includes/EpollInstance.hpp"
 
 
-void set_nonblocking(int sockfd)
+int make_nonblocking(int fd)
 {
-	int flags = fcntl(sockfd, F_GETFL, 0);
+	int flags = fcntl(fd, F_GETFL, 0);
 	if (flags == -1)
-		throw(std::runtime_error("Cannot set nonblocking"));
-	if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == -1)
-		throw(std::runtime_error("Cannot set nonblocking"));
+		return -1;
+	return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
-
-
 
 ServerManage::~ServerManage(){}
 
@@ -101,7 +98,7 @@ void ServerManage::updateToNonBlocking(void)
 	try
 	{
 		std::cout << "nonblocking()" << this->getSocketFd() << std::endl;
-		set_nonblocking(this->getSocketFd());
+		make_nonblocking(this->getSocketFd());
 	}
 	catch (const std::exception &e)
 	{
@@ -155,7 +152,7 @@ void ServerManage::EpollInHandler(void)
 		{
 			try
 			{
-				set_nonblocking(clientFd);
+				make_nonblocking(clientFd);
 				int flag = 1;
 				if (setsockopt(clientFd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int)) < 0)
 					std::cerr << "[Warning] Failed to set TCP_NODELAY on client socket" << std::endl;

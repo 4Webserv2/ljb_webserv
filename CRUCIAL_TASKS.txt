@@ -1,0 +1,44 @@
+Pontos cruciais para finalizar o projeto Webserver (com prioridades)
+
+Prioridade alta (imprescindível para comportamento correto no navegador)
+1. HTTP/1.1 e gerenciamento de Connection
+   - Suporte a HTTP/1.1, interpretar "Connection: keep-alive" e "Connection: close".
+   - Definir comportamento padrão (ex.: "Connection: close") até implementar keep-alive.
+
+2. Conexões persistentes e timeouts
+   - Implementar keep-alive por socket, controlar último-uso e timeouts configuráveis.
+
+3. Robustez no parsing de cabeçalhos
+   - Tratamento case-insensitive, trim de espaços, cabeçalhos duplicados e folded headers.
+
+Prioridade média (segurança, compatibilidade e UX)
+4. Normalização e segurança de caminhos
+   - Normalizar URIs, prevenir path traversal (".."), e aplicar regras de `location`.
+
+5. Tipos MIME e Content-Type corretos
+   - Mapear extensões para `Content-Type` para servir arquivos estáticos corretamente.
+
+6. Tratamento consistente de erros
+   - Usar `error_pages/` para respostas de erro, retornar status + headers corretos.
+
+7. CGI: correção e hardening
+   - Garantir variáveis de ambiente corretas, limites de tamanho, diretório de execução e tratamento de erros.
+
+Prioridade baixa (melhorias, performance e entrega)
+8. Testes e CI
+   - Adicionar testes unitários/integrados para parsing, dispatch, CGI e endpoints; configurar CI (ex.: GitHub Actions).
+
+9. Encerramento gracioso e sinais
+   - Tratar SIGINT/SIGTERM para fechar listeners e conexões ativas de forma limpa.
+
+10. Limites e performance
+    - Limitar número de clientes concorrentes, tunar backlog e testar sob carga.
+
+Extras recomendados (opcionais/avançados)
+- Chunked transfer encoding (Transfer-Encoding: chunked)
+- Logging com níveis (INFO/WARN/ERROR) e rotação
+- Documentação completa e exemplos de `config/`
+- Empacotamento/Docker e simplificação do build
+- TLS/HTTPS (OpenSSL) — opcional e de maior esforço
+
+

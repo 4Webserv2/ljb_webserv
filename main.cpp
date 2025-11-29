@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/11/29 10:55:21 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/29 15:13:02 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,7 +70,6 @@ void epollValidationLoop()
 	{
 		std::cout << "Checking timeout for FD: " << it->first << std::endl;
 		it->second->handleTimeout();
-		std::cout << "Timeout Ok" << std::endl;
 	}
 }
 
@@ -96,50 +95,20 @@ void	serverLoop()
 		if (sockets == -1)
 		{
 			std::cout << "Erro ao aceitar conexão do cliente" << std::endl;
-			break; // Continuar esperando novas conexões
+			break;
 		}
 		else
 		{
 			epollReadyListLoop(sockets);
 			epollValidationLoop();
-			//std::cout << "Teste" << std::endl;
 		}
 	}
 }
 
-/*void	printBlock(std::vector<ServerBlock> serverBlocks, std::vector<ServerManage> serverListens)
-{
-	serverListens;
-    for (size_t i = 0; i < serverBlocks.size(); i++)
-    {
-        std::cout << "==================== SERVER BLOCK " << i + 1 << " ====================" << std::endl;
-        serverBlocks[i].printServerBlock();
-        std::cout << "Listens: " << std::endl;
-        for (size_t j = 0; j < serverListens.size(); j++)
-        {
-            if (serverListens[j].getBlock() == serverBlocks[i])
-            {
-                std::cout << "Host[" << j << "]: " << serverListens[j].getHost() << " Port[" << j << "]: " << serverListens[j].getPort() << std::endl;
-            }
-        }
-        std::map<std::string, LocationBlock> locations = serverBlocks[i].getLocations();
-        for (std::map<std::string, LocationBlock>::iterator it = locations.begin(); it != locations.end(); it++)
-        {
-            std::cout << "------------------ LOCATION BLOCK ------------------" << std::endl;
-            it->second.printLocationBlock();
-            std::cout << "----------------------------------------------------" << std::endl;
-        }
-        std::cout << "========================================================" << std::endl;
-    }
-}*/
-
 int	main(int ac, char **av)
 {
 	if (RunTime::createRuntime(ac, av) == 0)
-	{
-		//printBlock(RunTime::getServerConfig().getServerBlocks(), RunTime::getListeners());
 		serverLoop();
-	}
 	else
 	{
 		std::cout << "Error" << std::endl;

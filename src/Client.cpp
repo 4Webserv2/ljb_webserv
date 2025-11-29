@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 11:11:04 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/29 15:04:28 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@
 Client::~Client() {}
 
 Client::Client(int clientFd, ServerManage &server)
-	: EpollHandler(EPOLLIN | EPOLLRDHUP, clientFd, 30), _server(server)
+	: EpollHandler(clientFd, EPOLLIN | EPOLLRDHUP, 30), _server(server)
 {
 	this->_state = STATE_READING_HEADER;
 	this->_rawRequest = "";
@@ -175,10 +175,10 @@ bool Client::sendResponse(const std::string &responseStr)
 	{
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
 		{
-			struct epoll_event ev;
-			ev.events = EPOLLOUT | EPOLLRDHUP;
-			ev.data.ptr = this;
-			epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_MOD, this->getSocketFd(), &ev);
+			uint32_t events = this->getActiveEvents();
+			events |= EPOLLOUT;
+			this->setActiveEvents(events);
+			EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
 			return false;
 		}
 		std::cerr << "Erro ao enviar resposta: " << strerror(errno) << std::endl;
@@ -192,10 +192,10 @@ bool Client::sendResponse(const std::string &responseStr)
 		this->_responseOffset = 0;
 		return true;
 	}
-	struct epoll_event ev;
-	ev.events = EPOLLOUT | EPOLLRDHUP;
-	ev.data.ptr = this;
-	epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_MOD, this->getSocketFd(), &ev);
+	uint32_t events = this->getActiveEvents();
+	events |= EPOLLOUT;
+	this->setActiveEvents(events);
+	EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
 	return false;
 }
 
@@ -209,6 +209,20 @@ void Client::EpollInHandler(void)
 		this->concatenateRequestData(std::string(buffer, count));
 		if (this->isRequestComplete())
 		{
+			// Parse raw request into this->request
+			try {
+				this->request.setPar(this->request.httpParse(this->_rawRequest));
+			}
+			catch (std::exception &error) {
+				std::cout << "Erro ao parsear requisição: " << error.what() << std::endl;
+				this->response.setErrorPage(400);
+				std::string responseStr = this->response.toString();
+				if (!sendResponse(responseStr))
+					return;
+				if (this->_pendingResponse.empty())
+					RunTime::deleteClient(this->getSocketFd());
+				return;
+			}
 			std::cout << "================== REQUEST COMPLETE =================" << std::endl;
 			std::cout << this->request.getMethod() << std::endl;
 			std::cout << this->request.getUri() << std::endl;
@@ -219,7 +233,7 @@ void Client::EpollInHandler(void)
 			}
 			std::cout << "Body: " << this->request.getBody() << std::endl;
 			std::cout << "=====================================================" << std::endl;
-			this->response.dispatchRequest(this->request);
+			this->response = this->response.dispatchRequest(this->request);
 			std::string responseStr = this->response.toString();
 			std::cout << "=================== RESPONSE SEND ===================" << std::endl;
 			std::cout << responseStr << std::endl;
@@ -228,7 +242,7 @@ void Client::EpollInHandler(void)
 			{
 				return;
 			}
-			if (this->_responseOffset >= responseStr.size())
+			if (this->_pendingResponse.empty())
 			{
 				RunTime::deleteClient(this->getSocketFd());
 			}
