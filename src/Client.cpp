@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 15:04:28 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/29 15:17:51 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,7 +50,6 @@ Client &Client::operator=(const Client &src)
 	return (*this);
 }
 
-// GETTERS
 int Client::getState(void) const
 {
 	return (this->_state);
@@ -71,63 +70,45 @@ HttpResponse &Client::getResponse(void)
 	return (this->response);
 }
 
-// SETTERS
 void Client::setState(int state)
 {
 	this->_state = state;
 }
 
-// Concatena dados recebidos à requisição
 void Client::concatenateRequestData(const std::string &data)
 {
 	this->_rawRequest += data;
-
-	// Se ainda está lendo headers
 	if (this->_state == STATE_READING_HEADER)
 	{
 		size_t headerEnd = this->_rawRequest.find("\r\n\r\n");
 		if (headerEnd != std::string::npos)
 		{
-			// Headers completos, muda para leitura de body
 			this->setState(STATE_READING_BODY);
-
-			// Verifica se há Content-Length
 			size_t contentLengthPos = this->_rawRequest.find("Content-Length:");
 			if (contentLengthPos != std::string::npos)
 			{
-				// Extrai valor do Content-Length
 				size_t valueStart = contentLengthPos + 15;
 				size_t lineEnd = this->_rawRequest.find("\r\n", valueStart);
 				std::string lengthStr = this->_rawRequest.substr(valueStart, lineEnd - valueStart);
-
-				// Remove espaços
 				while (!lengthStr.empty() && isspace(lengthStr[0]))
 					lengthStr.erase(0, 1);
-
 				int contentLength = std::atoi(lengthStr.c_str());
 				size_t bodyStart = headerEnd + 4;
 				size_t currentBodySize = this->_rawRequest.size() - bodyStart;
-
-				// Verifica se recebeu todo o body
 				if (currentBodySize >= static_cast<size_t>(contentLength))
 					this->setState(STATE_COMPLETE);
 			}
 			else
-			{
-				// Sem Content-Length, requisição completa
 				this->setState(STATE_COMPLETE);
-			}
 		}
 	}
 }
 
-// Verifica se a requisição HTTP está completa
 bool Client::isRequestComplete(void)
 {
 	return (this->_state == STATE_COMPLETE);
 }
 
-// Processa a requisição HTTP
 void Client::processRequest(void)
 {
 	try
@@ -209,12 +190,10 @@ void Client::EpollInHandler(void)
 		this->concatenateRequestData(std::string(buffer, count));
 		if (this->isRequestComplete())
 		{
-			// Parse raw request into this->request
 			try {
 				this->request.setPar(this->request.httpParse(this->_rawRequest));
 			}
 			catch (std::exception &error) {
-				std::cout << "Erro ao parsear requisição: " << error.what() << std::endl;
 				this->response.setErrorPage(400);
 				std::string responseStr = this->response.toString();
 				if (!sendResponse(responseStr))
@@ -223,29 +202,23 @@ void Client::EpollInHandler(void)
 					RunTime::deleteClient(this->getSocketFd());
 				return;
 			}
-			std::cout << "================== REQUEST COMPLETE =================" << std::endl;
+			std::cout << "----------------- REQUEST COMPLETE ------------------" << std::endl;
 			std::cout << this->request.getMethod() << std::endl;
 			std::cout << this->request.getUri() << std::endl;
 			std::map<std::string, std::string> headers = this->request.getHeaders();
 			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
-			{
 				std::cout << it->first << ": " << it->second << std::endl;
-			}
 			std::cout << "Body: " << this->request.getBody() << std::endl;
-			std::cout << "=====================================================" << std::endl;
+			std::cout << "-----------------------------------------------------" << std::endl;
 			this->response = this->response.dispatchRequest(this->request);
 			std::string responseStr = this->response.toString();
-			std::cout << "=================== RESPONSE SEND ===================" << std::endl;
+			std::cout << "------------------- RESPONSE SEND -------------------" << std::endl;
 			std::cout << responseStr << std::endl;
-			std::cout << "=====================================================" << std::endl;
+			std::cout << "-----------------------------------------------------" << std::endl;
 			if (!sendResponse(responseStr))
-			{
 				return;
-			}
 			if (this->_pendingResponse.empty())
-			{
 				RunTime::deleteClient(this->getSocketFd());
-			}
 		}
 	}
 	else if (count == 0)
@@ -267,9 +240,7 @@ void Client::EpollOutHandler(void)
 		return;
 	}
 	if (!sendResponse(this->_pendingResponse))
-	{
 		return;
-	}
 	if (this->_responseOffset >= this->_pendingResponse.size())
 	{
 		uint32_t events = this->getActiveEvents();
