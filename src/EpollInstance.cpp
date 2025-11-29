@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/13 20:46:14 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/28 09:45:44 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/29 07:50:43 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,6 +120,8 @@ struct epoll_event &EpollInstance::getEpollEventsList()
 
 struct epoll_event &EpollInstance::getElementFromEventsList(int i)
 {
+	if (_run == NULL)
+		throw(std::runtime_error("Epoll unitialized!"));
 	return (_run->_eventsList[i]);
 }
 

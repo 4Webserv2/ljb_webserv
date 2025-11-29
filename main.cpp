@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/11/28 09:25:29 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/29 10:55:21 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,9 +43,10 @@ int	clientLoop(const int& clientFd) {
 	std::cout << "Requisição recebida, processando..." << std::endl;
 	try
 	{
-		HttpParse req = request.httpParse(rawRequest);
+
+		request.setPar(request.httpParse(rawRequest));
 		HttpResponse response;
-		response = response.dispatchRequest(req);
+		response = response.dispatchRequest(request);
 		std::string responseStr = response.toString();
 		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
 		std::cout << "Resposta enviada com sucesso (status " << response.intToString(response.status_code) << ")" << std::endl;
@@ -80,12 +81,9 @@ void epollReadyListLoop(int numberOfReadySockets)
 		for (int i = 0; i < numberOfReadySockets; i++)
 		{
 			struct epoll_event &data = EpollInstance::getElementFromEventsList(i);
-
 			EpollHandler *handler = static_cast<EpollHandler *>(data.data.ptr);
 			if (handler)
-			{
 				handler->EpollEventHandler(data);
-			}
 		}
 	}
 }
@@ -104,7 +102,7 @@ void	serverLoop()
 		{
 			epollReadyListLoop(sockets);
 			epollValidationLoop();
-			std::cout << "Teste" << std::endl;
+			//std::cout << "Teste" << std::endl;
 		}
 	}
 }

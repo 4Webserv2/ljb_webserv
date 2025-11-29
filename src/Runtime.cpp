@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:32:41 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/28 09:21:39 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/29 11:18:13 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -122,4 +122,17 @@ ServerManage &RunTime::getElementInServerList(int serverSocketFd)
 			return (_runtime->_sListeners[i]);
 	}
 	return (_runtime->_sListeners[0]);;
+}
+
+void RunTime::deleteClient(int client_fd)
+{
+	if (_runtime == NULL)
+		return;
+
+	std::map<int, Client>::iterator it = _runtime->_clients.find(client_fd);
+	if (it == _runtime->_clients.end())
+		return;
+	epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_DEL, client_fd, NULL);
+	close(client_fd);
+	_runtime->_clients.erase(it);
 }

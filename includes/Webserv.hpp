@@ -6,33 +6,41 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:50:29 by lraggio           #+#    #+#             */
-/*   Updated: 2025/11/20 15:37:55 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/29 08:12:05 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef WEBSERV_HPP
 # define WEBSERV_HPP
 
-# include <sys/socket.h>
-# include <sys/epoll.h>
 # include <iostream>
+# include <sys/socket.h>
 # include <netinet/in.h>
-# include <cstdlib>
+# include <netinet/tcp.h>
 # include <unistd.h>
-# include <arpa/inet.h>
+# include <fcntl.h>
+# include <sys/epoll.h>
+# include <cerrno>
+# include <exception>
+# include <algorithm>
 # include <vector>
 # include <map>
 # include <string>
-# include <iostream>
+# include <utility>
+# include <cstddef>
+# include <cstdlib>
+# include <ctime>
 # include <fstream>
 # include <sstream>
-# include <cstring>
-# include <fcntl.h>
-# include <stdio.h>
-# include <utility>
+# include <cctype>
+# include <set>
+# include <csignal>
+# include <sys/types.h>
 # include <sys/wait.h>
-#include <set>
-#include <utility>
+# include <cerrno>
+# include <clocale>
+# include <cstring>
+
 
 
 // # include "HttpParser.hpp"

@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/21 15:21:57 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/29 10:57:02 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,15 +18,15 @@ HttpResponse::HttpResponse(){
 
 HttpResponse::~HttpResponse(){};
 
-HttpResponse HttpResponse::handleCGI(const HttpParse &req){
+HttpResponse HttpResponse::handleCGI(const HttpRequest &req){
 	HttpResponse res;
-	std::string path = "./www" + req.uri;
+	std::string path = "./www" + req.getUri();
 
 	std::string queryString = "";
-	size_t queryPos = req.uri.find('?');
+	size_t queryPos = req.getUri().find('?');
 	if (queryPos != std::string::npos) {
-		queryString = req.uri.substr(queryPos + 1);
-		path = "./www" + req.uri.substr(0, queryPos);
+		queryString = req.getUri().substr(queryPos + 1);
+		path = "./www" + req.getUri().substr(0, queryPos);
 	}
 
 	// Verificar se o arquivo existe
@@ -66,14 +66,14 @@ HttpResponse HttpResponse::handleCGI(const HttpParse &req){
 		dup2(outputPipe[1], STDOUT_FILENO);
 		close(outputPipe[1]);
 
-		setenv("REQUEST_METHOD", req.method.c_str(), 1);
+		setenv("REQUEST_METHOD", req.getMethod().c_str(), 1);
 		setenv("QUERY_STRING", queryString.c_str(), 1);
-		setenv("CONTENT_LENGTH", req.headers.count("Content-Length") ? req.headers.at("Content-Length").c_str() : "", 1);
-		setenv("CONTENT_TYPE", req.headers.count("Content-Type") ? req.headers.at("Content-Type").c_str() : "", 1);
-		setenv("SCRIPT_NAME", req.uri.c_str(), 1);
-		setenv("SERVER_NAME", req.headers.count("Host") ? req.headers.at("Host").c_str() : "localhost", 1);
+		setenv("CONTENT_LENGTH", req.getHeaders().count("Content-Length") ? req.getHeaders().at("Content-Length").c_str() : "", 1);
+		setenv("CONTENT_TYPE", req.getHeaders().count("Content-Type") ? req.getHeaders().at("Content-Type").c_str() : "", 1);
+		setenv("SCRIPT_NAME", req.getUri().c_str(), 1);
+		setenv("SERVER_NAME", req.getHeaders().count("Host") ? req.getHeaders().at("Host").c_str() : "localhost", 1);
 		setenv("SERVER_PORT", "8080", 1);
-		setenv("SERVER_PROTOCOL", req.version.c_str(), 1);
+		setenv("SERVER_PROTOCOL", req.getVersion().c_str(), 1);
 		setenv("REDIRECT_STATUS", "200", 1);
 
 		// Mudar para o diretório do script
@@ -93,8 +93,8 @@ HttpResponse HttpResponse::handleCGI(const HttpParse &req){
 		close(inputPipe[0]);
 		close(outputPipe[1]);
 
-		if (req.method == "POST" && !req.body.empty()) {
-			write(inputPipe[1], req.body.c_str(), req.body.size());
+		if (req.getMethod() == "POST" && !req.getBody().empty()) {
+			write(inputPipe[1], req.getBody().c_str(), req.getBody().size());
 		}
 
 		close(inputPipe[1]);
@@ -174,9 +174,9 @@ HttpResponse HttpResponse::handleCGI(const HttpParse &req){
 }
 
 
-HttpResponse	HttpResponse::handleGet(const HttpParse &req){
+HttpResponse	HttpResponse::handleGet(const HttpRequest &req){
 	HttpResponse res;
-	std::string path = "./www" + req.uri; // root simplificada
+	std::string path = "./www" + req.getUri(); // root simplificada
 
 	std::ifstream file(path.c_str(), std::ios::binary);
 	if (!file) {
@@ -192,11 +192,11 @@ HttpResponse	HttpResponse::handleGet(const HttpParse &req){
 	return res;
 };
 
-HttpResponse	HttpResponse::handlePost(const HttpParse &req){
+HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
 	HttpResponse res;
 
 	// Verificar se há corpo na requisição
-	if (req.body.empty()) {
+	if (req.getBody().empty()) {
 		res.setStatus(400, "Bad Request");
 		res.setBody("<h1>400 Bad Request</h1><p>No data to upload</p>", "text/html");
 		return res;
@@ -227,21 +227,21 @@ HttpResponse	HttpResponse::handlePost(const HttpParse &req){
 		return res;
 	}
 
-	file << req.body;
+	file << req.getBody();
 	file.close();
 
 	res.setStatus(201, "Created");
 	std::ostringstream bodyMsg;
 	bodyMsg << "<h1>File uploaded successfully!</h1>"
 			<< "<p>File saved to: " << path << "</p>"
-			<< "<p>Size: " << req.body.size() << " bytes</p>";
+			<< "<p>Size: " << req.getBody().size() << " bytes</p>";
 	res.setBody(bodyMsg.str(), "text/html");
 	return res;
 }
 
-HttpResponse	HttpResponse::handleDelete(const HttpParse &req){
+HttpResponse	HttpResponse::handleDelete(const HttpRequest &req){
 		HttpResponse res;
-		std::string path = "./www" + req.uri;
+		std::string path = "./www" + req.getUri();
 
 		if (std::remove(path.c_str()) == 0) {
 			res.setStatus(200, "OK");
@@ -253,27 +253,27 @@ HttpResponse	HttpResponse::handleDelete(const HttpParse &req){
 		return res;
 };
 
-HttpResponse	HttpResponse::dispatchRequest(const HttpParse &req){
+HttpResponse	HttpResponse::dispatchRequest(const HttpRequest &req){
 	std::string extension;
-	size_t dotPos = req.uri.find_last_of('.');
-	size_t queryPos = req.uri.find('?');
+	size_t dotPos = req.getUri().find_last_of('.');
+	size_t queryPos = req.getUri().find('?');
 
 	if (dotPos != std::string::npos) {
 		if (queryPos != std::string::npos && queryPos > dotPos) {
-			extension = req.uri.substr(dotPos, queryPos - dotPos);
+			extension = req.getUri().substr(dotPos, queryPos - dotPos);
 		} else {
-			extension = req.uri.substr(dotPos);
+			extension = req.getUri().substr(dotPos);
 		}
 		if (extension == ".py") {
 			return handleCGI(req);
 		}
 	}
 
-	if(req.method == "GET"){
+	if(req.getMethod() == "GET"){
 		return handleGet(req);
-	} else if(req.method == "POST"){
+	} else if(req.getMethod() == "POST"){
 		return handlePost(req);
-	} else if(req.method == "DELETE"){
+	} else if(req.getMethod() == "DELETE"){
 		return handleDelete(req);
 	} else {
 		HttpResponse res;
@@ -313,24 +313,15 @@ void		HttpResponse::setErrorPage(int code){
 
 std::string	HttpResponse::toString() const{
 	std::ostringstream response;
-
-	// Status line
 	response << http_version << " "
 				<< status_code << " "
 				<< status_message << "\r\n";
-
-	// Headers
 	for (std::map<std::string, std::string>::const_iterator it = headers.begin();
 			it != headers.end(); ++it) {
 		response << it->first << ": " << it->second << "\r\n";
 	}
-
-	// Linha em branco
 	response << "\r\n";
-
-	// Corpo
 	response << body;
-
 	return response.str();
 }
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerManage.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:36:40 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/27 09:38:11 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/11/29 08:06:24 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,29 +20,31 @@ class Client;
 
 class ServerManage: public EpollHandler
 {
-    private:
-        unsigned int        _host;
-        int                 _port;
-        struct sockaddr_in  _serverAddr;
-        const ServerBlock   &_block;
+	private:
+		unsigned int		_host;
+		int					_port;
+		struct sockaddr_in	_serverAddr;
+		const ServerBlock	&_block;
 
-    public:
-        ServerManage(unsigned int host, int port, const ServerBlock &block);
-        ServerManage(const ServerManage &src);
-        ServerManage &operator=(const ServerManage &src);
-        ~ServerManage();
+	public:
+		ServerManage(unsigned int host, int port, const ServerBlock &block);
+		ServerManage(const ServerManage &src);
+		ServerManage &operator=(const ServerManage &src);
+		~ServerManage();
 
-        // Métodos herdados de EpollHandler
-        virtual void EpollInHandler(void);
 
-        void startSocket(int domain, int type);
-        void makeSocket(int domain, int type);
-        void bindServer();
-        void setServerAddr(int domain);
-        void listenSocket();
-        int getFd() const;
+		void EpollInHandler(void);
 
-        unsigned int getHost() const;
-        int getPort() const;
-        ServerBlock getBlock() const;
+		void startSocket(int domain, int type);
+		void makeSocket(int domain, int type);
+		void setServerAddr(int domain);
+		void reuseAddr();
+		void bindServer();
+		void updateToNonBlocking();
+		void listenSocket();
+		int getFd() const;
+
+		unsigned int getHost() const;
+		int getPort() const;
+		ServerBlock getBlock() const;
 };

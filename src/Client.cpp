@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/28 09:09:25 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/29 11:11:04 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,8 +22,8 @@ Client::Client(int clientFd, ServerManage &server)
 {
 	this->_state = STATE_READING_HEADER;
 	this->_rawRequest = "";
-	this->_request = HttpRequest();
-	this->_response = HttpResponse();
+	this->request = HttpRequest();
+	this->response = HttpResponse();
 	this->_pendingResponse = "";
 	this->_responseOffset = 0;
 }
@@ -39,8 +39,8 @@ Client &Client::operator=(const Client &src)
 {
 	if (this != &src)
 	{
-		this->_request = src._request;
-		this->_response = src._response;
+		this->request = src.request;
+		this->response = src.response;
 		this->_state = src._state;
 		this->_rawRequest = src._rawRequest;
 		this->_pendingResponse = src._pendingResponse;
@@ -63,12 +63,12 @@ std::string &Client::getRawRequest(void)
 
 HttpRequest &Client::getRequest(void)
 {
-	return (this->_request);
+	return (this->request);
 }
 
 HttpResponse &Client::getResponse(void)
 {
-	return (this->_response);
+	return (this->response);
 }
 
 // SETTERS
@@ -132,26 +132,27 @@ void Client::processRequest(void)
 {
 	try
 	{
-		HttpParse req = this->_request.httpParse(this->_rawRequest);
+		HttpRequest req;
+		req.setPar(this->request.httpParse(this->_rawRequest));
 
-		if (req.uri.empty() || req.uri[0] != '/')
+		if (req.getUri().empty() || req.getUri()[0] != '/')
 		{
-			this->_response.setErrorPage(404);
+			this->response.setErrorPage(404);
 			return;
 		}
 
-		if (req.method != "GET" && req.method != "POST" && req.method != "DELETE")
+		if (req.getMethod() != "GET" && req.getMethod() != "POST" && req.getMethod() != "DELETE")
 		{
-			this->_response.setErrorPage(405);
+			this->response.setErrorPage(405);
 			return;
 		}
 
-		this->_response = this->_response.dispatchRequest(req);
+		this->response = this->response.dispatchRequest(req);
 	}
 	catch (std::exception &error)
 	{
 		std::cout << "Erro ao processar requisição: " << error.what() << std::endl;
-		this->_response.setErrorPage(400);
+		this->response.setErrorPage(400);
 	}
 }
 
@@ -200,46 +201,68 @@ bool Client::sendResponse(const std::string &responseStr)
 
 void Client::EpollInHandler(void)
 {
-	char buffer[BUFFER_SIZE];
-	ssize_t bytesRead = recv(this->getSocketFd(), buffer, BUFFER_SIZE - 1, 0);
+	char buffer[4096] = {0};
+	int count = 0;
 
-	if (bytesRead <= 0)
+	if ((count = read(this->getSocketFd(), buffer, sizeof(buffer))) > 0)
 	{
-		if (bytesRead == 0)
-			std::cout << "Cliente desconectou (fd=" << this->getSocketFd() << ")" << std::endl;
-		else
-			std::cout << "Erro na leitura do cliente (fd=" << this->getSocketFd() << ")" << std::endl;
-
-		this->deleteHandler();
-		return;
-	}
-
-	buffer[bytesRead] = '\0';
-	this->concatenateRequestData(std::string(buffer));
-
-	if (this->isRequestComplete())
-	{
-		std::cout << "Requisição completa recebida (fd=" << this->getSocketFd() << ")" << std::endl;
-		this->processRequest();
-		std::string responseStr = this->_response.toString();
-		if (this->sendResponse(responseStr))
+		this->concatenateRequestData(std::string(buffer, count));
+		if (this->isRequestComplete())
 		{
-			std::cout << "Resposta enviada com sucesso (fd=" << this->getSocketFd()
-					  << ", status=" << this->_response.status_code << ")" << std::endl;
-			this->deleteHandler();
+			std::cout << "================== REQUEST COMPLETE =================" << std::endl;
+			std::cout << this->request.getMethod() << std::endl;
+			std::cout << this->request.getUri() << std::endl;
+			std::map<std::string, std::string> headers = this->request.getHeaders();
+			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
+			{
+				std::cout << it->first << ": " << it->second << std::endl;
+			}
+			std::cout << "Body: " << this->request.getBody() << std::endl;
+			std::cout << "=====================================================" << std::endl;
+			this->response.dispatchRequest(this->request);
+			std::string responseStr = this->response.toString();
+			std::cout << "=================== RESPONSE SEND ===================" << std::endl;
+			std::cout << responseStr << std::endl;
+			std::cout << "=====================================================" << std::endl;
+			if (!sendResponse(responseStr))
+			{
+				return;
+			}
+			if (this->_responseOffset >= responseStr.size())
+			{
+				RunTime::deleteClient(this->getSocketFd());
+			}
 		}
+	}
+	else if (count == 0)
+	{
+		std::cout << "Client closed the connection." << std::endl;
+		std::cout << this->getRawRequest() << std::endl;
+		RunTime::deleteClient(this->getSocketFd());
 	}
 }
 
 void Client::EpollOutHandler(void)
 {
-	if (this->_pendingResponse.empty())
-		return;
-
-	if (this->sendResponse(this->_pendingResponse))
+	if (this->_pendingResponse.empty() || this->_responseOffset >= this->_pendingResponse.size())
 	{
-		std::cout << "Resposta enviada com sucesso (fd=" << this->getSocketFd() << ", status=" << this->_response.status_code << ")" << std::endl;
-		this->deleteHandler();
+		uint32_t events = this->getActiveEvents();
+		events &= ~EPOLLOUT;
+		this->setActiveEvents(events);
+		EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
+		return;
+	}
+	if (!sendResponse(this->_pendingResponse))
+	{
+		return;
+	}
+	if (this->_responseOffset >= this->_pendingResponse.size())
+	{
+		uint32_t events = this->getActiveEvents();
+		events &= ~EPOLLOUT;
+		this->setActiveEvents(events);
+		EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
+		RunTime::deleteClient(this->getSocketFd());
 	}
 }
 
@@ -251,3 +274,4 @@ void Client::deleteHandler(void)
 	close(this->getSocketFd());
 	RunTime::getClients().erase(this->getSocketFd());
 }
+

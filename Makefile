@@ -22,6 +22,7 @@ OBJS =		${SRCS:.cpp=.o}
 
 all:		$(NAME)
 			@echo "$(RED)$(NAME) is ready!$(RESET)"
+			@clean
 
 $(NAME):	$(OBJS)
 			ar -rcs webserv.a $(OBJS)

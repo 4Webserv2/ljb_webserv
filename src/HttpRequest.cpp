@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:32 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/21 15:36:24 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/29 11:05:49 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,23 +16,23 @@ HttpRequest::HttpRequest(){}
 
 HttpRequest::~HttpRequest(){}
 
-void HttpRequest::parseRequestLine(std::istringstream &stream, HttpParse &req) {
+void HttpRequest::parseRequestLine(std::istringstream &stream, HttpParse &parse) {
 	std::string line;
 	if (std::getline(stream, line)) {
 		if (!line.empty() && line[line.size() - 1] == '\r')
 			line.erase(line.size() - 1);
 		std::istringstream first_line(line);
-		first_line >> req.method >> req.uri >> req.version;
+		first_line >> parse.method >> parse.uri >> parse.version;
 
-		if (req.method.empty() || req.uri.empty() || req.version.empty())
+		if (parse.method.empty() || parse.uri.empty() || parse.version.empty())
 			throw std::runtime_error("Request line malformada: campos ausentes");
 
-		if(req.method != "GET" && req.method != "POST" && req.method != "DELETE")
-			throw std::runtime_error("Método HTTP não permitido: " + req.method);
+		if(parse.method != "GET" && parse.method != "POST" && parse.method != "DELETE")
+			throw std::runtime_error("Método HTTP não permitido: " + parse.method);
 	}
 }
 
-void HttpRequest::parseHeaders(std::istringstream &stream, HttpParse &req) {
+void HttpRequest::parseHeaders(std::istringstream &stream, HttpParse &parse) {
 	std::string line;
 	while (std::getline(stream, line)) {
 		if (line == "\r" || line == "") break;
@@ -44,24 +44,54 @@ void HttpRequest::parseHeaders(std::istringstream &stream, HttpParse &req) {
 			std::string value = line.substr(sep + 1);
 			if (!value.empty() && value[0] == ' ')
 				value.erase(0, 1);
-			req.headers[key] = value;
+			parse.headers[key] = value;
 		}
 	}
 }
 
-void HttpRequest::parseBody(std::istringstream &stream, HttpParse &req) {
+void HttpRequest::parseBody(std::istringstream &stream, HttpParse &parse) {
 	std::string line, body;
 	while (std::getline(stream, line)) {
 		body += line + "\n";
 	}
-	req.body = body;
+	parse.body = body;
 }
 
 HttpParse HttpRequest::httpParse(const std::string &rawRequest) {
-	HttpParse req;
+	HttpParse parse;
 	std::istringstream stream(rawRequest);
-	parseRequestLine(stream, req);
-	parseHeaders(stream, req);
-	parseBody(stream, req);
-	return req;
+	parseRequestLine(stream, parse);
+	parseHeaders(stream, parse);
+	parseBody(stream, parse);
+	return parse;
+}
+
+void HttpRequest::setPar(HttpParse parse)
+{
+	this->_par = parse;
+}
+
+std::string HttpRequest::getMethod() const
+{
+	return (this->_par.method);
+}
+
+std::string HttpRequest::getUri() const
+{
+	return (this->_par.uri);
+}
+
+std::string HttpRequest::getVersion() const
+{
+	return (this->_par.version);
+}
+
+std::map<std::string, std::string> HttpRequest::getHeaders() const
+{
+	return (this->_par.headers);
+}
+
+std::string HttpRequest::getBody() const
+{
+	return (this->_par.body);
 }
