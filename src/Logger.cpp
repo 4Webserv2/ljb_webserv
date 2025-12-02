@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/10 17:07:18 by lraggio           #+#    #+#             */
-/*   Updated: 2025/11/19 22:31:39 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/02 14:01:39 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,22 +80,13 @@ void Logger::error(std::string message)
 	Logger::_instance->_handler->handleError(event);
 }
 
-// int main() {
-//		Singleton* s1 = Singleton::getInstance();
-//		s1->showMessage();
+std::string Logger::getTimestamp() {
+	std::time_t t = std::time(NULL);
+	std::string s = std::ctime(&t);
 
-//		Singleton* s2 = Singleton::getInstance();
-//		s2->showMessage();
+	long unsigned int pos = s.find("\n");
+	if (pos != std::string::npos)
+		s.erase(pos, 1);
 
-//		if (s1 == s2) {
-// std::cout << "s1 and s2 point to the same Singleton instance." << std::endl;
-// Verify that both pointers refer to the same instance
-// }
-// }
-
-// Formato da mensagem do log seria assim:
-// [2024-01-22 10:49:14] INFO: Program started.
-// [2024-01-22 10:49:14] DEBUG: Debugging information.
-// [2024-01-22 10:49:14] ERROR: An error occurred.
-
-// [2025-10-10 16:42:00] INFO: 127.0.0.1 GET /index.html 200
+	return s;
+}
