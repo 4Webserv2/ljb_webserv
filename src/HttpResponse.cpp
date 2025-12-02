@@ -3,20 +3,31 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 10:57:02 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/02 11:24:08 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 # include "../includes/HttpResponse.hpp"
 
-HttpResponse::HttpResponse(){
-	http_version = "HTTP/1.0";
-};
+HttpResponse::HttpResponse()
+{
+    http_version = "HTTP/1.1";
+    status_code = 200;
+    status_message = "OK";
+    _errorPages = NULL;
+    _rootPath = "./www";
+}
 
-HttpResponse::~HttpResponse(){};
+HttpResponse::~HttpResponse(){}
+
+void HttpResponse::setErrorPageConfig(const std::map<int, std::string> *errorPages, const std::string &rootPath)
+{
+    this->_errorPages = errorPages;
+    this->_rootPath = rootPath;
+}
 
 HttpResponse HttpResponse::handleCGI(const HttpRequest &req){
 	HttpResponse res;
@@ -175,15 +186,19 @@ HttpResponse HttpResponse::handleCGI(const HttpRequest &req){
 
 
 HttpResponse	HttpResponse::handleGet(const HttpRequest &req){
-	HttpResponse res;
-	std::string path = "./www" + req.getUri(); // root simplificada
+    HttpResponse res;
+    
+    // Copiar configuração de error pages
+    res.setErrorPageConfig(this->_errorPages, this->_rootPath);
+    
+    std::string path = this->_rootPath + req.getUri();
 
-	std::ifstream file(path.c_str(), std::ios::binary);
-	if (!file) {
-		res.setStatus(404, "Not Found");
-		res.setBody("<h1>404 Not Found</h1>", "text/html");
-		return res;
-	}
+    std::ifstream file(path.c_str(), std::ios::binary);
+    if (!file)
+    {
+        res.setErrorPage(404);
+        return res;
+    }
 
 	std::ostringstream buffer;
 	buffer << file.rdbuf();
@@ -194,6 +209,22 @@ HttpResponse	HttpResponse::handleGet(const HttpRequest &req){
 
 HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
 	HttpResponse res;
+
+	res.setErrorPageConfig(this->_errorPages, this->_rootPath);
+    
+    if (req.getBody().empty())
+    {
+        res.setErrorPage(400);
+        return res;
+    }
+
+	std::string uri = req.getUri();
+    
+    if (uri.find("/upload") != 0)
+    {
+        res.setErrorPage(404);
+        return res;
+    }
 
 	// Verificar se há corpo na requisição
 	if (req.getBody().empty()) {
@@ -240,52 +271,66 @@ HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
 }
 
 HttpResponse	HttpResponse::handleDelete(const HttpRequest &req){
-		HttpResponse res;
-		std::string path = "./www" + req.getUri();
+	HttpResponse res;
+	res.setErrorPageConfig(this->_errorPages, this->_rootPath);
+	
+	std::string path = this->_rootPath + req.getUri();
 
-		if (std::remove(path.c_str()) == 0) {
-			res.setStatus(200, "OK");
-			res.setBody("<h1>File deleted successfully</h1>", "text/html");
-		} else {
-			res.setStatus(404, "Not Found");
-			res.setBody("<h1>404 Not Found</h1>", "text/html");
-		}
-		return res;
+	if (std::remove(path.c_str()) == 0)
+	{
+		res.setStatus(200, "OK");
+		res.setBody("<h1>File deleted successfully</h1>", "text/html");
+	}
+	else
+	{
+		res.setErrorPage(404);
+	}
+	return res;
 };
 
-HttpResponse	HttpResponse::dispatchRequest(const HttpRequest &req){
-	std::string extension;
-	size_t dotPos = req.getUri().find_last_of('.');
-	size_t queryPos = req.getUri().find('?');
+HttpResponse HttpResponse::dispatchRequest(const HttpRequest &req)
+{
+    std::string extension;
+    size_t dotPos = req.getUri().find_last_of('.');
+    size_t queryPos = req.getUri().find('?');
 
-	if (dotPos != std::string::npos) {
-		if (queryPos != std::string::npos && queryPos > dotPos) {
-			extension = req.getUri().substr(dotPos, queryPos - dotPos);
-		} else {
-			extension = req.getUri().substr(dotPos);
-		}
-		if (extension == ".py") {
-			return handleCGI(req);
-		}
-	}
+    if (dotPos != std::string::npos) {
+        if (queryPos != std::string::npos && queryPos > dotPos) {
+            extension = req.getUri().substr(dotPos, queryPos - dotPos);
+        } else {
+            extension = req.getUri().substr(dotPos);
+        }
+        if (extension == ".py") {
+            return handleCGI(req);
+        }
+    }
 
-	if(req.getMethod() == "GET"){
-		return handleGet(req);
-	} else if(req.getMethod() == "POST"){
-		return handlePost(req);
-	} else if(req.getMethod() == "DELETE"){
-		return handleDelete(req);
-	} else {
-		HttpResponse res;
-		res.setErrorPage(405);
-		return res;
-	}
+    if (req.getMethod() == "GET") {
+        return handleGet(req);
+    } 
+    else if (req.getMethod() == "POST") {
+        return handlePost(req);
+    } 
+    else if (req.getMethod() == "DELETE") {
+        return handleDelete(req);
+    } 
+    else {
+        // Método não suportado
+        HttpResponse res;
+        res.setErrorPageConfig(this->_errorPages, this->_rootPath);
+        res.setErrorPage(405);
+        return res;
+    }
 }
 
-void		HttpResponse::setStatus(int code, const std::string &message){
-	this->status_code = code;
-	this->status_message = message;
-};
+void		HttpResponse::setStatus(int code, const std::string &message)
+{
+    this->status_code = code;
+    if (message.empty())
+        this->status_message = getDefaultStatusMessage(code);
+    else
+        this->status_message = message;
+}
 
 void		HttpResponse::setHeader(const std::string &key, const std::string &value){
 	this->headers[key] = value;
@@ -297,36 +342,126 @@ void		HttpResponse::setBody(const std::string &b, const std::string &contentType
 	this->headers["Content-Length"] = intToString(body.size());
 }
 
-void		HttpResponse::setErrorPage(int code){
-	std::string path = "./error_pages/" + intToString(code) + ".html";
+void HttpResponse::setErrorPage(int code)
+{
+	std::string path;
+	
+	// 1. Tentar usar error_page customizada da configuração
+	if (_errorPages != NULL && _errorPages->count(code) > 0)
+	{
+		path = _rootPath + _errorPages->at(code);
+		std::cout << "DEBUG: Usando error_page da config: " << path << std::endl;
+	}
+	else
+	{
+		// 2. Fallback: usar error_pages/ padrão
+		path = "./error_pages/" + intToString(code) + ".html";
+		std::cout << "DEBUG: Usando error_page padrão: " << path << std::endl;
+	}
+	
+	// Tentar abrir o arquivo
 	std::ifstream file(path.c_str());
-	if(!file){
-		setStatus(code, "Error");
-		setBody("<h1>"+ intToString(code) + "Error</h1>","text/html");
+	
+	if (!file)
+	{
+		std::cerr << "AVISO: Arquivo de erro não encontrado: " << path << std::endl;
+		
+		// 3. Fallback final: página HTML genérica
+		setStatus(code, getDefaultStatusMessage(code));
+		std::string fallbackBody = 
+			"<!DOCTYPE html>\n"
+			"<html>\n"
+			"<head>\n"
+			"  <meta charset=\"UTF-8\">\n"
+			"  <title>" + intToString(code) + " " + status_message + "</title>\n"
+			"  <style>\n"
+			"    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f9f9f9; }\n"
+			"    h1 { font-size: 6rem; color: #e74c3c; margin: 0; }\n"
+			"    h2 { font-size: 2rem; color: #333; }\n"
+			"    p { color: #555; }\n"
+			"  </style>\n"
+			"</head>\n"
+			"<body>\n"
+			"  <h1>" + intToString(code) + "</h1>\n"
+			"  <h2>" + status_message + "</h2>\n"
+			"  <p>WebServ/1.0</p>\n"
+			"</body>\n"
+			"</html>";
+		setBody(fallbackBody, "text/html; charset=utf-8");
 		return;
 	}
+	
+	// Ler o arquivo de erro
 	std::ostringstream buffer;
 	buffer << file.rdbuf();
-	setStatus(code, "Error");
-	setBody(buffer.str(),"text/html");
+	file.close();
+	
+	setStatus(code, getDefaultStatusMessage(code));
+	setBody(buffer.str(), "text/html; charset=utf-8");
 }
 
-std::string	HttpResponse::toString() const{
+// Mapeamento padrão de códigos HTTP
+std::string HttpResponse::getDefaultStatusMessage(int code)
+{
+	switch(code)
+	{
+		case 200: return "OK";
+		case 201: return "Created";
+		case 204: return "No Content";
+		case 400: return "Bad Request";
+		case 401: return "Unauthorized";
+		case 403: return "Forbidden";
+		case 404: return "Not Found";
+		case 405: return "Method Not Allowed";
+		case 413: return "Payload Too Large";
+		case 500: return "Internal Server Error";
+		case 501: return "Not Implemented";
+		case 502: return "Bad Gateway";
+		case 503: return "Service Unavailable";
+		default: return "Error";
+	}
+}
+
+std::string HttpResponse::toString() const
+{
 	std::ostringstream response;
+
+	// Status line
 	response << http_version << " "
-				<< status_code << " "
-				<< status_message << "\r\n";
-	for (std::map<std::string, std::string>::const_iterator it = headers.begin();
-			it != headers.end(); ++it) {
+			<< status_code << " "
+			<< status_message << "\r\n";
+
+	// Headers obrigatórios
+	std::map<std::string, std::string> finalHeaders = headers;
+	
+	if (finalHeaders.count("Content-Type") == 0)
+		finalHeaders["Content-Type"] = "text/html; charset=utf-8";
+	
+	if (finalHeaders.count("Content-Length") == 0)
+		finalHeaders["Content-Length"] = intToString(body.size());
+	
+	if (finalHeaders.count("Server") == 0)
+		finalHeaders["Server"] = "WebServ/1.0";
+	
+	if (finalHeaders.count("Connection") == 0)
+		finalHeaders["Connection"] = "close";
+
+	// Escrever headers
+	for (std::map<std::string, std::string>::const_iterator it = finalHeaders.begin();
+		it != finalHeaders.end(); ++it)
+	{
 		response << it->first << ": " << it->second << "\r\n";
 	}
+
 	response << "\r\n";
 	response << body;
+
 	return response.str();
 }
 
-std::string	HttpResponse::intToString(int n) const{
-	std::ostringstream oss;
-	oss << n;
-	return oss.str();
+std::string HttpResponse::intToString(int n) const
+{
+    std::ostringstream oss;
+    oss << n;
+    return oss.str();
 }

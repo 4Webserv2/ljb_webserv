@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:32 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 11:05:49 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/02 11:18:27 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,8 +27,8 @@ void HttpRequest::parseRequestLine(std::istringstream &stream, HttpParse &parse)
 		if (parse.method.empty() || parse.uri.empty() || parse.version.empty())
 			throw std::runtime_error("Request line malformada: campos ausentes");
 
-		if(parse.method != "GET" && parse.method != "POST" && parse.method != "DELETE")
-			throw std::runtime_error("Método HTTP não permitido: " + parse.method);
+		// if(parse.method != "GET" && parse.method != "POST" && parse.method != "DELETE")
+		// 	throw std::runtime_error("Método HTTP não permitido: " + parse.method);
 	}
 }
 

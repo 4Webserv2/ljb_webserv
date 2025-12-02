@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 15:17:51 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/02 11:19:11 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,30 +111,53 @@ bool Client::isRequestComplete(void)
 
 void Client::processRequest(void)
 {
-	try
-	{
-		HttpRequest req;
-		req.setPar(this->request.httpParse(this->_rawRequest));
+    try
+    {
+        HttpRequest req;
+        req.setPar(this->request.httpParse(this->_rawRequest));
 
-		if (req.getUri().empty() || req.getUri()[0] != '/')
-		{
-			this->response.setErrorPage(404);
-			return;
-		}
+        // Configurar error pages do ServerBlock
+        ServerBlock block = this->_server.getBlock();
+        std::map<int, std::string> errorPages = block.getErrorPages();
+        std::string rootPath = block.getRoot().second;
+        
+        this->response.setErrorPageConfig(&errorPages, rootPath);
 
-		if (req.getMethod() != "GET" && req.getMethod() != "POST" && req.getMethod() != "DELETE")
-		{
-			this->response.setErrorPage(405);
-			return;
-		}
+        // Validar URI
+        if (req.getUri().empty() || req.getUri()[0] != '/')
+        {
+            this->response.setErrorPage(404);
+            return;
+        }
 
-		this->response = this->response.dispatchRequest(req);
-	}
-	catch (std::exception &error)
-	{
-		std::cout << "Erro ao processar requisição: " << error.what() << std::endl;
-		this->response.setErrorPage(400);
-	}
+        // ADICIONAR: Validar método (retorna 405 se não suportado)
+        if (req.getMethod() != "GET" && 
+            req.getMethod() != "POST" && 
+            req.getMethod() != "DELETE")
+        {
+            std::cout << "Método não permitido: " << req.getMethod() << std::endl;
+            this->response.setErrorPage(405);
+            return;
+        }
+
+        // Processar requisição
+        this->response = this->response.dispatchRequest(req);
+        
+        // Manter a configuração de error pages após dispatch
+        this->response.setErrorPageConfig(&errorPages, rootPath);
+    }
+    catch (std::exception &error)
+    {
+        std::cerr << "Erro ao processar requisição: " << error.what() << std::endl;
+        
+        // Garantir que error page config está disponível
+        ServerBlock block = this->_server.getBlock();
+        std::map<int, std::string> errorPages = block.getErrorPages();
+        std::string rootPath = block.getRoot().second;
+        this->response.setErrorPageConfig(&errorPages, rootPath);
+        
+        this->response.setErrorPage(400);
+    }
 }
 
 bool Client::sendResponse(const std::string &responseStr)
