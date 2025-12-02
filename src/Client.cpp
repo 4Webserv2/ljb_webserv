@@ -6,7 +6,7 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/02 11:19:11 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/02 12:40:36 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,31 +77,37 @@ void Client::setState(int state)
 
 void Client::concatenateRequestData(const std::string &data)
 {
-	this->_rawRequest += data;
-	if (this->_state == STATE_READING_HEADER)
-	{
-		size_t headerEnd = this->_rawRequest.find("\r\n\r\n");
-		if (headerEnd != std::string::npos)
-		{
-			this->setState(STATE_READING_BODY);
-			size_t contentLengthPos = this->_rawRequest.find("Content-Length:");
-			if (contentLengthPos != std::string::npos)
-			{
-				size_t valueStart = contentLengthPos + 15;
-				size_t lineEnd = this->_rawRequest.find("\r\n", valueStart);
-				std::string lengthStr = this->_rawRequest.substr(valueStart, lineEnd - valueStart);
-				while (!lengthStr.empty() && isspace(lengthStr[0]))
-					lengthStr.erase(0, 1);
-				int contentLength = std::atoi(lengthStr.c_str());
-				size_t bodyStart = headerEnd + 4;
-				size_t currentBodySize = this->_rawRequest.size() - bodyStart;
-				if (currentBodySize >= static_cast<size_t>(contentLength))
-					this->setState(STATE_COMPLETE);
-			}
-			else
-				this->setState(STATE_COMPLETE);
-		}
-	}
+    this->_rawRequest += data;
+    if (this->_state == STATE_READING_HEADER)
+    {
+        size_t headerEnd = this->_rawRequest.find("\r\n\r\n");
+        if (headerEnd != std::string::npos)
+        {
+            this->setState(STATE_READING_BODY);
+            
+            // Parse parcial para pegar Content-Length
+            HttpRequest tempReq;
+            HttpParse tempParse = tempReq.httpParse(this->_rawRequest);
+            
+            // Usar getter case-insensitive
+            std::string contentLengthStr = tempReq.getHeader("Content-Length");
+            
+            if (!contentLengthStr.empty())
+            {
+                int contentLength = std::atoi(contentLengthStr.c_str());
+                size_t bodyStart = headerEnd + 4;
+                size_t currentBodySize = this->_rawRequest.size() - bodyStart;
+                
+                if (currentBodySize >= (size_t)contentLength)
+                    this->setState(STATE_COMPLETE);
+            }
+            else
+            {
+                // Sem Content-Length, request está completo
+                this->setState(STATE_COMPLETE);
+            }
+        }
+    }
 }
 
 bool Client::isRequestComplete(void)

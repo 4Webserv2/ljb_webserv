@@ -8,18 +8,12 @@ Prioridade alta (imprescindível para comportamento correto no navegador)
 2. Conexões persistentes e timeouts
    - Implementar keep-alive por socket, controlar último-uso e timeouts configuráveis.
 
-3. Robustez no parsing de cabeçalhos
-   - Tratamento case-insensitive, trim de espaços, cabeçalhos duplicados e folded headers.
-
 Prioridade média (segurança, compatibilidade e UX)
 4. Normalização e segurança de caminhos
    - Normalizar URIs, prevenir path traversal (".."), e aplicar regras de `location`.
 
 5. Tipos MIME e Content-Type corretos
    - Mapear extensões para `Content-Type` para servir arquivos estáticos corretamente.
-
-6. Tratamento consistente de erros
-   - Usar `error_pages/` para respostas de erro, retornar status + headers corretos.
 
 7. CGI: correção e hardening
    - Garantir variáveis de ambiente corretas, limites de tamanho, diretório de execução e tratamento de erros.

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:11 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 11:05:32 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/02 12:37:26 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ class HttpRequest {
 		void parseRequestLine(std::istringstream &stream, HttpParse &parse);
 		void parseHeaders(std::istringstream &stream, HttpParse &parse);
 		void parseBody(std::istringstream &stream, HttpParse &parse);
+		std::string unfoldHeader(const std::string &value);
 
 	public:
 		HttpParse httpParse(const std::string &rawParse);
@@ -40,5 +41,8 @@ class HttpRequest {
 		std::string getVersion() const;
 		std::map<std::string, std::string> getHeaders() const;
 		std::string getBody() const;
+
+		std::string getHeader(const std::string &name) const;
+		bool hasHeader(const std::string &name) const;
 
 };

@@ -6,7 +6,7 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/02 11:24:08 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/02 12:41:09 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,132 +30,127 @@ void HttpResponse::setErrorPageConfig(const std::map<int, std::string> *errorPag
 }
 
 HttpResponse HttpResponse::handleCGI(const HttpRequest &req){
-	HttpResponse res;
-	std::string path = "./www" + req.getUri();
+    HttpResponse res;
+    std::string path = "./www" + req.getUri();
 
-	std::string queryString = "";
-	size_t queryPos = req.getUri().find('?');
-	if (queryPos != std::string::npos) {
-		queryString = req.getUri().substr(queryPos + 1);
-		path = "./www" + req.getUri().substr(0, queryPos);
-	}
+    std::string queryString = "";
+    size_t queryPos = req.getUri().find('?');
+    if (queryPos != std::string::npos) {
+        queryString = req.getUri().substr(queryPos + 1);
+        path = "./www" + req.getUri().substr(0, queryPos);
+    }
 
-	// Verificar se o arquivo existe
-	if (access(path.c_str(), F_OK) == -1) {
-		res.setStatus(404, "Not Found");
-		res.setBody("<h1>404 Not Found</h1>", "text/html");
-		return res;
-	}
+    if (access(path.c_str(), F_OK) == -1) {
+        res.setStatus(404, "Not Found");
+        res.setBody("<h1>404 Not Found</h1>", "text/html");
+        return res;
+    }
 
-	int inputPipe[2];
-	int outputPipe[2];
+    int inputPipe[2];
+    int outputPipe[2];
 
-	if (pipe(inputPipe) < 0 || pipe(outputPipe) < 0) {
-		res.setStatus(500, "Internal Server Error");
-		res.setBody("<h1>500 Internal Server Error</h1>", "text/html");
-		return res;
-	}
-	pid_t pid = fork();
+    if (pipe(inputPipe) < 0 || pipe(outputPipe) < 0) {
+        res.setStatus(500, "Internal Server Error");
+        res.setBody("<h1>500 Internal Server Error</h1>", "text/html");
+        return res;
+    }
 
-	if (pid < 0) {
-		close(inputPipe[0]);
-		close(inputPipe[1]);
-		close(outputPipe[0]);
-		close(outputPipe[1]);
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        close(inputPipe[0]); close(inputPipe[1]);
+        close(outputPipe[0]); close(outputPipe[1]);
+        res.setStatus(500, "Internal Server Error");
+        res.setBody("<h1>500 Internal Server Error</h1>", "text/html");
+        return res;
+    }
 
-		res.setStatus(500, "Internal Server Error");
-		res.setBody("<h1>500 Internal Server Error</h1>", "text/html");
-		return res;
-	}
+    if (pid == 0) {
+        close(inputPipe[1]);
+        dup2(inputPipe[0], STDIN_FILENO);
+        close(inputPipe[0]);
 
-	if (pid == 0) {
-		close(inputPipe[1]);
-		dup2(inputPipe[0], STDIN_FILENO);
-		close(inputPipe[0]);
+        close(outputPipe[0]);
+        dup2(outputPipe[1], STDOUT_FILENO);
+        close(outputPipe[1]);
 
-		close(outputPipe[0]);
-		dup2(outputPipe[1], STDOUT_FILENO);
-		close(outputPipe[1]);
+        setenv("REQUEST_METHOD", req.getMethod().c_str(), 1);
+        setenv("QUERY_STRING", queryString.c_str(), 1);
+        
+        // Usar getters case-insensitive
+        setenv("CONTENT_LENGTH", req.getHeader("Content-Length").c_str(), 1);
+        setenv("CONTENT_TYPE", req.getHeader("Content-Type").c_str(), 1);
+        setenv("SCRIPT_NAME", req.getUri().c_str(), 1);
+        setenv("SERVER_NAME", req.getHeader("Host").c_str(), 1);
+        setenv("SERVER_PORT", "8080", 1);
+        setenv("SERVER_PROTOCOL", req.getVersion().c_str(), 1);
+        setenv("REDIRECT_STATUS", "200", 1);
 
-		setenv("REQUEST_METHOD", req.getMethod().c_str(), 1);
-		setenv("QUERY_STRING", queryString.c_str(), 1);
-		setenv("CONTENT_LENGTH", req.getHeaders().count("Content-Length") ? req.getHeaders().at("Content-Length").c_str() : "", 1);
-		setenv("CONTENT_TYPE", req.getHeaders().count("Content-Type") ? req.getHeaders().at("Content-Type").c_str() : "", 1);
-		setenv("SCRIPT_NAME", req.getUri().c_str(), 1);
-		setenv("SERVER_NAME", req.getHeaders().count("Host") ? req.getHeaders().at("Host").c_str() : "localhost", 1);
-		setenv("SERVER_PORT", "8080", 1);
-		setenv("SERVER_PROTOCOL", req.getVersion().c_str(), 1);
-		setenv("REDIRECT_STATUS", "200", 1);
+        char* const args[] = {
+            const_cast<char*>("python3"),
+            const_cast<char*>(path.c_str()),
+            NULL
+        };
 
-		// Mudar para o diretório do script
-		// std::string scriptDir = path.substr(0, path.find_last_of('/'));
-		// chdir(scriptDir.c_str());
+        execve("/usr/bin/python3", args, environ);
+        exit(1);
+    }
+    else {
+        close(inputPipe[0]);
+        close(outputPipe[1]);
 
-		char* const args[] = {
-			const_cast<char*>("python3"),
-			const_cast<char*>(path.c_str()),
-			NULL
-		};
+        if (req.getMethod() == "POST" && !req.getBody().empty()) {
+            write(inputPipe[1], req.getBody().c_str(), req.getBody().size());
+        }
 
-		execve("/usr/bin/python3", args, environ);
-		exit(1);
-	}
-	else {
-		close(inputPipe[0]);
-		close(outputPipe[1]);
+        close(inputPipe[1]);
 
-		if (req.getMethod() == "POST" && !req.getBody().empty()) {
-			write(inputPipe[1], req.getBody().c_str(), req.getBody().size());
-		}
+        char buffer[4096];
+        ssize_t bytesRead;
+        std::string cgiOutput;
 
-		close(inputPipe[1]);
+        while ((bytesRead = read(outputPipe[0], buffer, sizeof(buffer) - 1)) > 0) {
+            buffer[bytesRead] = '\0';
+            cgiOutput += buffer;
+        }
 
-		char buffer[4096];
-		ssize_t bytesRead;
-		std::string cgiOutput;
+        close(outputPipe[0]);
 
-		while ((bytesRead = read(outputPipe[0], buffer, sizeof(buffer) - 1)) > 0) {
-			buffer[bytesRead] = '\0';
-			cgiOutput += buffer;
-		}
+        int status;
+        waitpid(pid, &status, 0);
 
-		close(outputPipe[0]);
+        if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+            size_t headerEnd = cgiOutput.find("\r\n\r\n");
+            if (headerEnd == std::string::npos) {
+                headerEnd = cgiOutput.find("\n\n");
+            }
 
-		int status;
-		waitpid(pid, &status, 0);
+            if (headerEnd != std::string::npos) {
+                std::string headers = cgiOutput.substr(0, headerEnd);
+                std::string body = cgiOutput.substr(headerEnd + (cgiOutput[headerEnd] == '\r' ? 4 : 2));
 
-		if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-			size_t headerEnd = cgiOutput.find("\r\n\r\n");
-			if (headerEnd == std::string::npos) {
-				headerEnd = cgiOutput.find("\n\n");
-			}
+                res.setStatus(200, "OK");
 
-			if (headerEnd != std::string::npos) {
-				std::string headers = cgiOutput.substr(0, headerEnd);
-				std::string body = cgiOutput.substr(headerEnd + (cgiOutput[headerEnd] == '\r' ? 4 : 2));
+                std::istringstream headerStream(headers);
+                std::string line;
+                while (std::getline(headerStream, line)) {
+                    if (line.empty() || line == "\r") continue;
 
-				res.setStatus(200, "OK");
+                    if (!line.empty() && line[line.size() - 1] == '\r') {
+                        line.erase(line.size() - 1);
+                    }
+                    size_t colonPos = line.find(':');
+                    if (colonPos != std::string::npos) {
+                        std::string key = line.substr(0, colonPos);
+                        std::string value = line.substr(colonPos + 1);
 
-				std::istringstream headerStream(headers);
-				std::string line;
-				while (std::getline(headerStream, line)) {
-					if (line.empty() || line == "\r") continue;
-
-					if (!line.empty() && line[line.size() - 1] == '\r') {
-						line.erase(line.size() - 1);
-					}
-					size_t colonPos = line.find(':');
-					if (colonPos != std::string::npos) {
-						std::string key = line.substr(0, colonPos);
-						std::string value = line.substr(colonPos + 1);
-
-						while (!value.empty() && isspace(value[0])) {
-							value.erase(0, 1);
-						}
-						if (key == "Status") {
-							size_t spacePos = value.find(' ');
-							if (spacePos != std::string::npos) {
-								res.setStatus(std::atoi(value.substr(0, spacePos).c_str()),
+                        while (!value.empty() && isspace(value[0])) {
+                            value.erase(0, 1);
+                        }
+                        if (key == "Status") {
+                            size_t spacePos = value.find(' ');
+                            if (spacePos != std::string::npos) {
+                                res.setStatus(std::atoi(value.substr(0, spacePos).c_str()),
 											value.substr(spacePos + 1));
 							}
 						} else {
