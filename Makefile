@@ -6,9 +6,7 @@ C_FLAGS = -Wall -Wextra -Werror -std=c++98
 
 SRC_DIR = src/
 
-FIND = $(shell find $(SRC_DIR))
-
-SRCS = $(filter %.cpp, $(FIND))
+SRCS := $(shell find $(SRC_DIR) -type f -name "*.cpp")
 
 RED =		\033[0;35m
 BLUE =		\033[0;34m
