@@ -6,9 +6,7 @@ C_FLAGS = -Wall -Wextra -Werror -std=c++98
 
 SRC_DIR = src/
 
-FIND = $(shell find $(SRC_DIR))
-
-SRCS = $(filter %.cpp, $(FIND))
+SRCS := $(shell find $(SRC_DIR) -type f -name "*.cpp")
 
 RED =		\033[0;35m
 BLUE =		\033[0;34m
@@ -28,12 +26,14 @@ $(NAME):	$(OBJS)
 			@$(CC) $(C_FLAGS) main.cpp webserv.a -o $(NAME)
 
 clean:
+			@rm -rf uploads/
 			@rm -f $(OBJS)
 			@echo "$(BLUE) 📤 Objects deleted$(RESET)"
 
 fclean:
 			@rm -f $(NAME)
 			@rm -f $(OBJS)
+			@rm -f webserv.a
 			@echo "$(BLUE) 🧼 All cleaned$(RESET)"
 
 re:			fclean all

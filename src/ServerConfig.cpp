@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:40:04 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/08 20:40:05 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/28 09:06:39 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,10 +17,19 @@ ServerConfig::ServerConfig(void) {}
 ServerConfig::~ServerConfig(void) {}
 
 ServerConfig::ServerConfig(int ac, char **av) {
+	std::string configFile;
+
 	if (ac == 2)
-		this->parser(av[1]);
+		configFile = av[1];
 	else
-		this->parser("config/default.conf");
+		configFile = "config/default.conf";
+
+	std::cout << "DEBUG: Tentando ler arquivo de configuração: " << configFile << std::endl;
+
+	this->parser(configFile);
+
+	std::cout << "DEBUG: Configuração lida com sucesso! Servers encontrados: "
+			<< this->_serverBlocks.size() << std::endl;
 }
 
 void ServerConfig::readFile(const std::string &filename, std::string &content)
@@ -148,13 +157,22 @@ void ServerConfig::parser(const std::string &filename)
 {
 	std::string content;
 	cleanFile(filename, content);
+
+	std::cout << "DEBUG: Arquivo limpo. Tamanho do conteúdo: " << content.size() << std::endl;
+
 	tokenizeContent(content);
+
+	std::cout << "DEBUG: Tokens gerados: " << this->_tokens.size() << std::endl;
+	if (this->_tokens.size() > 0)
+		std::cout << "DEBUG: Primeiro token: " << this->_tokens[0] << std::endl;
 
 	if (this->_tokens.size() == 0)
 		throw std::runtime_error("Configuração inválida: não foi encontrado nenhum servidor");
 
-	while (this->_tokens.size() > 0) //| While para pegar todos os servers (se tiver mais de um server)
+	while (this->_tokens.size() > 0)
 	{
+		std::cout << "DEBUG: Processando token: " << this->_tokens[0] << std::endl;
+
 		if (this->_tokens[0] == "server" && this->_tokens[1] == "{")
 			this->_serverBlocks.push_back(ServerBlock(*this));
 		else

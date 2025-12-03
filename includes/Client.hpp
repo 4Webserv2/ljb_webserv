@@ -6,43 +6,56 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:18 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/08 20:39:19 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/29 09:52:09 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 # include "Webserv.hpp"
-# include "HttpParser.hpp"
+# include "HttpRequest.hpp"
 # include "HttpResponse.hpp"
+# include "EpollHandler.hpp"
 
-class HttpResponse;
-class HttpParser;
+class ServerManage;
 
-class Client
+// Estados do cliente
+enum ClientState {
+	STATE_READING_HEADER = 0,
+	STATE_READING_BODY = 1,
+	STATE_COMPLETE = 2
+};
+
+class Client: public EpollHandler
 {
 	private:
-		std::string	_rawRequest;
-		int	_clientFd;
-		int	_state;
+		int _state;
+		std::string _rawRequest;
+		ServerManage &_server;
+		std::string _pendingResponse;
+		size_t _responseOffset;
 
 	public:
-		HttpResponse	_response;
-		HttpParser		_request;
+		HttpResponse	response;
+		HttpRequest		request;
 
 		~Client();
-		Client();
-		Client(int clientFd);
-		Client(int clientFd, int state, HttpParser request, HttpResponse response);
+		Client(int clientFd, ServerManage &server);
 		Client(const Client &src);
 		Client &operator=(const Client &src);
 
-		//Getters
-		int getState(void);
-		int getClientFd(void);
-		std::string &getRawRequest(void);
-		HttpParser &getRequest(void);
-		HttpResponse &getResponse(void);
+		virtual void EpollInHandler(void);
+		virtual void EpollOutHandler(void);
+		virtual void deleteHandler(void);
 
-		void	processRequest();
+		void concatenateRequestData(const std::string &data);
+		bool isRequestComplete(void);
+		bool sendResponse(const std::string &responseStr);
+		void processRequest(void);
+
+		int getState(void) const;
+		std::string &getRawRequest(void);
+		HttpRequest &getRequest(void);
+		HttpResponse &getResponse(void);
+		void setState(int state);
 };

@@ -6,35 +6,50 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:15 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/08 20:39:16 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/28 09:14:20 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 # include "Webserv.hpp"
+// # include "EpollHandler.hpp"
+
+class EpollHandler;
 
 class EpollInstance
 {
 	private:
+		static EpollInstance	*_run;
 		int	_epollFd;
+		std::map<int, EpollHandler*>	_epollHandlers;
 		struct epoll_event _epollEvents;
 		struct epoll_event _eventsList[MAX_EVENTS];
 
-	public:
-		~EpollInstance();
 		EpollInstance();
 		EpollInstance(const EpollInstance &src);
 		EpollInstance &operator=(const EpollInstance &src);
 
-		int getEpollFd() const;
-		struct epoll_event getEpollEvents() const;
-		struct epoll_event &getEpollEventsList();
-		struct epoll_event &getElementFromEventsList(int i);
+	public:
+		~EpollInstance();
 
-		void initEpoll();
+		static int getEpollFd();
+		static std::map<int, EpollHandler*> &getEpollHandlers();
+		static struct epoll_event getEpollEvents();
+		static struct epoll_event &getEpollEventsList();
+		static struct epoll_event &getElementFromEventsList(int i);
+		static void manipInterestList(int operation, EpollHandler *handler);
+		static void deleteElementFromHandlers(int socketFd);
+		static void initEpollRun();
+		static int manipEpollWait();
 
 		class CannotInitEpoll : public std::exception
+		{
+			public:
+				virtual const char *what() const throw();
+		};
+
+		class CannotManipulate : public std::exception
 		{
 			public:
 				virtual const char *what() const throw();

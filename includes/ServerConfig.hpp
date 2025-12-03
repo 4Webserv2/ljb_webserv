@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:38:12 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/08 20:38:13 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/27 11:36:57 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,4 +46,6 @@ class ServerConfig {
 
 		std::vector<std::string> getTokens(void);
 		std::vector<ServerBlock> getServerBlocks(void) const;
+
+		// void initServerSockets(int socketDomain, int socketType);
 };

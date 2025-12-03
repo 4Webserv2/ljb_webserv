@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:45:55 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/10/28 20:08:52 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/11/28 00:18:44 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,16 +15,16 @@
 # include "Webserv.hpp"
 # include "EpollInstance.hpp"
 # include "Client.hpp"
-# include "ServerListen.hpp"
 # include "ServerConfig.hpp"
+
+class ServerManage;
 
 class RunTime {
 	private:
 		static RunTime *_runtime;
 		ServerConfig _config;
-		EpollInstance _epoll;
 		std::map<int, Client> _clients;
-		std::vector<ServerListen> _sListeners;
+		std::vector<ServerManage> _sListeners;
 		bool _running;
 
 		RunTime();
@@ -34,17 +34,17 @@ class RunTime {
 
 	public:
 		~RunTime();
-		static void createInstance(int ac, char **av);
-		static void destroyInstance(void);
+		static int createRuntime(int ac, char **av);
+		static void destroyRuntime(void);
 
 		static void initListeners(void);
-		static void initSockets(void);
+		static void initSockets(int domain, int type);
 		static void deleteClient(int client_fd);
 
-		static RunTime &getInstance();
-		static EpollInstance &getEpoll();
+		static RunTime &getRuntime();
 		static ServerConfig &getServerConfig();
-		static std::vector<ServerListen> &getListeners();
+		static std::vector<ServerManage> &getListeners();
 		static std::map<int, Client> &getClients();
 		static Client &getClient(int client_fd);
+		static ServerManage &getElementInServerList(int serverSocketFd);
 };
