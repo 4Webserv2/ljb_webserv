@@ -3,16 +3,20 @@
 /*                                                        :::      ::::::::   */
 /*   ServerBlock.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:59 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/28 09:05:49 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/04 10:29:41 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/ServerBlock.hpp"
 
-ServerBlock::ServerBlock(ServerConfig &config) : _config(config), _maxBodySize(false, 0), _root(false, "./")
+ServerBlock::ServerBlock(ServerConfig &config) 
+    : _config(config), 
+      _maxBodySize(std::make_pair(false, 0)), 
+      _root(std::make_pair(false, "")),
+      _cgiTimeout(30)  // ADICIONAR: Timeout padrão de 30 segundos
 {
 	this->_config.removeTokens(2); //| Remove os 2 primeiros tokens ('server' e '{')
 	this->_config.verifyToken(EMPTY, "Configuração inválida: server: não foi encontrado nenhum servidor");
@@ -397,4 +401,12 @@ void ServerBlock::addRoot()
 	this->_config.removeTokens(1); //| Removendo o argumento de root
 	this->_config.verifyToken(DIFF_SEMICOLON, "Configuração inválida: root: esperava um ponto e vírgula no final de root");
 	this->_config.removeTokens(1); //| Removendo o ponto e vírgula
+}
+
+unsigned int ServerBlock::getCgiTimeout() const {
+	return this->_cgiTimeout;
+}
+
+void ServerBlock::setCgiTimeout(unsigned int timeout) {
+	this->_cgiTimeout = timeout;
 }

@@ -15,15 +15,9 @@ Prioridade média (segurança, compatibilidade e UX)
 5. Tipos MIME e Content-Type corretos
    - Mapear extensões para `Content-Type` para servir arquivos estáticos corretamente.
 
-7. CGI: correção e hardening
-   - Garantir variáveis de ambiente corretas, limites de tamanho, diretório de execução e tratamento de erros.
-
 Prioridade baixa (melhorias, performance e entrega)
 8. Testes e CI
    - Adicionar testes unitários/integrados para parsing, dispatch, CGI e endpoints; configurar CI (ex.: GitHub Actions).
-
-9. Encerramento gracioso e sinais - DONE
-   - Tratar SIGINT/SIGTERM para fechar listeners e conexões ativas de forma limpa.
 
 10. Limites e performance
     - Limitar número de clientes concorrentes, tunar backlog e testar sob carga.

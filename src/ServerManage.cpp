@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerManage.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 20:58:51 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 15:13:18 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/04 10:33:22 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,12 +51,26 @@ ServerManage &ServerManage::operator=(const ServerManage &src)
 
 void ServerManage::startSocket(int domain, int type)
 {
-	this->makeSocket(domain, type);
-	this->setServerAddr(domain);
-	this->reuseAddr();
-	this->bindServer();
-	this->updateToNonBlocking();
-	this->listenSocket();
+	try {
+		this->makeSocket(domain, type);
+		this->setServerAddr(domain);
+		this->reuseAddr();
+		this->bindServer();  // Pode lançar exceção agora
+		this->updateToNonBlocking();
+		this->listenSocket();
+		
+		std::cout << "[OK] Server started on port " << this->getPort() << std::endl;
+	}
+	catch (const std::exception &e) {
+		// Fechar socket se algo falhar
+		if (this->getSocketFd() != -1) {
+			close(this->getSocketFd());
+			this->setSocketFd(-1);
+		}
+		
+		// Re-lançar a exceção
+		throw;
+	}
 }
 
 void	ServerManage::makeSocket(int domain, int type)
@@ -83,14 +97,21 @@ void ServerManage::reuseAddr()
 		throw(std::runtime_error("Cannot reuse addr"));
 }
 
-void	ServerManage::bindServer(void)
+void ServerManage::bindServer(void)
 {
 	int initBind = bind(this->getSocketFd(), (struct sockaddr *)&this->_serverAddr, sizeof(this->_serverAddr));
 	if (initBind == -1)
 	{
-		std::cout << "Cannot bind Server socket!" << std::endl;
-		return ;
+		// Mensagem de erro mais detalhada
+		std::cerr << "[ERROR] Cannot bind Server socket on port " << this->getPort() 
+				<< ": " << strerror(errno) << std::endl;
+		
+		// IMPORTANTE: Lançar exceção ao invés de apenas retornar
+		throw std::runtime_error("Failed to bind socket on port " + 
+								std::string(1, '0' + this->getPort()));
 	}
+	
+	std::cout << "[OK] Socket bound successfully on port " << this->getPort() << std::endl;
 }
 
 void ServerManage::updateToNonBlocking(void)
