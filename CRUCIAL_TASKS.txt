@@ -1,13 +1,5 @@
 Pontos cruciais para finalizar o projeto Webserver (com prioridades)
 
-Prioridade alta (imprescindível para comportamento correto no navegador)
-1. HTTP/1.1 e gerenciamento de Connection
-   - Suporte a HTTP/1.1, interpretar "Connection: keep-alive" e "Connection: close".
-   - Definir comportamento padrão (ex.: "Connection: close") até implementar keep-alive.
-
-2. Conexões persistentes e timeouts
-   - Implementar keep-alive por socket, controlar último-uso e timeouts configuráveis.
-
 Prioridade média (segurança, compatibilidade e UX)
 4. Normalização e segurança de caminhos
    - Normalizar URIs, prevenir path traversal (".."), e aplicar regras de `location`.
