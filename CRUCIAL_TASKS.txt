@@ -22,7 +22,7 @@ Prioridade baixa (melhorias, performance e entrega)
 8. Testes e CI
    - Adicionar testes unitários/integrados para parsing, dispatch, CGI e endpoints; configurar CI (ex.: GitHub Actions).
 
-9. Encerramento gracioso e sinais
+9. Encerramento gracioso e sinais - DONE
    - Tratar SIGINT/SIGTERM para fechar listeners e conexões ativas de forma limpa.
 
 10. Limites e performance

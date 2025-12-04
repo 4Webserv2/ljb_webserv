@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Runtime.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:45:55 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/28 00:18:44 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/04 10:09:49 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,12 @@ class RunTime {
 		static void initListeners(void);
 		static void initSockets(int domain, int type);
 		static void deleteClient(int client_fd);
+
+		static void gracefulShutdown();
+		static void closeAllClients();
+		static void closeAllServers();
+		static bool isRunning();
+		static void setRunning(bool running);
 
 		static RunTime &getRuntime();
 		static ServerConfig &getServerConfig();

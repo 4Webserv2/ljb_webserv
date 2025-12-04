@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/11/29 15:13:02 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/04 10:11:13 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "includes/HttpRequest.hpp"
 #include "includes/HttpResponse.hpp"
 #include "includes/ServerManage.hpp"
+#include "includes/SignalHandler.hpp"
 
 int	clientLoop(const int& clientFd) {
 	char	buffer[BUFFER_SIZE];
@@ -65,10 +66,16 @@ int	clientLoop(const int& clientFd) {
 
 void epollValidationLoop()
 {
+	// Verificar se deve fazer shutdown
+	if (SignalHandler::isShutdownRequested()) {
+		std::cout << "[MAIN] Shutdown solicitado, parando loop..." << std::endl;
+		return;
+	}
+	
 	std::map<int, EpollHandler *> &handlers = EpollInstance::getEpollHandlers();
-	for (std::map<int, EpollHandler *>::iterator it = handlers.begin(); it != handlers.end(); ++it)
+	for (std::map<int, EpollHandler *>::iterator it = handlers.begin(); 
+		 it != handlers.end(); ++it)
 	{
-		std::cout << "Checking timeout for FD: " << it->first << std::endl;
 		it->second->handleTimeout();
 	}
 }
@@ -87,32 +94,65 @@ void epollReadyListLoop(int numberOfReadySockets)
 	}
 }
 
-void	serverLoop()
+void serverLoop()
 {
-	while (42)
+	std::cout << "[MAIN] Servidor iniciado. Pressione Ctrl+C para parar." << std::endl;
+	
+	while (RunTime::isRunning() && !SignalHandler::isShutdownRequested())
 	{
 		int sockets = EpollInstance::manipEpollWait();
+		
+		// Se epoll_wait foi interrompido por sinal
 		if (sockets == -1)
 		{
-			std::cout << "Erro ao aceitar conexão do cliente" << std::endl;
+			if (errno == EINTR) {
+				// Interrompido por sinal, verificar se é shutdown
+				if (SignalHandler::isShutdownRequested()) {
+					std::cout << "[MAIN] epoll_wait interrompido por sinal de shutdown" 
+							  << std::endl;
+					break;
+				}
+				// Outro sinal, continuar
+				continue;
+			}
+			
+			std::cerr << "[ERROR] Erro no epoll_wait: " << strerror(errno) << std::endl;
 			break;
 		}
-		else
-		{
-			epollReadyListLoop(sockets);
-			epollValidationLoop();
-		}
+		
+		epollReadyListLoop(sockets);
+		epollValidationLoop();
 	}
+	
+	std::cout << "[MAIN] Loop do servidor encerrado" << std::endl;
 }
 
-int	main(int ac, char **av)
+int main(int ac, char **av)
 {
-	if (RunTime::createRuntime(ac, av) == 0)
-		serverLoop();
-	else
+	// 1. Configurar handlers de sinais ANTES de inicializar o runtime
+	SignalHandler::setupSignalHandlers();
+	
+	// 2. Inicializar runtime
+	if (RunTime::createRuntime(ac, av) != 0)
 	{
-		std::cout << "Error" << std::endl;
-		return (1);
+		std::cerr << "Erro ao inicializar runtime" << std::endl;
+		return 1;
 	}
-	return (0);
+	
+	// 3. Executar loop principal
+	try {
+		serverLoop();
+	}
+	catch (std::exception &e) {
+		std::cerr << "[ERROR] Exceção capturada: " << e.what() << std::endl;
+		RunTime::gracefulShutdown();
+		return 1;
+	}
+	
+	// 4. Shutdown gracioso
+	std::cout << "[MAIN] Iniciando shutdown gracioso..." << std::endl;
+	RunTime::gracefulShutdown();
+	
+	std::cout << "[MAIN] Servidor encerrado com sucesso. Até logo! 👋" << std::endl;
+	return 0;
 }
