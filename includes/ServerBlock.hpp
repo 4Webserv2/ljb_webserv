@@ -6,7 +6,7 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:38:08 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/27 11:42:26 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/04 10:24:39 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,7 @@ class ServerBlock
 		std::pair<bool, std::string>            _root;
 		std::map<std::string, LocationBlock>    _locations;
 		std::map<int, std::string>              _errorPages;
+		unsigned int							_cgiTimeout;
 
 	public:
 		ServerBlock(ServerConfig &config);
@@ -52,6 +53,8 @@ class ServerBlock
 		void addRoot();
 		void addErrorPages();
 		void addLocation();
+		unsigned int getCgiTimeout() const;
+		void setCgiTimeout(unsigned int timeout);
 
 		//| Getters
 		std::vector<std::string> getServerNames() const;
