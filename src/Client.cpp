@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/02 12:40:36 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/05 15:20:38 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,8 @@
 #include "../includes/ServerManage.hpp"
 #include "../includes/EpollInstance.hpp"
 #include "../includes/Runtime.hpp"
+#include "../includes/Logger.hpp"
+#include "../includes/StringUtils.hpp"
 
 Client::~Client() {}
 
@@ -84,20 +86,20 @@ void Client::concatenateRequestData(const std::string &data)
         if (headerEnd != std::string::npos)
         {
             this->setState(STATE_READING_BODY);
-            
+
             // Parse parcial para pegar Content-Length
             HttpRequest tempReq;
             HttpParse tempParse = tempReq.httpParse(this->_rawRequest);
-            
+
             // Usar getter case-insensitive
             std::string contentLengthStr = tempReq.getHeader("Content-Length");
-            
+
             if (!contentLengthStr.empty())
             {
                 int contentLength = std::atoi(contentLengthStr.c_str());
                 size_t bodyStart = headerEnd + 4;
                 size_t currentBodySize = this->_rawRequest.size() - bodyStart;
-                
+
                 if (currentBodySize >= (size_t)contentLength)
                     this->setState(STATE_COMPLETE);
             }
@@ -126,7 +128,7 @@ void Client::processRequest(void)
         ServerBlock block = this->_server.getBlock();
         std::map<int, std::string> errorPages = block.getErrorPages();
         std::string rootPath = block.getRoot().second;
-        
+
         this->response.setErrorPageConfig(&errorPages, rootPath);
 
         // Validar URI
@@ -136,32 +138,32 @@ void Client::processRequest(void)
             return;
         }
 
-        // ADICIONAR: Validar método (retorna 405 se não suportado)
-        if (req.getMethod() != "GET" && 
-            req.getMethod() != "POST" && 
+        // Validar método (retorna 405 se não suportado)
+        if (req.getMethod() != "GET" &&
+            req.getMethod() != "POST" &&
             req.getMethod() != "DELETE")
         {
-            std::cout << "Método não permitido: " << req.getMethod() << std::endl;
+			Logger::error("Método não permitido: " << req.getMethod())
             this->response.setErrorPage(405);
             return;
         }
 
         // Processar requisição
         this->response = this->response.dispatchRequest(req);
-        
+
         // Manter a configuração de error pages após dispatch
         this->response.setErrorPageConfig(&errorPages, rootPath);
     }
     catch (std::exception &error)
     {
         std::cerr << "Erro ao processar requisição: " << error.what() << std::endl;
-        
+
         // Garantir que error page config está disponível
         ServerBlock block = this->_server.getBlock();
         std::map<int, std::string> errorPages = block.getErrorPages();
         std::string rootPath = block.getRoot().second;
         this->response.setErrorPageConfig(&errorPages, rootPath);
-        
+
         this->response.setErrorPage(400);
     }
 }
@@ -242,7 +244,7 @@ void Client::EpollInHandler(void)
 			this->response = this->response.dispatchRequest(this->request);
 			std::string responseStr = this->response.toString();
 			std::cout << "------------------- RESPONSE SEND -------------------" << std::endl;
-			std::cout << responseStr << std::endl;
+			Logger::info(responseStr)
 			std::cout << "-----------------------------------------------------" << std::endl;
 			if (!sendResponse(responseStr))
 				return;
@@ -252,7 +254,7 @@ void Client::EpollInHandler(void)
 	}
 	else if (count == 0)
 	{
-		std::cout << "Client closed the connection." << std::endl;
+		Logger::info("Client closed the connection.")
 		std::cout << this->getRawRequest() << std::endl;
 		RunTime::deleteClient(this->getSocketFd());
 	}
@@ -282,7 +284,7 @@ void Client::EpollOutHandler(void)
 
 void Client::deleteHandler(void)
 {
-	std::cout << "Removendo cliente (fd=" << this->getSocketFd() << ")" << std::endl;
+	Logger::info("Removing client (fd=" + StringUtils::intToString(this->getSocketFd()) + ")");
 
 	epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_DEL, this->getSocketFd(), NULL);
 	close(this->getSocketFd());

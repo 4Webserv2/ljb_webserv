@@ -35,3 +35,9 @@ std::string StringUtils::normalizeHeaderName(const std::string &name) {
     // Convertemos para minúsculas para comparação
     return toLower(trim(name));
 }
+
+std::string StringUtils::intToString(int n) {
+    std::ostringstream oss;
+    oss << n;
+    return oss.str();
+}
