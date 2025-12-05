@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/04 10:11:13 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/05 15:44:02 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,9 +29,9 @@ int	clientLoop(const int& clientFd) {
 		if (bytesRead <= 0)
 		{
 			if (bytesRead == 0)
-				std::cout << "Cliente desconectou" << std::endl;
+				Logger::info("Client disconnected")
 			else
-				std::cout << "Erro na leitura do cliente" << std::endl;
+				Logger::error("Error: client read")
 			close(clientFd);
 			return (bytesRead == 0 ? NO_ERROR : ERROR);
 		}
@@ -41,7 +41,7 @@ int	clientLoop(const int& clientFd) {
 			break;
 		}
 	} while (bytesRead == BUFFER_SIZE - 1);
-	std::cout << "Requisição recebida, processando..." << std::endl;
+	Logger::info("Request received, processing...")
 	try
 	{
 
@@ -50,7 +50,7 @@ int	clientLoop(const int& clientFd) {
 		response = response.dispatchRequest(request);
 		std::string responseStr = response.toString();
 		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
-		std::cout << "Resposta enviada com sucesso (status " << response.intToString(response.status_code) << ")" << std::endl;
+		Logger::info("Response sent successfully (status " << response.intToString(response.status_code) << ")")
 	}
 	catch (std::exception& e)
 	{
@@ -58,7 +58,7 @@ int	clientLoop(const int& clientFd) {
 		errorResponse.setErrorPage(400);
 		std::string responseStr = errorResponse.toString();
 		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
-		std::cout << "Erro ao processar requisição: " << e.what() << std::endl;
+		Logger::error("Error while processing request: " << e.what())
 	}
 	close(clientFd);
 	return NO_ERROR;
@@ -68,12 +68,12 @@ void epollValidationLoop()
 {
 	// Verificar se deve fazer shutdown
 	if (SignalHandler::isShutdownRequested()) {
-		std::cout << "[MAIN] Shutdown solicitado, parando loop..." << std::endl;
+		Logger::info("[MAIN] Shutdown requested, stopping loop...")
 		return;
 	}
-	
+
 	std::map<int, EpollHandler *> &handlers = EpollInstance::getEpollHandlers();
-	for (std::map<int, EpollHandler *>::iterator it = handlers.begin(); 
+	for (std::map<int, EpollHandler *>::iterator it = handlers.begin();
 		 it != handlers.end(); ++it)
 	{
 		it->second->handleTimeout();
@@ -96,63 +96,62 @@ void epollReadyListLoop(int numberOfReadySockets)
 
 void serverLoop()
 {
-	std::cout << "[MAIN] Servidor iniciado. Pressione Ctrl+C para parar." << std::endl;
-	
+	Logger::info("[MAIN] Server started. Press Ctrl+C to stop.")
 	while (RunTime::isRunning() && !SignalHandler::isShutdownRequested())
 	{
 		int sockets = EpollInstance::manipEpollWait();
-		
+
 		// Se epoll_wait foi interrompido por sinal
 		if (sockets == -1)
 		{
 			if (errno == EINTR) {
 				// Interrompido por sinal, verificar se é shutdown
 				if (SignalHandler::isShutdownRequested()) {
-					std::cout << "[MAIN] epoll_wait interrompido por sinal de shutdown" 
-							  << std::endl;
+					Logger::info("[MAIN] epoll_wait interrupted by shutdown signal")
 					break;
 				}
 				// Outro sinal, continuar
 				continue;
 			}
-			
-			std::cerr << "[ERROR] Erro no epoll_wait: " << strerror(errno) << std::endl;
+
+			std::cerr << "[ERROR] Error in epoll_wait: " << strerror(errno) << std::endl;
 			break;
 		}
-		
+
 		epollReadyListLoop(sockets);
 		epollValidationLoop();
 	}
-	
-	std::cout << "[MAIN] Loop do servidor encerrado" << std::endl;
+
+	Logger::info("[MAIN] Server loop terminated")
 }
 
 int main(int ac, char **av)
 {
 	// 1. Configurar handlers de sinais ANTES de inicializar o runtime
 	SignalHandler::setupSignalHandlers();
-	
+	Logger::initLogger(DEBUG, new StdLogHandler());
+
 	// 2. Inicializar runtime
 	if (RunTime::createRuntime(ac, av) != 0)
 	{
-		std::cerr << "Erro ao inicializar runtime" << std::endl;
+		std::cerr << "Error initializing runtime" << std::endl;
 		return 1;
 	}
-	
+
 	// 3. Executar loop principal
 	try {
 		serverLoop();
 	}
 	catch (std::exception &e) {
-		std::cerr << "[ERROR] Exceção capturada: " << e.what() << std::endl;
+		std::cerr << "[ERROR] Caught exception: " << e.what() << std::endl;
 		RunTime::gracefulShutdown();
 		return 1;
 	}
-	
+
 	// 4. Shutdown gracioso
-	std::cout << "[MAIN] Iniciando shutdown gracioso..." << std::endl;
+	Logger::info("Gracious Shutdown init..")
 	RunTime::gracefulShutdown();
-	
-	std::cout << "[MAIN] Servidor encerrado com sucesso. Até logo! 👋" << std::endl;
+
+	Logger::info("[MAIN] Server finished with successfully. See you! 👋")
 	return 0;
 }
