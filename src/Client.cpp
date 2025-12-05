@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/05 15:59:01 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/05 16:45:26 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -143,7 +143,8 @@ void Client::processRequest(void)
             req.getMethod() != "POST" &&
             req.getMethod() != "DELETE")
         {
-			Logger::error("Método não permitido: " << req.getMethod());
+			std::string reqMethod = req.getMethod()
+			Logger::error("Method not allowed: " << reqMethod);
             this->response.setErrorPage(405);
             return;
         }
@@ -156,7 +157,7 @@ void Client::processRequest(void)
     }
     catch (std::exception &error)
     {
-        std::cerr << "Erro ao processar requisição: " << error.what() << std::endl;
+        std::cerr << "Error processing request: " << error.what() << std::endl;
 
         // Garantir que error page config está disponível
         ServerBlock block = this->_server.getBlock();
@@ -193,7 +194,7 @@ bool Client::sendResponse(const std::string &responseStr)
 			EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
 			return false;
 		}
-		std::cerr << "Erro ao enviar resposta: " << strerror(errno) << std::endl;
+		std::cerr << "Error sending response: " << strerror(errno) << std::endl;
 		return false;
 	}
 
@@ -290,4 +291,3 @@ void Client::deleteHandler(void)
 	close(this->getSocketFd());
 	RunTime::getClients().erase(this->getSocketFd());
 }
-
