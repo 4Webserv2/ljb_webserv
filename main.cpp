@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/05 17:20:37 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/05 17:46:34 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,7 +51,7 @@ int	clientLoop(const int& clientFd) {
 		response = response.dispatchRequest(request);
 		std::string responseStr = response.toString();
 		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
-		Logger::info("Response sent successfully (status " << response.intToString(response.status_code) << ")");
+		Logger::info("Response sent successfully (status " + response.intToString(response.status_code) + ")");
 	}
 	catch (std::exception& e)
 	{
@@ -59,7 +59,7 @@ int	clientLoop(const int& clientFd) {
 		errorResponse.setErrorPage(400);
 		std::string responseStr = errorResponse.toString();
 		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
-		Logger::error("Error while processing request: " + e.what());
+		Logger::error(std::string("Error while processing request: ") + e.what());
 	}
 	close(clientFd);
 	return NO_ERROR;
@@ -138,6 +138,9 @@ int main(int ac, char **av)
 		std::cerr << "Error initializing runtime" << std::endl;
 		return 1;
 	}
+
+std::string reqMethod = StringUtils::ostreamToString(req.getMethod());
+Logger::error("Method not allowed: " + reqMethod);
 
 	// 3. Executar loop principal
 	try {
