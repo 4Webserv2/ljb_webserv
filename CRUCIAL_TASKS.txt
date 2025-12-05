@@ -17,7 +17,8 @@ Prioridade baixa (melhorias, performance e entrega)
 Extras recomendados (opcionais/avançados)
 - Chunked transfer encoding (Transfer-Encoding: chunked)
 - Logging com níveis (INFO/WARN/ERROR) e rotação
-- Documentação completa e exemplos de `config/`
+- Documentação completa
+- Exemplos de `config/`
 - Empacotamento/Docker e simplificação do build
 - TLS/HTTPS (OpenSSL) — opcional e de maior esforço
 
