@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/05 15:20:38 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/05 15:59:01 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -143,7 +143,7 @@ void Client::processRequest(void)
             req.getMethod() != "POST" &&
             req.getMethod() != "DELETE")
         {
-			Logger::error("Método não permitido: " << req.getMethod())
+			Logger::error("Método não permitido: " << req.getMethod());
             this->response.setErrorPage(405);
             return;
         }
@@ -244,7 +244,7 @@ void Client::EpollInHandler(void)
 			this->response = this->response.dispatchRequest(this->request);
 			std::string responseStr = this->response.toString();
 			std::cout << "------------------- RESPONSE SEND -------------------" << std::endl;
-			Logger::info(responseStr)
+			Logger::info(responseStr);
 			std::cout << "-----------------------------------------------------" << std::endl;
 			if (!sendResponse(responseStr))
 				return;
@@ -254,7 +254,7 @@ void Client::EpollInHandler(void)
 	}
 	else if (count == 0)
 	{
-		Logger::info("Client closed the connection.")
+		Logger::info("Client closed the connection.");
 		std::cout << this->getRawRequest() << std::endl;
 		RunTime::deleteClient(this->getSocketFd());
 	}

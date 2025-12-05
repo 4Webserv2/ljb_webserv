@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/05 15:44:02 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/05 15:54:38 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,9 +29,9 @@ int	clientLoop(const int& clientFd) {
 		if (bytesRead <= 0)
 		{
 			if (bytesRead == 0)
-				Logger::info("Client disconnected")
+				Logger::info("Client disconnected");
 			else
-				Logger::error("Error: client read")
+				Logger::error("Error: client read");
 			close(clientFd);
 			return (bytesRead == 0 ? NO_ERROR : ERROR);
 		}
@@ -41,7 +41,7 @@ int	clientLoop(const int& clientFd) {
 			break;
 		}
 	} while (bytesRead == BUFFER_SIZE - 1);
-	Logger::info("Request received, processing...")
+	Logger::info("Request received, processing...");
 	try
 	{
 
@@ -50,7 +50,7 @@ int	clientLoop(const int& clientFd) {
 		response = response.dispatchRequest(request);
 		std::string responseStr = response.toString();
 		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
-		Logger::info("Response sent successfully (status " << response.intToString(response.status_code) << ")")
+		Logger::info("Response sent successfully (status " << response.intToString(response.status_code) << ")");
 	}
 	catch (std::exception& e)
 	{
@@ -58,7 +58,7 @@ int	clientLoop(const int& clientFd) {
 		errorResponse.setErrorPage(400);
 		std::string responseStr = errorResponse.toString();
 		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
-		Logger::error("Error while processing request: " << e.what())
+		Logger::error("Error while processing request: " << e.what());
 	}
 	close(clientFd);
 	return NO_ERROR;
@@ -68,7 +68,7 @@ void epollValidationLoop()
 {
 	// Verificar se deve fazer shutdown
 	if (SignalHandler::isShutdownRequested()) {
-		Logger::info("[MAIN] Shutdown requested, stopping loop...")
+		Logger::info("[MAIN] Shutdown requested, stopping loop...");
 		return;
 	}
 
@@ -96,7 +96,7 @@ void epollReadyListLoop(int numberOfReadySockets)
 
 void serverLoop()
 {
-	Logger::info("[MAIN] Server started. Press Ctrl+C to stop.")
+	Logger::info("[MAIN] Server started. Press Ctrl+C to stop.");
 	while (RunTime::isRunning() && !SignalHandler::isShutdownRequested())
 	{
 		int sockets = EpollInstance::manipEpollWait();
@@ -107,7 +107,7 @@ void serverLoop()
 			if (errno == EINTR) {
 				// Interrompido por sinal, verificar se é shutdown
 				if (SignalHandler::isShutdownRequested()) {
-					Logger::info("[MAIN] epoll_wait interrupted by shutdown signal")
+					Logger::info("[MAIN] epoll_wait interrupted by shutdown signal");
 					break;
 				}
 				// Outro sinal, continuar
@@ -122,7 +122,7 @@ void serverLoop()
 		epollValidationLoop();
 	}
 
-	Logger::info("[MAIN] Server loop terminated")
+	Logger::info("[MAIN] Server loop terminated");
 }
 
 int main(int ac, char **av)
@@ -149,9 +149,9 @@ int main(int ac, char **av)
 	}
 
 	// 4. Shutdown gracioso
-	Logger::info("Gracious Shutdown init..")
+	Logger::info("Gracious Shutdown init..");
 	RunTime::gracefulShutdown();
 
-	Logger::info("[MAIN] Server finished with successfully. See you! 👋")
+	Logger::info("[MAIN] Server finished with successfully. See you! 👋");
 	return 0;
 }
