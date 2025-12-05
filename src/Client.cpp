@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/05 16:55:41 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/05 16:58:48 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -143,7 +143,7 @@ void Client::processRequest(void)
 			req.getMethod() != "POST" &&
 			req.getMethod() != "DELETE")
 		{
-			std::string reqMethod = req.getMethod();
+			std::string reqMethod = StringUtils::intToString(req.getMethod());
 			Logger::error("Method not allowed: " << reqMethod);
 			this->response.setErrorPage(405);
 			return;
