@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/05 17:51:39 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/05 18:29:44 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -127,11 +127,25 @@ void serverLoop()
 	Logger::info("[MAIN] Server loop terminated");
 }
 
+void	initLogger() {
+	CompositeLogHandler multi;
+    StdLogHandler console;
+    FileLogHandler file("app.log");
+
+    multi.addHandler(&console);
+    multi.addHandler(&file);
+
+    Logger::initializeLogger(DEBUG, &multi);
+
+    Logger::info("Logger initialized with stdout + file.");
+}
+
+
 int main(int ac, char **av)
 {
 	// 1. Configurar handlers de sinais ANTES de inicializar o runtime
 	SignalHandler::setupSignalHandlers();
-	Logger::initializeLogger(DEBUG, new StdLogHandler());
+	initLogger();
 
 	// 2. Inicializar runtime
 	if (RunTime::createRuntime(ac, av) != 0)
