@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/05 16:50:34 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/05 17:20:37 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include "includes/HttpResponse.hpp"
 #include "includes/ServerManage.hpp"
 #include "includes/SignalHandler.hpp"
+#include "includes/Logger.hpp"
 
 int	clientLoop(const int& clientFd) {
 	char	buffer[BUFFER_SIZE];
@@ -58,7 +59,7 @@ int	clientLoop(const int& clientFd) {
 		errorResponse.setErrorPage(400);
 		std::string responseStr = errorResponse.toString();
 		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
-		Logger::error("Error while processing request: " << e.what());
+		Logger::error("Error while processing request: " + e.what());
 	}
 	close(clientFd);
 	return NO_ERROR;
