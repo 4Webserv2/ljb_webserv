@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/05 17:46:34 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/05 17:51:39 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include "includes/ServerManage.hpp"
 #include "includes/SignalHandler.hpp"
 #include "includes/Logger.hpp"
+#include "includes/StringUtils.hpp"
 
 int	clientLoop(const int& clientFd) {
 	char	buffer[BUFFER_SIZE];
@@ -130,7 +131,7 @@ int main(int ac, char **av)
 {
 	// 1. Configurar handlers de sinais ANTES de inicializar o runtime
 	SignalHandler::setupSignalHandlers();
-	Logger::initLogger(DEBUG, new StdLogHandler());
+	Logger::initializeLogger(DEBUG, new StdLogHandler());
 
 	// 2. Inicializar runtime
 	if (RunTime::createRuntime(ac, av) != 0)
@@ -138,9 +139,6 @@ int main(int ac, char **av)
 		std::cerr << "Error initializing runtime" << std::endl;
 		return 1;
 	}
-
-std::string reqMethod = StringUtils::ostreamToString(req.getMethod());
-Logger::error("Method not allowed: " + reqMethod);
 
 	// 3. Executar loop principal
 	try {
