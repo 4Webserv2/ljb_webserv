@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:50:29 by lraggio           #+#    #+#             */
-/*   Updated: 2025/11/29 08:12:05 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/05 16:50:14 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,7 +60,7 @@
 # define BUFFER_SIZE 4096
 
 enum e_status {
-	ERROR = -1,
+	E_ERROR = -1,
 	NO_ERROR = 0
 };
 

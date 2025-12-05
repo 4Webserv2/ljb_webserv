@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/05 15:54:38 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/05 16:50:34 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,7 @@ int	clientLoop(const int& clientFd) {
 			else
 				Logger::error("Error: client read");
 			close(clientFd);
-			return (bytesRead == 0 ? NO_ERROR : ERROR);
+			return (bytesRead == 0 ? NO_ERROR : E_ERROR);
 		}
 		buffer[bytesRead] = '\0';
 		rawRequest += buffer;
