@@ -41,3 +41,11 @@ std::string StringUtils::intToString(int n) {
     oss << n;
     return oss.str();
 }
+
+std::string ostreamToString(std::string ss) {
+	std::ostringstream oss;
+
+	oss << ss;
+	return (oss.str());
+}
+

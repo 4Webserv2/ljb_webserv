@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/10 17:00:17 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/02 22:17:42 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/05 17:11:48 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 # include <iostream>
 # include <string>
 # include <ctime>
+# include <ostream>
 
 /**
  * @enum LogLevel

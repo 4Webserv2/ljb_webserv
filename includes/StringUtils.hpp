@@ -22,4 +22,5 @@ public:
 
 	// Passa um int qualquer para uma string
 	static std::string intToString(int n);
+	static std::string ostreamToString(std::string ss);
 };
