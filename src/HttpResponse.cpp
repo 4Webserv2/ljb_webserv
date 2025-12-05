@@ -6,7 +6,7 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/05 09:30:51 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/05 10:01:58 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -345,26 +345,68 @@ HttpResponse HttpResponse::handleCGI(const HttpRequest &req) {
 
 
 HttpResponse	HttpResponse::handleGet(const HttpRequest &req){
-	HttpResponse res;
-	
-	// Copiar configuração de error pages
-	res.setErrorPageConfig(this->_errorPages, this->_rootPath);
-	
-	std::string path = this->_rootPath + req.getUri();
+    HttpResponse res;
+    
+    // Copiar configuração de error pages
+    res.setErrorPageConfig(this->_errorPages, this->_rootPath);
+    
+    std::string path = this->_rootPath + req.getUri();
+    std::string uri = req.getUri();
 
-	std::ifstream file(path.c_str(), std::ios::binary);
-	if (!file)
-	{
-		res.setStatus(404, "Not found");
-		res.setErrorPage(404);
-		return res;
-	}
+    // 1. Verificar se o recurso existe
+    struct stat pathStat;
+    bool resourceExists = (stat(path.c_str(), &pathStat) == 0);
 
-	std::ostringstream buffer;
-	buffer << file.rdbuf();
-	res.setStatus(200, "OK");
-	res.setBody(buffer.str(), "text/html");
-	return res;
+    // 2. Se existe, verificar se é diretório
+    if (resourceExists && S_ISDIR(pathStat.st_mode)) {
+        // É um diretório existente - retornar 200 com body vazio
+        std::cout << "[GET] Diretório acessado: " << path << std::endl;
+        res.setStatus(200, "OK");
+        res.setBody("", "text/html");
+        return res;
+    }
+
+    // 3. Se não existe, verificar se é um diretório (pela URI)
+    if (!resourceExists) {
+        // Critérios para identificar diretório:
+        // - Termina com /
+        // - Não tem extensão (sem ponto após última barra)
+        bool endsWithSlash = (!uri.empty() && uri[uri.length() - 1] == '/');
+        
+        size_t lastSlash = uri.find_last_of('/');
+        size_t lastDot = uri.find_last_of('.');
+        bool hasExtension = (lastDot != std::string::npos && 
+                            (lastSlash == std::string::npos || lastDot > lastSlash));
+        
+        if (endsWithSlash || !hasExtension) {
+            // Parece ser um diretório - retornar 200 com body vazio
+            std::cout << "[GET] Diretório inexistente (URI), retornando 200: " << path << std::endl;
+            res.setStatus(200, "OK");
+            res.setBody("", "text/html");
+            return res;
+        }
+        
+        // É um arquivo que não existe - retornar 404
+        std::cerr << "[GET] Arquivo não encontrado: " << path << std::endl;
+        res.setErrorPage(404);
+        return res;
+    }
+
+    // 4. Existe e é um arquivo - tentar abrir
+    std::ifstream file(path.c_str(), std::ios::binary);
+    if (!file) {
+        // Erro ao abrir arquivo
+        std::cerr << "[GET] Erro ao abrir arquivo: " << path << std::endl;
+        res.setErrorPage(404);
+        return res;
+    }
+
+    // 5. Ler arquivo e retornar conteúdo
+    std::ostringstream buffer;
+    buffer << file.rdbuf();
+    res.setStatus(200, "OK");
+    res.setBody(buffer.str(), "text/html");
+    return res;
 };
 
 HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
