@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/05 16:45:26 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/05 16:55:41 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,37 +79,37 @@ void Client::setState(int state)
 
 void Client::concatenateRequestData(const std::string &data)
 {
-    this->_rawRequest += data;
-    if (this->_state == STATE_READING_HEADER)
-    {
-        size_t headerEnd = this->_rawRequest.find("\r\n\r\n");
-        if (headerEnd != std::string::npos)
-        {
-            this->setState(STATE_READING_BODY);
+	this->_rawRequest += data;
+	if (this->_state == STATE_READING_HEADER)
+	{
+		size_t headerEnd = this->_rawRequest.find("\r\n\r\n");
+		if (headerEnd != std::string::npos)
+		{
+			this->setState(STATE_READING_BODY);
 
-            // Parse parcial para pegar Content-Length
-            HttpRequest tempReq;
-            HttpParse tempParse = tempReq.httpParse(this->_rawRequest);
+			// Parse parcial para pegar Content-Length
+			HttpRequest tempReq;
+			HttpParse tempParse = tempReq.httpParse(this->_rawRequest);
 
-            // Usar getter case-insensitive
-            std::string contentLengthStr = tempReq.getHeader("Content-Length");
+			// Usar getter case-insensitive
+			std::string contentLengthStr = tempReq.getHeader("Content-Length");
 
-            if (!contentLengthStr.empty())
-            {
-                int contentLength = std::atoi(contentLengthStr.c_str());
-                size_t bodyStart = headerEnd + 4;
-                size_t currentBodySize = this->_rawRequest.size() - bodyStart;
+			if (!contentLengthStr.empty())
+			{
+				int contentLength = std::atoi(contentLengthStr.c_str());
+				size_t bodyStart = headerEnd + 4;
+				size_t currentBodySize = this->_rawRequest.size() - bodyStart;
 
-                if (currentBodySize >= (size_t)contentLength)
-                    this->setState(STATE_COMPLETE);
-            }
-            else
-            {
-                // Sem Content-Length, request está completo
-                this->setState(STATE_COMPLETE);
-            }
-        }
-    }
+				if (currentBodySize >= (size_t)contentLength)
+					this->setState(STATE_COMPLETE);
+			}
+			else
+			{
+				// Sem Content-Length, request está completo
+				this->setState(STATE_COMPLETE);
+			}
+		}
+	}
 }
 
 bool Client::isRequestComplete(void)
@@ -119,54 +119,54 @@ bool Client::isRequestComplete(void)
 
 void Client::processRequest(void)
 {
-    try
-    {
-        HttpRequest req;
-        req.setPar(this->request.httpParse(this->_rawRequest));
+	try
+	{
+		HttpRequest req;
+		req.setPar(this->request.httpParse(this->_rawRequest));
 
-        // Configurar error pages do ServerBlock
-        ServerBlock block = this->_server.getBlock();
-        std::map<int, std::string> errorPages = block.getErrorPages();
-        std::string rootPath = block.getRoot().second;
+		// Configurar error pages do ServerBlock
+		ServerBlock block = this->_server.getBlock();
+		std::map<int, std::string> errorPages = block.getErrorPages();
+		std::string rootPath = block.getRoot().second;
 
-        this->response.setErrorPageConfig(&errorPages, rootPath);
+		this->response.setErrorPageConfig(&errorPages, rootPath);
 
-        // Validar URI
-        if (req.getUri().empty() || req.getUri()[0] != '/')
-        {
-            this->response.setErrorPage(404);
-            return;
-        }
+		// Validar URI
+		if (req.getUri().empty() || req.getUri()[0] != '/')
+		{
+			this->response.setErrorPage(404);
+			return;
+		}
 
-        // Validar método (retorna 405 se não suportado)
-        if (req.getMethod() != "GET" &&
-            req.getMethod() != "POST" &&
-            req.getMethod() != "DELETE")
-        {
-			std::string reqMethod = req.getMethod()
+		// Validar método (retorna 405 se não suportado)
+		if (req.getMethod() != "GET" &&
+			req.getMethod() != "POST" &&
+			req.getMethod() != "DELETE")
+		{
+			std::string reqMethod = req.getMethod();
 			Logger::error("Method not allowed: " << reqMethod);
-            this->response.setErrorPage(405);
-            return;
-        }
+			this->response.setErrorPage(405);
+			return;
+		}
 
-        // Processar requisição
-        this->response = this->response.dispatchRequest(req);
+		// Processar requisição
+		this->response = this->response.dispatchRequest(req);
 
-        // Manter a configuração de error pages após dispatch
-        this->response.setErrorPageConfig(&errorPages, rootPath);
-    }
-    catch (std::exception &error)
-    {
-        std::cerr << "Error processing request: " << error.what() << std::endl;
+		// Manter a configuração de error pages após dispatch
+		this->response.setErrorPageConfig(&errorPages, rootPath);
+	}
+	catch (std::exception &error)
+	{
+		std::cerr << "Error processing request: " << error.what() << std::endl;
 
-        // Garantir que error page config está disponível
-        ServerBlock block = this->_server.getBlock();
-        std::map<int, std::string> errorPages = block.getErrorPages();
-        std::string rootPath = block.getRoot().second;
-        this->response.setErrorPageConfig(&errorPages, rootPath);
+		// Garantir que error page config está disponível
+		ServerBlock block = this->_server.getBlock();
+		std::map<int, std::string> errorPages = block.getErrorPages();
+		std::string rootPath = block.getRoot().second;
+		this->response.setErrorPageConfig(&errorPages, rootPath);
 
-        this->response.setErrorPage(400);
-    }
+		this->response.setErrorPage(400);
+	}
 }
 
 bool Client::sendResponse(const std::string &responseStr)
