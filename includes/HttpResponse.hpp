@@ -6,7 +6,7 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:08 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/02 10:54:36 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/08 10:33:26 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 # include "HttpRequest.hpp"
 # include <sys/stat.h>
 # include <sys/types.h>
+# include <unistd.h>
 # include <ctime>
 
 // Forward declaration

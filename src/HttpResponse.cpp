@@ -6,11 +6,7 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-<<<<<<< HEAD
-/*   Updated: 2025/12/05 10:01:58 by btaveira         ###   ########.fr       */
-=======
-/*   Updated: 2025/12/04 10:23:41 by btaveira         ###   ########.fr       */
->>>>>>> parent of 2fb214d (feat: erro de POST com body size = 0 corrigido)
+/*   Updated: 2025/12/08 10:33:04 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -349,131 +345,114 @@ HttpResponse HttpResponse::handleCGI(const HttpRequest &req) {
 
 
 HttpResponse	HttpResponse::handleGet(const HttpRequest &req){
-    HttpResponse res;
-    
-    // Copiar configuração de error pages
-    res.setErrorPageConfig(this->_errorPages, this->_rootPath);
-    
-    std::string path = this->_rootPath + req.getUri();
-    std::string uri = req.getUri();
-
-    // 1. Verificar se o recurso existe
-    struct stat pathStat;
-    bool resourceExists = (stat(path.c_str(), &pathStat) == 0);
-
-    // 2. Se existe, verificar se é diretório
-    if (resourceExists && S_ISDIR(pathStat.st_mode)) {
-        // É um diretório existente - retornar 200 com body vazio
-        std::cout << "[GET] Diretório acessado: " << path << std::endl;
-        res.setStatus(200, "OK");
-        res.setBody("", "text/html");
-        return res;
-    }
-
-    // 3. Se não existe, verificar se é um diretório (pela URI)
-    if (!resourceExists) {
-        // Critérios para identificar diretório:
-        // - Termina com /
-        // - Não tem extensão (sem ponto após última barra)
-        bool endsWithSlash = (!uri.empty() && uri[uri.length() - 1] == '/');
-        
-        size_t lastSlash = uri.find_last_of('/');
-        size_t lastDot = uri.find_last_of('.');
-        bool hasExtension = (lastDot != std::string::npos && 
-                            (lastSlash == std::string::npos || lastDot > lastSlash));
-        
-        if (endsWithSlash || !hasExtension) {
-            // Parece ser um diretório - retornar 200 com body vazio
-            std::cout << "[GET] Diretório inexistente (URI), retornando 200: " << path << std::endl;
-            res.setStatus(200, "OK");
-            res.setBody("", "text/html");
-            return res;
-        }
-        
-        // É um arquivo que não existe - retornar 404
-        std::cerr << "[GET] Arquivo não encontrado: " << path << std::endl;
-        res.setErrorPage(404);
-        return res;
-    }
-
-    // 4. Existe e é um arquivo - tentar abrir
-    std::ifstream file(path.c_str(), std::ios::binary);
-    if (!file) {
-        // Erro ao abrir arquivo
-        std::cerr << "[GET] Erro ao abrir arquivo: " << path << std::endl;
-        res.setErrorPage(404);
-        return res;
-    }
-
-    // 5. Ler arquivo e retornar conteúdo
-    std::ostringstream buffer;
-    buffer << file.rdbuf();
-    res.setStatus(200, "OK");
-    res.setBody(buffer.str(), "text/html");
-    return res;
-};
-
-HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
 	HttpResponse res;
-
+	
+	// Copiar configuração de error pages
 	res.setErrorPageConfig(this->_errorPages, this->_rootPath);
 	
-	if (req.getBody().empty())
-	{
-		res.setErrorPage(400);
-		return res;
-	}
+	std::string path = this->_rootPath + req.getUri();
 
-	std::string uri = req.getUri();
-	
-	if (uri.find("/upload") != 0)
+	std::ifstream file(path.c_str(), std::ios::binary);
+	if (!file)
 	{
+		res.setStatus(404, "Not found");
 		res.setErrorPage(404);
 		return res;
 	}
 
-	// Verificar se há corpo na requisição
-	if (req.getBody().empty()) {
-		res.setStatus(400, "Bad Request");
-		res.setBody("<h1>400 Bad Request</h1><p>No data to upload</p>", "text/html");
-		return res;
-	}
-
-	// Criar diretório uploads se não existir
-	std::string uploadDir = "./uploads";
-	struct stat st;
-	if (stat(uploadDir.c_str(), &st) == -1) {
-		if (mkdir(uploadDir.c_str(), 0755) != 0) {
-			res.setStatus(500, "Internal Server Error");
-			res.setBody("<h1>500 Internal Server Error</h1><p>Could not create uploads directory</p>", "text/html");
-			return res;
-		}
-	}
-
-	// Gerar nome de arquivo único (timestamp)
-	std::time_t now = std::time(0);
-	std::ostringstream filename;
-	filename << "./uploads/upload_" << now << ".txt";
-
-	std::string path = filename.str();
-
-	std::ofstream file(path.c_str());
-	if (!file) {
-		res.setStatus(500, "Internal Server Error");
-		res.setBody("<h1>500 Internal Server Error</h1><p>Could not create file</p>", "text/html");
-		return res;
-	}
-
-	file << req.getBody();
-	file.close();
-
-	res.setStatus(201, "Created");
-	std::ostringstream bodyMsg;
-	bodyMsg << "<h1>File uploaded successfully!</h1>"
-			<< "<p>File saved to: " << path << "</p>"
-			<< "<p>Size: " << req.getBody().size() << " bytes</p>";
-	res.setBody(bodyMsg.str(), "text/html");
+	std::ostringstream buffer;
+	buffer << file.rdbuf();
+	res.setStatus(200, "OK");
+	res.setBody(buffer.str(), "text/html");
 	return res;
+};
+
+HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
+    HttpResponse res;
+    res.setErrorPageConfig(this->_errorPages, this->_rootPath);
+    
+    std::string uri = req.getUri();
+    
+    // 1. Verificar se a URI suporta POST
+    // Apenas /upload e scripts .py aceitam POST
+    bool isUploadEndpoint = (uri.find("/upload") == 0);
+    bool isPythonScript = (uri.find(".py") != std::string::npos);
+    
+    if (!isUploadEndpoint && !isPythonScript)
+    {
+        // POST não permitido para esta URI
+        std::cerr << "[POST] URI não suporta POST: " << uri << std::endl;
+        res.setErrorPage(405);  // Method Not Allowed
+        return res;
+    }
+    
+    // 2. Se for script Python, redirecionar para CGI
+    if (isPythonScript)
+    {
+        std::cout << "[POST] Redirecionando para handleCGI" << std::endl;
+        return handleCGI(req);
+    }
+    
+    // 3. Processar upload (apenas para /upload)
+    
+    // Se o body estiver vazio, retornar 200 OK com mensagem informativa
+    // (RFC 7231: POST não precisa criar recurso)
+    if (req.getBody().empty()) {
+        std::cout << "[POST] Body vazio, retornando 200 OK" << std::endl;
+        res.setStatus(200, "OK");
+        res.setBody(
+            "<h1>200 OK</h1>"
+            "<p>POST request processed successfully.</p>"
+            "<p>No data was uploaded (empty body).</p>",
+            "text/html"
+        );
+        return res;
+    }
+
+    // Criar diretório uploads se não existir
+    std::string uploadDir = "./uploads";
+    struct stat st;
+    if (stat(uploadDir.c_str(), &st) == -1) {
+        if (mkdir(uploadDir.c_str(), 0755) != 0) {
+            std::cerr << "[POST] Erro ao criar diretório uploads: " 
+                      << strerror(errno) << std::endl;
+            res.setStatus(500, "Internal Server Error");
+            res.setBody("<h1>500 Internal Server Error</h1>"
+                       "<p>Could not create uploads directory</p>", "text/html");
+            return res;
+        }
+    }
+
+    // Gerar nome de arquivo único (timestamp)
+    std::time_t now = std::time(0);
+    std::ostringstream filename;
+    filename << "./uploads/upload_" << now << ".txt";
+
+    std::string path = filename.str();
+
+    // Salvar arquivo
+    std::ofstream file(path.c_str());
+    if (!file) {
+        std::cerr << "[POST] Erro ao criar arquivo: " << path << std::endl;
+        res.setStatus(500, "Internal Server Error");
+        res.setBody("<h1>500 Internal Server Error</h1>"
+                   "<p>Could not create file</p>", "text/html");
+        return res;
+    }
+
+    file << req.getBody();
+    file.close();
+
+    std::cout << "[POST] Upload concluído: " << path 
+              << " (" << req.getBody().size() << " bytes)" << std::endl;
+
+    res.setStatus(201, "Created");
+    std::ostringstream bodyMsg;
+    bodyMsg << "<h1>✅ File uploaded successfully!</h1>"
+            << "<p><strong>File saved to:</strong> " << path << "</p>"
+            << "<p><strong>Size:</strong> " << req.getBody().size() << " bytes</p>";
+    res.setBody(bodyMsg.str(), "text/html");
+    return res;
 }
 
 HttpResponse	HttpResponse::handleDelete(const HttpRequest &req){
