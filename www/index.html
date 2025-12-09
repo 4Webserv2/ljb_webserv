@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebServ - Testes HTTP</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .test-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        .test-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="file"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .response {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+
+        .response.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .response h3 {
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+
+        .status-success {
+            color: #28a745;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .status-error {
+            color: #dc3545;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-top: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            background: #f8f9fa;
+            border: 2px dashed #667eea;
+            color: #667eea;
+            padding: 40px;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: block;
+        }
+
+        .file-input-label:hover {
+            background: #e9ecef;
+            border-color: #764ba2;
+        }
+
+        .file-input-label.has-file {
+            background: #e7f3ff;
+            border-color: #28a745;
+            color: #28a745;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 WebServ - HTTP Methods Tester</h1>
+
+        <!-- GET Test -->
+        <div class="test-section">
+            <h2>📥 GET Request</h2>
+            <div class="form-group">
+                <label for="get-path">Caminho do arquivo:</label>
+                <input type="text" id="get-path" value="/index.html" placeholder="/index.html">
+            </div>
+            <button onclick="testGet()">Executar GET</button>
+            
+            <div id="get-response" class="response">
+                <h3>Resposta:</h3>
+                <div id="get-status"></div>
+                <pre id="get-body"></pre>
+            </div>
+        </div>
+
+        <!-- POST Upload Text -->
+        <div class="test-section">
+            <h2>📤 POST Request - Upload de Texto</h2>
+            <div class="form-group">
+                <label for="post-text">Conteúdo do texto:</label>
+                <textarea id="post-text" placeholder="Digite o texto que deseja fazer upload...">Hello from WebServ!
+This is a test upload.
+Line 3 of text.</textarea>
+            </div>
+            <button onclick="uploadText()">Upload Texto</button>
+            
+            <div id="text-response" class="response">
+                <h3>Resposta:</h3>
+                <div id="text-status"></div>
+                <pre id="text-body"></pre>
+            </div>
+        </div>
+
+        <!-- POST Upload File -->
+        <div class="test-section">
+            <h2>📎 POST Request - Upload de Arquivo(s)</h2>
+            <div class="form-group">
+                <label>Selecione um ou mais arquivos:</label>
+                <div class="file-input-wrapper">
+                    <label id="file-label" class="file-input-label" for="file-input">
+                        📁 Clique aqui ou arraste arquivos<br>
+                        <small>Suporta múltiplos arquivos</small>
+                    </label>
+                    <input type="file" id="file-input" multiple onchange="updateFileLabel()">
+                </div>
+            </div>
+            <button onclick="uploadFile()">Upload Arquivo(s)</button>
+            
+            <div id="file-response" class="response">
+                <h3>Resposta:</h3>
+                <div id="file-status"></div>
+                <pre id="file-body"></pre>
+            </div>
+        </div>
+
+        <!-- POST CGI Python -->
+        <div class="test-section">
+            <h2>🐍 POST Request - CGI Python</h2>
+            <div class="form-group">
+                <label for="cgi-data">Dados para enviar ao script:</label>
+                <textarea id="cgi-data" placeholder="name=John&age=30">name=Bruno&email=test@example.com&message=Hello from CGI!</textarea>
+            </div>
+            <button onclick="testCGI()">Executar CGI</button>
+            
+            <div id="cgi-response" class="response">
+                <h3>Resposta:</h3>
+                <div id="cgi-status"></div>
+                <pre id="cgi-body"></pre>
+            </div>
+        </div>
+
+        <!-- DELETE Test -->
+        <div class="test-section">
+            <h2>🗑️ DELETE Request</h2>
+            <div class="form-group">
+                <label for="delete-path">Caminho do arquivo para deletar:</label>
+                <input type="text" id="delete-path" value="/test_delete.txt" placeholder="/test_delete.txt">
+            </div>
+            <div class="button-group">
+                <button onclick="createTestFile()">1. Criar Arquivo de Teste</button>
+                <button onclick="testDelete()">2. Deletar Arquivo</button>
+            </div>
+            
+            <div id="delete-response" class="response">
+                <h3>Resposta:</h3>
+                <div id="delete-status"></div>
+                <pre id="delete-body"></pre>
+            </div>
+        </div>
+
+        <!-- Multiple Tests -->
+        <div class="test-section">
+            <h2>⚡ Testes Rápidos</h2>
+            <div class="grid-2">
+                <div>
+                    <h3 style="margin-bottom: 10px;">Status Codes</h3>
+                    <button onclick="testQuick('/index.html', 'GET')">200 OK</button>
+                    <button onclick="testQuick('/notfound.html', 'GET')">404 Not Found</button>
+                    <button onclick="testQuick('/', 'POST')">405 Not Allowed</button>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 10px;">Diferentes Arquivos</h3>
+                    <button onclick="testQuick('/style.css', 'GET')">CSS File</button>
+                    <button onclick="testQuick('/test.py', 'GET')">Python Script</button>
+                </div>
+            </div>
+            
+            <div id="quick-response" class="response">
+                <h3>Resposta:</h3>
+                <div id="quick-status"></div>
+                <pre id="quick-body"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showResponse(sectionId, status, body) {
+            const responseDiv = document.getElementById(sectionId + '-response');
+            const statusDiv = document.getElementById(sectionId + '-status');
+            const bodyPre = document.getElementById(sectionId + '-body');
+            
+            const statusClass = status >= 200 && status < 300 ? 'status-success' : 'status-error';
+            statusDiv.innerHTML = `<span class="${statusClass}">Status: ${status}</span>`;
+            bodyPre.textContent = typeof body === 'string' ? body : JSON.stringify(body, null, 2);
+            
+            responseDiv.classList.add('show');
+        }
+
+        // GET Test
+        async function testGet() {
+            const path = document.getElementById('get-path').value;
+            
+            try {
+                const response = await fetch(path, {
+                    method: 'GET'
+                });
+                
+                const body = await response.text();
+                showResponse('get', response.status, body);
+            } catch (error) {
+                showResponse('get', 0, 'Erro: ' + error.message);
+            }
+        }
+
+        // POST Upload Text
+        async function uploadText() {
+            const text = document.getElementById('post-text').value;
+            
+            if (!text) {
+                alert('Digite algum texto!');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    },
+                    body: text
+                });
+                
+                const body = await response.text();
+                showResponse('text', response.status, body);
+            } catch (error) {
+                showResponse('text', 0, 'Erro: ' + error.message);
+            }
+        }
+
+        // POST Upload File
+        function updateFileLabel() {
+            const fileInput = document.getElementById('file-input');
+            const label = document.getElementById('file-label');
+            
+            if (fileInput.files.length > 0) {
+                const fileNames = Array.from(fileInput.files).map(f => f.name).join(', ');
+                label.innerHTML = `✅ ${fileInput.files.length} arquivo(s) selecionado(s):<br><small>${fileNames}</small>`;
+                label.classList.add('has-file');
+            } else {
+                label.innerHTML = '📁 Clique aqui ou arraste arquivos<br><small>Suporta múltiplos arquivos</small>';
+                label.classList.remove('has-file');
+            }
+        }
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('file-input');
+            
+            if (fileInput.files.length === 0) {
+                alert('Selecione pelo menos um arquivo!');
+                return;
+            }
+            
+            const formData = new FormData();
+            
+            // Adicionar todos os arquivos
+            for (let i = 0; i < fileInput.files.length; i++) {
+                formData.append('file', fileInput.files[i]);
+            }
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const body = await response.text();
+                showResponse('file', response.status, body);
+            } catch (error) {
+                showResponse('file', 0, 'Erro: ' + error.message);
+            }
+        }
+
+        // POST CGI
+        async function testCGI() {
+            const data = document.getElementById('cgi-data').value;
+            
+            try {
+                const response = await fetch('/test.py', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: data
+                });
+                
+                const body = await response.text();
+                showResponse('cgi', response.status, body);
+            } catch (error) {
+                showResponse('cgi', 0, 'Erro: ' + error.message);
+            }
+        }
+
+        // DELETE Test
+        async function createTestFile() {
+            const path = document.getElementById('delete-path').value;
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    },
+                    body: 'This is a test file that will be deleted.'
+                });
+                
+                const body = await response.text();
+                showResponse('delete', response.status, 'Arquivo criado com sucesso!\n\n' + body);
+            } catch (error) {
+                showResponse('delete', 0, 'Erro ao criar arquivo: ' + error.message);
+            }
+        }
+
+        async function testDelete() {
+            const path = document.getElementById('delete-path').value;
+            
+            if (!confirm(`Tem certeza que deseja deletar: ${path}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(path, {
+                    method: 'DELETE'
+                });
+                
+                const body = await response.text();
+                showResponse('delete', response.status, body);
+            } catch (error) {
+                showResponse('delete', 0, 'Erro: ' + error.message);
+            }
+        }
+
+        // Quick Tests
+        async function testQuick(path, method) {
+            try {
+                const response = await fetch(path, {
+                    method: method
+                });
+                
+                const body = await response.text();
+                showResponse('quick', response.status, `${method} ${path}\n\n${body}`);
+            } catch (error) {
+                showResponse('quick', 0, `${method} ${path}\n\nErro: ${error.message}`);
+            }
+        }
+
+        // Drag and drop support
+        const fileLabel = document.getElementById('file-label');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            fileLabel.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileLabel.addEventListener(eventName, () => {
+                fileLabel.style.borderColor = '#28a745';
+                fileLabel.style.background = '#e7f3ff';
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileLabel.addEventListener(eventName, () => {
+                fileLabel.style.borderColor = '#667eea';
+                fileLabel.style.background = '#f8f9fa';
+            }, false);
+        });
+
+        fileLabel.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            document.getElementById('file-input').files = files;
+            updateFileLabel();
+        }, false);
+    </script>
+</body>
+</html>

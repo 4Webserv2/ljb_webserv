@@ -6,7 +6,7 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/08 10:33:04 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/09 09:55:28 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -374,20 +374,19 @@ HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
     std::string uri = req.getUri();
     
     // 1. Verificar se a URI suporta POST
-    // Apenas /upload e scripts .py aceitam POST
     bool isUploadEndpoint = (uri.find("/upload") == 0);
     bool isPythonScript = (uri.find(".py") != std::string::npos);
+    bool isBlaScript = (uri.find(".bla") != std::string::npos);
     
-    if (!isUploadEndpoint && !isPythonScript)
+    if (!isUploadEndpoint && !isPythonScript && !isBlaScript)
     {
-        // POST não permitido para esta URI
         std::cerr << "[POST] URI não suporta POST: " << uri << std::endl;
-        res.setErrorPage(405);  // Method Not Allowed
+        res.setErrorPage(405);
         return res;
     }
     
-    // 2. Se for script Python, redirecionar para CGI
-    if (isPythonScript)
+    // 2. Se for script (.py ou .bla), redirecionar para CGI
+    if (isPythonScript || isBlaScript)
     {
         std::cout << "[POST] Redirecionando para handleCGI" << std::endl;
         return handleCGI(req);
@@ -395,8 +394,7 @@ HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
     
     // 3. Processar upload (apenas para /upload)
     
-    // Se o body estiver vazio, retornar 200 OK com mensagem informativa
-    // (RFC 7231: POST não precisa criar recurso)
+    // Se o body estiver vazio, retornar 200 OK
     if (req.getBody().empty()) {
         std::cout << "[POST] Body vazio, retornando 200 OK" << std::endl;
         res.setStatus(200, "OK");
@@ -416,27 +414,42 @@ HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
         if (mkdir(uploadDir.c_str(), 0755) != 0) {
             std::cerr << "[POST] Erro ao criar diretório uploads: " 
                       << strerror(errno) << std::endl;
-            res.setStatus(500, "Internal Server Error");
-            res.setBody("<h1>500 Internal Server Error</h1>"
-                       "<p>Could not create uploads directory</p>", "text/html");
+            res.setErrorPage(500);
             return res;
         }
     }
 
+    // Verificar se é multipart/form-data (upload de arquivo)
+    std::string contentType = req.getHeader("Content-Type");
+    
+    if (contentType.find("multipart/form-data") != std::string::npos) {
+        // Upload de arquivo com multipart
+        std::cout << "[POST] Processando multipart/form-data upload" << std::endl;
+        return handleMultipartUpload(req, uploadDir, res);
+    } else {
+        // Upload simples (texto/dados brutos)
+        std::cout << "[POST] Processando upload simples" << std::endl;
+        return handleSimpleUpload(req, uploadDir, res);
+    }
+}
+
+// Novo método: Upload simples
+HttpResponse HttpResponse::handleSimpleUpload(const HttpRequest &req, 
+                                               const std::string &uploadDir, 
+                                               HttpResponse &res)
+{
     // Gerar nome de arquivo único (timestamp)
     std::time_t now = std::time(0);
     std::ostringstream filename;
-    filename << "./uploads/upload_" << now << ".txt";
+    filename << uploadDir << "/upload_" << now << ".txt";
 
     std::string path = filename.str();
 
     // Salvar arquivo
-    std::ofstream file(path.c_str());
+    std::ofstream file(path.c_str(), std::ios::binary);
     if (!file) {
         std::cerr << "[POST] Erro ao criar arquivo: " << path << std::endl;
-        res.setStatus(500, "Internal Server Error");
-        res.setBody("<h1>500 Internal Server Error</h1>"
-                   "<p>Could not create file</p>", "text/html");
+        res.setErrorPage(500);
         return res;
     }
 
@@ -453,6 +466,181 @@ HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
             << "<p><strong>Size:</strong> " << req.getBody().size() << " bytes</p>";
     res.setBody(bodyMsg.str(), "text/html");
     return res;
+}
+
+// Novo método: Upload multipart (arquivos)
+HttpResponse HttpResponse::handleMultipartUpload(const HttpRequest &req, 
+                                                  const std::string &uploadDir, 
+                                                  HttpResponse &res)
+{
+    std::string contentType = req.getHeader("Content-Type");
+    std::string body = req.getBody();
+    
+    std::cout << "[Multipart] Content-Type: " << contentType << std::endl;
+    std::cout << "[Multipart] Body size: " << body.size() << " bytes" << std::endl;
+    
+    // Extrair boundary do Content-Type
+    // Ex: multipart/form-data; boundary=----WebKitFormBoundaryFR0Yj9bGrUMTGTjp
+    size_t boundaryPos = contentType.find("boundary=");
+    if (boundaryPos == std::string::npos) {
+        std::cerr << "[POST] Boundary não encontrado no Content-Type" << std::endl;
+        res.setErrorPage(400);
+        return res;
+    }
+    
+    // MELHORAR: Remover possíveis aspas ao redor do boundary
+    std::string boundaryValue = contentType.substr(boundaryPos + 9);
+    
+    // Remover espaços, tabs, aspas
+    while (!boundaryValue.empty() && 
+           (boundaryValue[0] == ' ' || boundaryValue[0] == '\t' || boundaryValue[0] == '"')) {
+        boundaryValue.erase(0, 1);
+    }
+    while (!boundaryValue.empty() && 
+           (boundaryValue[boundaryValue.length()-1] == ' ' || 
+            boundaryValue[boundaryValue.length()-1] == '\t' ||
+            boundaryValue[boundaryValue.length()-1] == '"' ||
+            boundaryValue[boundaryValue.length()-1] == '\r' ||
+            boundaryValue[boundaryValue.length()-1] == '\n')) {
+        boundaryValue.erase(boundaryValue.length()-1);
+    }
+    
+    std::string boundary = "--" + boundaryValue;
+    std::cout << "[Multipart] Boundary: '" << boundary << "'" << std::endl;
+    
+    // Debug: Mostrar primeiros 200 chars do body
+    std::cout << "[Multipart] Body preview: " 
+              << body.substr(0, std::min((size_t)200, body.size())) << std::endl;
+    
+    // Procurar pelo primeiro boundary
+    size_t startPos = body.find(boundary);
+    if (startPos == std::string::npos) {
+        std::cerr << "[POST] Boundary '" << boundary << "' não encontrado no body" << std::endl;
+        res.setErrorPage(400);
+        return res;
+    }
+    
+    std::cout << "[Multipart] Primeiro boundary encontrado na posição: " << startPos << std::endl;
+    
+    std::vector<std::string> uploadedFiles;
+    int partCount = 0;
+    
+    // Processar cada parte do multipart
+    while (startPos != std::string::npos) {
+        partCount++;
+        std::cout << "[Multipart] Processando parte #" << partCount << std::endl;
+        
+        // Encontrar o próximo boundary
+        size_t nextBoundary = body.find(boundary, startPos + boundary.length());
+        if (nextBoundary == std::string::npos)
+            break;
+        
+        // Extrair a parte entre os boundaries
+        std::string part = body.substr(startPos + boundary.length(), 
+                                       nextBoundary - startPos - boundary.length());
+        
+        std::cout << "[Multipart] Tamanho da parte: " << part.size() << " bytes" << std::endl;
+        
+        // Procurar pelos headers da parte (terminam com \r\n\r\n)
+        size_t headerEnd = part.find("\r\n\r\n");
+        if (headerEnd == std::string::npos)
+            headerEnd = part.find("\n\n");
+        
+        if (headerEnd != std::string::npos) {
+            std::string headers = part.substr(0, headerEnd);
+            std::string fileData = part.substr(headerEnd + 
+                                              (part[headerEnd] == '\r' ? 4 : 2));
+            
+            std::cout << "[Multipart] Headers da parte: " << headers << std::endl;
+            
+            // Remover \r\n no final do fileData
+            while (!fileData.empty() && 
+                   (fileData[fileData.length() - 1] == '\r' || 
+                    fileData[fileData.length() - 1] == '\n')) {
+                fileData.erase(fileData.length() - 1);
+            }
+            
+            std::cout << "[Multipart] Dados do arquivo: " << fileData.size() << " bytes" << std::endl;
+            
+            // Extrair filename do header Content-Disposition
+            std::string filename = extractFilename(headers);
+            std::cout << "[Multipart] Filename extraído: '" << filename << "'" << std::endl;
+            
+            if (!filename.empty() && !fileData.empty()) {
+                // Gerar path único
+                std::time_t now = std::time(0);
+                std::ostringstream filepath;
+                filepath << uploadDir << "/" << now << "_" << filename;
+                
+                // Salvar arquivo
+                std::ofstream file(filepath.str().c_str(), std::ios::binary);
+                if (file) {
+                    file.write(fileData.c_str(), fileData.size());
+                    file.close();
+                    
+                    uploadedFiles.push_back(filepath.str());
+                    std::cout << "[POST] ✅ Arquivo salvo: " << filepath.str() 
+                              << " (" << fileData.size() << " bytes)" << std::endl;
+                } else {
+                    std::cerr << "[POST] ❌ Erro ao salvar arquivo: " 
+                              << filepath.str() << std::endl;
+                }
+            } else {
+                std::cout << "[Multipart] ⚠️ Parte ignorada (filename vazio ou sem dados)" << std::endl;
+            }
+        }
+        
+        startPos = nextBoundary;
+    }
+    
+    std::cout << "[Multipart] Total de partes processadas: " << partCount << std::endl;
+    std::cout << "[Multipart] Arquivos salvos: " << uploadedFiles.size() << std::endl;
+    
+    // Montar resposta
+    if (uploadedFiles.empty()) {
+        res.setStatus(400, "Bad Request");
+        res.setBody("<h1>❌ No files uploaded</h1>"
+                   "<p>No valid files were found in the request.</p>", "text/html");
+        return res;
+    }
+    
+    res.setStatus(201, "Created");
+    std::ostringstream bodyMsg;
+    bodyMsg << "<h1>✅ Files uploaded successfully!</h1>";
+    bodyMsg << "<p><strong>Total files:</strong> " << uploadedFiles.size() << "</p>";
+    bodyMsg << "<h2>Uploaded files:</h2><ul>";
+    
+    for (size_t i = 0; i < uploadedFiles.size(); i++) {
+        bodyMsg << "<li>" << uploadedFiles[i] << "</li>";
+    }
+    bodyMsg << "</ul>";
+    
+    res.setBody(bodyMsg.str(), "text/html");
+    return res;
+}
+
+// Função auxiliar: extrair filename do header Content-Disposition
+std::string HttpResponse::extractFilename(const std::string &headers)
+{
+    // Procurar por filename="..."
+    size_t filenamePos = headers.find("filename=\"");
+    if (filenamePos == std::string::npos)
+        return "";
+    
+    size_t start = filenamePos + 10; // Pular filename="
+    size_t end = headers.find("\"", start);
+    
+    if (end == std::string::npos)
+        return "";
+    
+    std::string filename = headers.substr(start, end - start);
+    
+    // Sanitizar filename (remover path traversal)
+    size_t lastSlash = filename.find_last_of("/\\");
+    if (lastSlash != std::string::npos)
+        filename = filename.substr(lastSlash + 1);
+    
+    return filename;
 }
 
 HttpResponse	HttpResponse::handleDelete(const HttpRequest &req){
