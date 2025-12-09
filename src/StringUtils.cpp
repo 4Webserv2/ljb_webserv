@@ -55,3 +55,9 @@ void StringUtils::errorAndCerr(const std::string &msg) {
 	std::cerr << msg << std::endl;
 }
 
+std::string StringUtils::size_tToString(size_t n) {
+	std::ostringstream oss;
+	oss << n;
+	return oss.str();
+}
+

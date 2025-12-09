@@ -26,4 +26,6 @@ public:
 	static std::string ostreamToString(std::string ss);
 	//Além de usar Logger::error, joga o erro pro std::cerr
 	static void errorAndCerr(const std::string &msg);
+	//Passa size_t para string
+	static std::string size_tToString(size_t n);
 };
