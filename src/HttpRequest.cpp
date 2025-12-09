@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:32 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/02 12:40:06 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/09 13:58:03 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,12 +23,12 @@ void HttpRequest::parseRequestLine(std::istringstream &stream, HttpParse &parse)
         // Remove \r se existir
         if (!line.empty() && line[line.size() - 1] == '\r')
             line.erase(line.size() - 1);
-        
+
         std::istringstream first_line(line);
         first_line >> parse.method >> parse.uri >> parse.version;
 
         if (parse.method.empty() || parse.uri.empty() || parse.version.empty())
-            throw std::runtime_error("Request line malformada: campos ausentes");
+            throw std::runtime_error("Malformed request line: missing fields");
     }
 }
 
@@ -37,18 +37,19 @@ std::string HttpRequest::unfoldHeader(const std::string &value) {
     // Um header "folded" tem \r\n seguido de espaço/tab
     std::string result = value;
     size_t pos = 0;
-    
+
     while ((pos = result.find("\r\n", pos)) != std::string::npos) {
         // Verificar se após \r\n há um espaço ou tab
-        if (pos + 2 < result.length() && 
+        if (pos + 2 < result.length() &&
             (result[pos + 2] == ' ' || result[pos + 2] == '\t')) {
             // Substituir \r\n + espaço por um único espaço
             result.replace(pos, 3, " ");
-        } else {
+        }
+		else {
             break;
         }
     }
-    
+
     return result;
 }
 
@@ -56,16 +57,16 @@ void HttpRequest::parseHeaders(std::istringstream &stream, HttpParse &parse) {
     std::string line;
     std::string currentHeader;
     std::string currentValue;
-    
+
     while (std::getline(stream, line)) {
         // Remover \r se existir
         if (!line.empty() && line[line.size() - 1] == '\r')
             line.erase(line.size() - 1);
-        
+
         // Fim dos headers (linha vazia)
         if (line.empty())
             break;
-        
+
         // Verificar se é uma continuação (folded header)
         // Linha começa com espaço ou tab
         if (!line.empty() && (line[0] == ' ' || line[0] == '\t')) {
@@ -75,12 +76,12 @@ void HttpRequest::parseHeaders(std::istringstream &stream, HttpParse &parse) {
             }
             continue;
         }
-        
+
         // Se temos um header anterior, salvá-lo
         if (!currentHeader.empty()) {
             std::string normalizedKey = StringUtils::normalizeHeaderName(currentHeader);
             std::string trimmedValue = StringUtils::trim(currentValue);
-            
+
             // Tratar headers duplicados
             if (parse.headers.count(normalizedKey) > 0) {
                 // RFC 7230: Combinar valores com vírgula
@@ -90,28 +91,29 @@ void HttpRequest::parseHeaders(std::istringstream &stream, HttpParse &parse) {
                 parse.headers[normalizedKey] = trimmedValue;
             }
         }
-        
+
         // Processar novo header
         size_t colonPos = line.find(':');
         if (colonPos != std::string::npos) {
             currentHeader = line.substr(0, colonPos);
             currentValue = line.substr(colonPos + 1);
-            
+
             // Unfold se necessário
             currentValue = unfoldHeader(currentValue);
         } else {
             // Header malformado - ignorar
-            std::cerr << "AVISO: Header malformado ignorado: " << line << std::endl;
+			Logger::warning(std::string("Malformed header ignored: ") + line);
+			std::cerr << "WARNING: Malformed header ignored: " << line << std::endl;
             currentHeader.clear();
             currentValue.clear();
         }
     }
-    
+
     // Salvar último header se existir
     if (!currentHeader.empty()) {
         std::string normalizedKey = StringUtils::normalizeHeaderName(currentHeader);
         std::string trimmedValue = StringUtils::trim(currentValue);
-        
+
         if (parse.headers.count(normalizedKey) > 0) {
             parse.headers[normalizedKey] += ", " + trimmedValue;
         } else {
@@ -164,11 +166,11 @@ std::string HttpRequest::getBody() const {
 // Getter case-insensitive para um header específico
 std::string HttpRequest::getHeader(const std::string &name) const {
     std::string normalizedName = StringUtils::normalizeHeaderName(name);
-    
+
     std::map<std::string, std::string>::const_iterator it = this->_par.headers.find(normalizedName);
     if (it != this->_par.headers.end())
         return it->second;
-    
+
     return "";
 }
 
