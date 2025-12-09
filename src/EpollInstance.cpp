@@ -3,15 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   EpollInstance.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/13 20:46:14 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 07:50:43 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/09 13:53:03 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/EpollInstance.hpp"
 #include "../includes/EpollHandler.hpp"
+#include "../includes/Logger.hpp"
+#include "../includes/StringUtils.hpp"
 
 EpollInstance *EpollInstance::_run = NULL;
 
@@ -51,7 +53,7 @@ void EpollInstance::initEpollRun(void)
 		_run->_epollFd = epoll_create(1);
 		if (_run->_epollFd == -1)
 			throw (std::runtime_error("Cannot Init Epoll!"));
-		std::cout << "Epoll created!" << std::endl;
+		Logger::info("Epoll created!");
 	}
 }
 
@@ -74,17 +76,21 @@ void EpollInstance::manipInterestList(int operation, EpollHandler *handler) {
 
 	struct epoll_event data;
 	data.events = handler->getActiveEvents();
-	std::cout << "Dentro do manipInterest. FD: " << handler->getSocketFd() << std::endl;
+	Logger::info("Inside manipInterest. FD: " + StringUtils::intToString(handler->getSocketFd()));
+
 	data.data.ptr = handler;
 	if (operation == EPOLL_CTL_ADD)
 		_run->_epollHandlers[handler->getSocketFd()] = handler;
 
 	if (epoll_ctl(_run->_epollFd, operation, handler->getSocketFd(), &data) == -1)
 	{
-		std::cerr << "epoll_ctl failed: op=" << operation << " fd=" << handler->getSocketFd() << " errno=" << errno << " (" << strerror(errno) << ")\n";
+		StringUtils::errorAndCerr("epoll_ctl failed: op=" + StringUtils::intToString(operation)
+		+ " fd=" + StringUtils::intToString(handler->getSocketFd())
+		+ " errno=" + StringUtils::intToString(errno) + " (" + std::string(strerror(errno)) + ")");
+
 		throw(EpollInstance::CannotManipulate());
 	}
-	std::cout << "Manipulação feita com sucesso!" << std::endl;
+	Logger::info("Epoll Manipulation ompleted successfully!");
 }
 
 int EpollInstance::manipEpollWait(void)
@@ -127,5 +133,5 @@ struct epoll_event &EpollInstance::getElementFromEventsList(int i)
 
 const char * EpollInstance::CannotManipulate::what() const throw()
 {
-	return ("Error: error in controling the epoll instance with epoll_ctl().");
+	return (Logger::error("Controling the epoll instance with epoll_ctl()."));
 }
