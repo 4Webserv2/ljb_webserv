@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:32:41 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 15:00:25 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/09 15:05:15 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -151,90 +151,76 @@ void RunTime::setRunning(bool running) {
 }
 
 void RunTime::closeAllClients() {
-    if (_runtime == NULL) {
-		return ;
+	if (_runtime == NULL) {
+		return;
 	}
 
-	Logger::info(std::string("[SHUTDOWN] Closing ")
-		+ StringUtils::size_tToString(_runtime->_clients.size())
-		+ " client connections...");
+	std::string msg = "[SHUTDOWN] Closing " +
+		StringUtils::size_tToString(_runtime->_clients.size()) +
+		" client connections...";
+	Logger::info(msg);
 
-    // Copiar as chaves para evitar invalidação de iterador
-    std::vector<int> clientFds;
-    for (std::map<int, Client>::iterator it = _runtime->_clients.begin();
-         it != _runtime->_clients.end(); ++it) {
-        clientFds.push_back(it->first);
-    }
+	// Copiar os FDs para evitar invalidação do iterador
+	std::vector<int> clientFds;
+	for (std::map<int, Client>::iterator it = _runtime->_clients.begin();
+		it != _runtime->_clients.end(); ++it)
+	{
+		clientFds.push_back(it->first);
+	}
 
-    // Fechar cada cliente
-    for (size_t i = 0; i < clientFds.size(); i++) {
-        int fd = clientFds[i];
+	// Fechar cada cliente
+	for (size_t i = 0; i < clientFds.size(); i++) {
+		int fd = clientFds[i];
+		std::map<int, Client>::iterator it = _runtime->_clients.find(fd);
+		if (it != _runtime->_clients.end()) {
+			const char shutdownMsg[] =
+				"HTTP/1.1 503 Service Unavailable\r\n"
+				"Connection: close\r\n"
+				"Content-Type: text/html\r\n"
+				"Content-Length: 79\r\n"
+				"\r\n"
+				"<html><body><h1>503 Service Unavailable</h1>"
+				"<p>Server shutting down</p></body></html>";
 
-        // Enviar mensagem de encerramento se houver resposta pendente
-        std::map<int, Client>::iterator it = _runtime->_clients.find(fd);
-        if (it != _runtime->_clients.end()) {
-            // Tentar enviar resposta final
-            const char shutdownMsg[] =
-                "HTTP/1.1 503 Service Unavailable\r\n"
-                "Connection: close\r\n"
-                "Content-Type: text/html\r\n"
-                "Content-Length: 79\r\n"
-                "\r\n"
-                "<html><body><h1>503 Service Unavailable</h1>"
-                "<p>Server shutting down</p></body></html>";
+			send(fd, shutdownMsg, sizeof(shutdownMsg) - 1, MSG_NOSIGNAL);
+		}
 
-            send(fd, shutdownMsg, sizeof(shutdownMsg) - 1, MSG_NOSIGNAL);
-        }
-
-        // Remover do epoll
-        epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_DEL, fd, NULL);
-
-        // Fechar socket
-        close(fd);
+		epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_DEL, fd, NULL);
+		close(fd);
 
 		Logger::info("[SHUTDOWN] Client fd = " + StringUtils::intToString(fd) + " closed");
 	}
 
-    // Limpar mapa de clientes
-    _runtime->_clients.clear();
-
+	_runtime->_clients.clear();
 	Logger::info("[SHUTDOWN] All clients have been disconnected");
 }
 
 void RunTime::closeAllServers() {
-    if (_runtime == NULL) {
+	if (_runtime == NULL) {
 		return;
 	}
 
-	Logger::info("[SHUTDOWN] Closing "
-		+ StringUtils::size_tToString(_runtime->_sListeners.size())
-		+ " server sockets...");
+	std::string msg = "[SHUTDOWN] Closing " +
+		StringUtils::size_tToString(_runtime->_sListeners.size()) +
+		" server sockets...";
+	Logger::info(msg);
 
-    for (size_t i = 0; i < _runtime->_sListeners.size(); i++) {
-        int fd = _runtime->_sListeners[i].getSocketFd();
+	for (size_t i = 0; i < _runtime->_sListeners.size(); i++) {
+		int fd = _runtime->_sListeners[i].getSocketFd();
+		epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_DEL, fd, NULL);
+		close(fd);
 
-        // Remover do epoll
-        epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_DEL, fd, NULL);
+		std::cout << "[SHUTDOWN] Server fd=" << fd
+				<< " (port " << _runtime->_sListeners[i].getPort()
+				<< ") closed" << std::endl;
+	}
 
-        // Fechar socket
-        close(fd);
-
-        std::cout << "[SHUTDOWN] Servidor fd=" << fd
-                  << " (porta " << _runtime->_sListeners[i].getPort()
-                  << ") fechado" << std::endl;
-    }
-
-    _runtime->_sListeners.clear();
-
-	Logger::info("[SHUTDOWN] Closing "
-		+ StringUtils::size_tToString(_runtime->_sListeners.size())
-		+ " server sockets...");
-
+	_runtime->_sListeners.clear();
 	Logger::info("[SHUTDOWN] All server sockets have been closed");
 }
 
 void RunTime::gracefulShutdown() {
-    if (_runtime == NULL) {
+	if (_runtime == NULL) {
 		return;
 	}
 
@@ -242,22 +228,16 @@ void RunTime::gracefulShutdown() {
 	Logger::info("[SHUTDOWN] Starting graceful shutdown...");
 	Logger::info("========================================");
 
-    // Marcar como não mais em execução
-    _runtime->_running = false;
+	_runtime->_running = false;
 
-    // 1. Parar de aceitar novas conexões (fechar listeners)
-    closeAllServers();
+	closeAllServers();
+	closeAllClients();
 
-    // 2. Fechar conexões de clientes existentes
-    closeAllClients();
+	Logger::info("[SHUTDOWN] Closing epoll...");
+	close(EpollInstance::getEpollFd());
 
-    // 3. Fechar epoll
-    Logger::info("[SHUTDOWN] Closing epoll...");
-    close(EpollInstance::getEpollFd());
-
-    // 4. Destruir runtime
-    Logger::info("[SHUTDOWN] Releasing runtime resources...");
-    destroyRuntime();
+	Logger::info("[SHUTDOWN] Releasing runtime resources...");
+	destroyRuntime();
 
 	Logger::info("========================================");
 	Logger::info("[SHUTDOWN] Graceful shutdown completed successfully!");
