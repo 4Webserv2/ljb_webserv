@@ -6,7 +6,7 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/02 12:40:36 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/09 10:15:26 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,34 +78,110 @@ void Client::setState(int state)
 void Client::concatenateRequestData(const std::string &data)
 {
     this->_rawRequest += data;
+    
+    std::cout << "[Client] Dados recebidos: +" << data.size() << " bytes (total: " << this->_rawRequest.size() << ")" << std::endl;
+    
     if (this->_state == STATE_READING_HEADER)
     {
         size_t headerEnd = this->_rawRequest.find("\r\n\r\n");
         if (headerEnd != std::string::npos)
         {
             this->setState(STATE_READING_BODY);
+            std::cout << "[Client] ✅ Headers completos! Mudando para STATE_READING_BODY" << std::endl;
+        }
+    }
+    
+    if (this->_state == STATE_READING_BODY)
+    {
+        // Encontrar fim dos headers
+        size_t headerEnd = this->_rawRequest.find("\r\n\r\n");
+        if (headerEnd == std::string::npos) {
+            std::cerr << "[Client] ❌ ERRO: STATE_READING_BODY mas headers não encontrados!" << std::endl;
+            return;
+        }
+        
+        // Extrair apenas a parte de headers para parsing rápido
+        std::string headersOnly = this->_rawRequest.substr(0, headerEnd + 4);
+        
+        // Procurar manualmente por Content-Length nos headers
+        std::string contentLengthStr;
+        std::string transferEncoding;
+        
+        std::istringstream headerStream(headersOnly);
+        std::string line;
+        
+        // Pular primeira linha (request line)
+        std::getline(headerStream, line);
+        
+        // Ler headers
+        while (std::getline(headerStream, line)) {
+            // Remover \r se existir
+            if (!line.empty() && line[line.size() - 1] == '\r')
+                line.erase(line.size() - 1);
             
-            // Parse parcial para pegar Content-Length
-            HttpRequest tempReq;
-            HttpParse tempParse = tempReq.httpParse(this->_rawRequest);
+            if (line.empty())
+                break;
             
-            // Usar getter case-insensitive
-            std::string contentLengthStr = tempReq.getHeader("Content-Length");
+            // Procurar por Content-Length ou Transfer-Encoding
+            if (line.find("content-length:") == 0 || line.find("Content-Length:") == 0) {
+                size_t colonPos = line.find(':');
+                contentLengthStr = line.substr(colonPos + 1);
+                // Trim
+                while (!contentLengthStr.empty() && std::isspace(contentLengthStr[0]))
+                    contentLengthStr.erase(0, 1);
+                while (!contentLengthStr.empty() && std::isspace(contentLengthStr[contentLengthStr.length() - 1]))
+                    contentLengthStr.erase(contentLengthStr.length() - 1);
+            }
             
-            if (!contentLengthStr.empty())
+            if (line.find("transfer-encoding:") == 0 || line.find("Transfer-Encoding:") == 0) {
+                size_t colonPos = line.find(':');
+                transferEncoding = line.substr(colonPos + 1);
+                // Trim
+                while (!transferEncoding.empty() && std::isspace(transferEncoding[0]))
+                    transferEncoding.erase(0, 1);
+                while (!transferEncoding.empty() && std::isspace(transferEncoding[transferEncoding.length() - 1]))
+                    transferEncoding.erase(transferEncoding.length() - 1);
+            }
+        }
+        
+        // Verificar se é chunked
+        bool isChunked = (transferEncoding.find("chunked") != std::string::npos);
+        
+        if (isChunked) {
+            std::cout << "[Client] Transfer-Encoding: chunked" << std::endl;
+            // Para chunked, verificar se termina com "0\r\n\r\n"
+            if (this->_rawRequest.find("\r\n0\r\n\r\n") != std::string::npos ||
+                this->_rawRequest.find("\n0\n\n") != std::string::npos) {
+                std::cout << "[Client] ✅ Chunked encoding completo!" << std::endl;
+                this->setState(STATE_COMPLETE);
+            } else {
+                std::cout << "[Client] ⏳ Chunked: aguardando último chunk (0)..." << std::endl;
+            }
+        } else if (!contentLengthStr.empty()) {
+            // Usar Content-Length
+            int contentLength = std::atoi(contentLengthStr.c_str());
+            size_t bodyStart = headerEnd + 4;
+            size_t currentBodySize = this->_rawRequest.size() - bodyStart;
+            
+            std::cout << "[Client] 📊 Content-Length: " << contentLength << " bytes" << std::endl;
+            std::cout << "[Client] 📊 Body atual: " << currentBodySize << " bytes" << std::endl;
+            std::cout << "[Client] 📊 Progresso: " << (currentBodySize * 100 / (contentLength > 0 ? contentLength : 1)) << "%" << std::endl;
+            
+            if (currentBodySize >= (size_t)contentLength)
             {
-                int contentLength = std::atoi(contentLengthStr.c_str());
-                size_t bodyStart = headerEnd + 4;
-                size_t currentBodySize = this->_rawRequest.size() - bodyStart;
-                
-                if (currentBodySize >= (size_t)contentLength)
-                    this->setState(STATE_COMPLETE);
+                std::cout << "[Client] ✅ Body completo recebido!" << std::endl;
+                this->setState(STATE_COMPLETE);
             }
             else
             {
-                // Sem Content-Length, request está completo
-                this->setState(STATE_COMPLETE);
+                std::cout << "[Client] ⏳ Faltam " << (contentLength - currentBodySize) << " bytes..." << std::endl;
             }
+        }
+        else
+        {
+            // Sem Content-Length e sem chunked - assumir completo
+            std::cout << "[Client] ℹ️ Sem Content-Length/chunked, assumindo completo" << std::endl;
+            this->setState(STATE_COMPLETE);
         }
     }
 }

@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   HttpRequest.hpp                                    :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 20:39:11 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/02 12:37:26 by btaveira         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 # pragma once
 
 # include "Webserv.hpp"
@@ -25,10 +13,11 @@ typedef struct e_HttpParse {
 class HttpRequest {
 	private:
 		HttpParse _par;
-		void parseRequestLine(std::istringstream &stream, HttpParse &parse);
+		
 		void parseHeaders(std::istringstream &stream, HttpParse &parse);
 		void parseBody(std::istringstream &stream, HttpParse &parse);
 		std::string unfoldHeader(const std::string &value);
+		std::string decodeChunked(const std::string &chunkedBody);
 
 	public:
 		HttpParse httpParse(const std::string &rawParse);
@@ -41,6 +30,7 @@ class HttpRequest {
 		std::string getVersion() const;
 		std::map<std::string, std::string> getHeaders() const;
 		std::string getBody() const;
+		void parseRequestLine(std::istringstream &stream, HttpParse &parse);
 
 		std::string getHeader(const std::string &name) const;
 		bool hasHeader(const std::string &name) const;
