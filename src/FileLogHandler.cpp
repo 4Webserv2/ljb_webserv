@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/19 22:17:45 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/02 14:03:01 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/09 12:50:31 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,20 +48,20 @@ FileLogHandler::~FileLogHandler()
 
 void FileLogHandler::handleDebug(t_event event)
 {
-	_file << Logger::getTimestamp() << "[DEBUG] " << event.message << std::endl;
+	_file << Logger::getTimestamp() << " [DEBUG] " << event.message << std::endl;
 }
 
 void FileLogHandler::handleInfo(t_event event)
 {
-	_file << Logger::getTimestamp() << "[INFO] " << event.message << std::endl;
+	_file << Logger::getTimestamp() << " [INFO] " << event.message << std::endl;
 }
 
 void FileLogHandler::handleWarning(t_event event)
 {
-	_file << Logger::getTimestamp() << "[WARNING] " << event.message << std::endl;
+	_file << Logger::getTimestamp() << " [WARNING] " << event.message << std::endl;
 }
 
 void FileLogHandler::handleError(t_event event)
 {
-	_file << Logger::getTimestamp() << "[ERROR] " << event.message << std::endl;
+	_file << Logger::getTimestamp() << " [ERROR] " << event.message << std::endl;
 }
