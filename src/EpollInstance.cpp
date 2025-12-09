@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/13 20:46:14 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 13:53:03 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/09 14:20:45 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,5 +133,7 @@ struct epoll_event &EpollInstance::getElementFromEventsList(int i)
 
 const char * EpollInstance::CannotManipulate::what() const throw()
 {
-	return (Logger::error("Controling the epoll instance with epoll_ctl()."));
+	static const char msg[] = "Failed to manipulate epoll instance with epoll_ctl().";
+	Logger::error(msg);
+	return msg;
 }
