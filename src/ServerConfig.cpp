@@ -6,12 +6,13 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:40:04 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 15:10:44 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/09 15:12:10 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/ServerConfig.hpp"
 #include "../includes/Logger.hpp"
+#include "../includes/StringUtils.hpp"
 
 ServerConfig::ServerConfig(void) {}
 
