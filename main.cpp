@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/09 15:21:39 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/09 15:22:22 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -146,8 +146,8 @@ void	initLogger() {
 int main(int ac, char **av)
 {
 	// 1. Configurar handlers de sinais ANTES de inicializar o runtime
-	initLogger();
 	SignalHandler::setupSignalHandlers();
+	initLogger();
 
 	std::cout << "Saiu de init logger" << std::endl;
 	// 2. Inicializar runtime
