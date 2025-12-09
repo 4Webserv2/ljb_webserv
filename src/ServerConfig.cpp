@@ -3,14 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:40:04 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/28 09:06:39 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/09 15:10:44 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/ServerConfig.hpp"
+#include "../includes/Logger.hpp"
 
 ServerConfig::ServerConfig(void) {}
 
@@ -24,12 +25,12 @@ ServerConfig::ServerConfig(int ac, char **av) {
 	else
 		configFile = "config/default.conf";
 
-	std::cout << "DEBUG: Tentando ler arquivo de configuração: " << configFile << std::endl;
+	Logger::info("Attempting to read configuration file: " + configFile);
 
 	this->parser(configFile);
 
-	std::cout << "DEBUG: Configuração lida com sucesso! Servers encontrados: "
-			<< this->_serverBlocks.size() << std::endl;
+	Logger::info("Configuration successfully read! Servers found: " +
+                 StringUtils::size_tToString(this->_serverBlocks.size()));
 }
 
 void ServerConfig::readFile(const std::string &filename, std::string &content)
@@ -148,7 +149,7 @@ std::vector<std::string> ServerConfig::tokenizeContent(const std::string &conten
 		this->_tokens.push_back(currentToken);
 
 	if (braceCount != 0) //| Verifica se as chaves estão balanceadas
-		throw std::runtime_error("Configuração inválida: chaves não balanceadas");
+		throw std::runtime_error("Invalid configuration: unbalanced braces");
 
 	return this->_tokens;
 }
@@ -158,25 +159,27 @@ void ServerConfig::parser(const std::string &filename)
 	std::string content;
 	cleanFile(filename, content);
 
-	std::cout << "DEBUG: Arquivo limpo. Tamanho do conteúdo: " << content.size() << std::endl;
+	Logger::info("DEBUG: Cleaned file. Content size: " +
+			StringUtils::size_tToString(content.size()));
 
 	tokenizeContent(content);
 
-	std::cout << "DEBUG: Tokens gerados: " << this->_tokens.size() << std::endl;
+	Logger::info("DEBUG: Tokens generated: " +
+				StringUtils::size_tToString(this->_tokens.size()));
 	if (this->_tokens.size() > 0)
-		std::cout << "DEBUG: Primeiro token: " << this->_tokens[0] << std::endl;
+		Logger::info("DEBUG: First token: " + this->_tokens[0]);
 
 	if (this->_tokens.size() == 0)
-		throw std::runtime_error("Configuração inválida: não foi encontrado nenhum servidor");
+		throw std::runtime_error("Invalid configuration: no server found");
 
 	while (this->_tokens.size() > 0)
 	{
-		std::cout << "DEBUG: Processando token: " << this->_tokens[0] << std::endl;
+		Logger::info("DEBUG: Processing token: " + this->_tokens[0]);
 
 		if (this->_tokens[0] == "server" && this->_tokens[1] == "{")
 			this->_serverBlocks.push_back(ServerBlock(*this));
 		else
-			throw std::runtime_error("Configuração inválida: servidor não encontrado");
+			throw std::runtime_error("Invalid configuration: server not found");
 	}
 }
 
@@ -205,7 +208,7 @@ void ServerConfig::verifyToken(TypeValidation type, const std::string &message)
 			shouldThrow = this->_tokens[0] == this->_tokens.back();
 			break;
 		default:
-			throw std::runtime_error("Configuração inválida: tipo de validação desconhecido");
+			throw std::runtime_error("Invalid configuration: unknown validation type");
 	}
 
 	if (shouldThrow)
