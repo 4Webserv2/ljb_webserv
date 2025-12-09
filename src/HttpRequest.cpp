@@ -6,12 +6,13 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:32 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 13:58:03 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/09 14:23:12 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 # include "../includes/HttpRequest.hpp"
 # include "../includes/StringUtils.hpp"
+# include "../includes/Logger.hpp"
 
 HttpRequest::HttpRequest(){}
 
