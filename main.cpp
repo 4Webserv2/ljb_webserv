@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/09 12:44:18 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/09 14:12:33 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,8 +118,7 @@ void serverLoop()
 				// Outro sinal, continuar
 				continue;
 			}
-
-			std::cerr << "[ERROR] Error in epoll_wait: " << strerror(errno) << std::endl;
+			StringUtils::errorAndCerr("[ERROR] Error in epoll_wait: " + std::string(strerror(errno)));
 			break;
 		}
 
@@ -153,7 +152,7 @@ int main(int ac, char **av)
 	// 2. Inicializar runtime
 	if (RunTime::createRuntime(ac, av) != 0)
 	{
-		std::cerr << "Error initializing runtime" << std::endl;
+		StringUtils::errorAndCerr(Initializing runtime);
 		return 1;
 	}
 
@@ -162,7 +161,7 @@ int main(int ac, char **av)
 		serverLoop();
 	}
 	catch (std::exception &e) {
-		std::cerr << "[ERROR] Caught exception: " << e.what() << std::endl;
+		StringUtils::errorAndCerr(std::string("[ERROR] Caught exception: ") + e.what());
 		RunTime::gracefulShutdown();
 		return 1;
 	}
