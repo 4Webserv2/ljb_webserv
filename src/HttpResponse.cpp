@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 14:07:17 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/09 14:16:04 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,7 @@ HttpResponse HttpResponse::handleCGI(const HttpRequest &req) {
 	int outputPipe[2];
 
 	if (pipe(inputPipe) < 0 || pipe(outputPipe) < 0) {
-		StringUtils::errorAndCerr("[CGI] Error creating pipes: " + strerror(errno));
+		StringUtils::errorAndCerr(std::string("[CGI] Error creating pipes: ") + strerror(errno));
 
 		res.setErrorPage(500);
 		return res;
@@ -90,7 +90,7 @@ HttpResponse HttpResponse::handleCGI(const HttpRequest &req) {
 		close(inputPipe[0]); close(inputPipe[1]);
 		close(outputPipe[0]); close(outputPipe[1]);
 
-		StringUtils::errorAndCerr("[CGI] Error on fork: " + strerror(errno));
+		StringUtils::errorAndCerr(std::string("[CGI] Error on fork: ") + strerror(errno));
 		res.setErrorPage(500);
 		return res;
 	}
@@ -169,7 +169,7 @@ HttpResponse HttpResponse::handleCGI(const HttpRequest &req) {
 		// ========== MUDAR DIRETÓRIO DE TRABALHO ==========
 		std::string scriptDir = path.substr(0, path.find_last_of('/'));
 		if (chdir(scriptDir.c_str()) == -1) {
-			StringUtils::errorAndCerr("[CGI Child] Error changing directory: " + strerror(errno));
+			StringUtils::errorAndCerr(std::string("[CGI Child] Error changing directory: ") + strerror(errno));
 			exit(1);
 		}
 
@@ -186,7 +186,7 @@ HttpResponse HttpResponse::handleCGI(const HttpRequest &req) {
 
 		// Se execve falhar
 
-		StringUtils::errorAndCerr("[CGI Child] Error on execve: " + strerror(errno));
+		StringUtils::errorAndCerr(std::string("[CGI Child] Error on execve: ") + strerror(errno));
 		exit(1);
 	}
 
@@ -199,7 +199,7 @@ HttpResponse HttpResponse::handleCGI(const HttpRequest &req) {
 	if (req.getMethod() == "POST" && !req.getBody().empty()) {
 		ssize_t written = write(inputPipe[1], req.getBody().c_str(), req.getBody().size());
 		if (written < 0) {
-			StringUtils::errorAndCerr("[CGI] Error writing to pipe: " + strerror(errno));
+			StringUtils::errorAndCerr(std::string("[CGI] Error writing to pipe: ") + strerror(errno));
 		}
 	}
 	close(inputPipe[1]);
@@ -222,7 +222,7 @@ HttpResponse HttpResponse::handleCGI(const HttpRequest &req) {
 		int selectResult = select(outputPipe[0] + 1, &readFds, NULL, NULL, &timeout);
 
 		if (selectResult == -1) {
-			StringUtils::errorAndCerr("[CGI] Error on select: " + strerror(errno));
+			StringUtils::errorAndCerr(std::string("[CGI] Error on select: ") + strerror(errno));
 			break;
 		} else if (selectResult == 0) {
 			// Timeout
@@ -253,7 +253,7 @@ HttpResponse HttpResponse::handleCGI(const HttpRequest &req) {
 	int waitResult = waitpid(pid, &status, 0);
 
 	if (waitResult == -1) {
-		StringUtils::errorAndCerr("[CGI] Error on waitpid: " + strerror(errno));
+		StringUtils::errorAndCerr(std::string("[CGI] Error on waitpid: ") + strerror(errno));
 		res.setErrorPage(500);
 		return res;
 	}
