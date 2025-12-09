@@ -1,5 +1,5 @@
 #include "../includes/StringUtils.hpp"
-#include "../Logger.hpp"
+#include "../includes/Logger.hpp"
 
 std::string StringUtils::toLower(const std::string &str) {
     std::string result = str;
