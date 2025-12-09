@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/05 18:29:44 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/09 12:44:18 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,9 @@
 #include "includes/ServerManage.hpp"
 #include "includes/SignalHandler.hpp"
 #include "includes/Logger.hpp"
+#include "includes/CompositeLogHandler.hpp"
+#include "includes/StdLogHandler.hpp"
+#include "includes/FileLogHandler.hpp"
 #include "includes/StringUtils.hpp"
 
 int	clientLoop(const int& clientFd) {

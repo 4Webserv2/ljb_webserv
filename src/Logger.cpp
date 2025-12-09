@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/10 17:07:18 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/09 12:42:34 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/09 12:43:59 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,9 +14,6 @@
 // logger filtra e strategy implementar
 
 #include "../includes/Logger.hpp"
-#include "../includes/CompositeLogHandler.hpp"
-#include "../includes/StdLogHandler.hpp"
-#include "../includes/FileLogHandler.hpp"
 
 Logger *Logger::_instance = NULL;
 
