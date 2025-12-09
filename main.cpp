@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/09 14:12:33 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/09 14:25:52 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -152,7 +152,7 @@ int main(int ac, char **av)
 	// 2. Inicializar runtime
 	if (RunTime::createRuntime(ac, av) != 0)
 	{
-		StringUtils::errorAndCerr(Initializing runtime);
+		StringUtils::errorAndCerr("Initializing runtime");
 		return 1;
 	}
 
