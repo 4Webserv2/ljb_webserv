@@ -1,4 +1,5 @@
 #include "../includes/StringUtils.hpp"
+#include "../Logger.hpp"
 
 std::string StringUtils::toLower(const std::string &str) {
     std::string result = str;
@@ -47,5 +48,10 @@ std::string StringUtils::ostreamToString(std::string ss) {
 
 	oss << ss;
 	return (oss.str());
+}
+
+void StringUtils::errorAndCerr(const std::string &msg) {
+	Logger::error(msg);
+	std::cerr << msg << std::endl;
 }
 

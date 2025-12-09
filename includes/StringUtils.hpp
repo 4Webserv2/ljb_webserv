@@ -22,5 +22,8 @@ public:
 
 	// Passa um int qualquer para uma string
 	static std::string intToString(int n);
+	//Passa uma string e consegue somar com outra string
 	static std::string ostreamToString(std::string ss);
+	//Além de usar Logger::error, joga o erro pro std::cerr
+	static void errorAndCerr(const std::string &msg);
 };
