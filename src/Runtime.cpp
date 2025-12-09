@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:32:41 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 14:47:03 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/09 15:00:25 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -151,8 +151,9 @@ void RunTime::setRunning(bool running) {
 }
 
 void RunTime::closeAllClients() {
-    if (_runtime == NULL)
-        return;
+    if (_runtime == NULL) {
+		return ;
+	}
 
 	Logger::info(std::string("[SHUTDOWN] Closing ")
 		+ StringUtils::size_tToString(_runtime->_clients.size())
@@ -201,8 +202,9 @@ void RunTime::closeAllClients() {
 }
 
 void RunTime::closeAllServers() {
-    if (_runtime == NULL)
-        return;
+    if (_runtime == NULL) {
+		return;
+	}
 
 	Logger::info("[SHUTDOWN] Closing "
 		+ StringUtils::size_tToString(_runtime->_sListeners.size())
@@ -232,8 +234,9 @@ void RunTime::closeAllServers() {
 }
 
 void RunTime::gracefulShutdown() {
-    if (_runtime == NULL)
-        return;
+    if (_runtime == NULL) {
+		return;
+	}
 
 	Logger::info("========================================");
 	Logger::info("[SHUTDOWN] Starting graceful shutdown...");
@@ -260,5 +263,3 @@ void RunTime::gracefulShutdown() {
 	Logger::info("[SHUTDOWN] Graceful shutdown completed successfully!");
 	Logger::info("========================================");
 }
-
-
