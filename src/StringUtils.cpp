@@ -42,7 +42,7 @@ std::string StringUtils::intToString(int n) {
     return oss.str();
 }
 
-std::string ostreamToString(std::string ss) {
+std::string StringUtils::ostreamToString(std::string ss) {
 	std::ostringstream oss;
 
 	oss << ss;
