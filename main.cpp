@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/09 14:27:44 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/09 15:16:28 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -149,10 +149,13 @@ int main(int ac, char **av)
 	SignalHandler::setupSignalHandlers();
 	initLogger();
 
+	std::cout << "Saiu de init logger" << std::endl;
 	// 2. Inicializar runtime
 	if (RunTime::createRuntime(ac, av) != 0)
 	{
+		std::cout << "Entrou em create runtime" << std::endl;
 		StringUtils::errorAndCerr("Initializing runtime");
+		std::cout << "Saiu de errorAndCerr dentro do if de create runtime" << std::endl;
 		return 1;
 	}
 
