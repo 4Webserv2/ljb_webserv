@@ -6,7 +6,7 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 09:55:28 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/09 10:37:17 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -644,22 +644,56 @@ std::string HttpResponse::extractFilename(const std::string &headers)
 }
 
 HttpResponse	HttpResponse::handleDelete(const HttpRequest &req){
-	HttpResponse res;
-	res.setErrorPageConfig(this->_errorPages, this->_rootPath);
-	
-	std::string path = this->_rootPath + req.getUri();
-
-	if (std::remove(path.c_str()) == 0)
-	{
-		res.setStatus(200, "OK");
-		res.setBody("<h1>File deleted successfully</h1>", "text/html");
-	}
-	else
-	{
-		res.setErrorPage(404);
-	}
-	return res;
-};
+    HttpResponse res;
+    res.setErrorPageConfig(this->_errorPages, this->_rootPath);
+    
+    std::string uri = req.getUri();
+    std::string path;
+    
+    std::cout << "[DELETE] URI: " << uri << std::endl;
+    
+    // ADICIONAR: Verificar se é um arquivo em /uploads (fora de www/)
+    if (uri.find("/uploads/") == 0) {
+        // Arquivo está em ./uploads/ (raiz do projeto)
+        path = "." + uri; // ./uploads/arquivo.pdf
+        std::cout << "[DELETE] Caminho de upload: " << path << std::endl;
+    } else {
+        // Arquivo está em ./www/
+        path = this->_rootPath + uri;
+        std::cout << "[DELETE] Caminho em www: " << path << std::endl;
+    }
+    
+    // Verificar se o arquivo existe
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0) {
+        std::cerr << "[DELETE] ❌ Arquivo não encontrado: " << path << std::endl;
+        std::cerr << "[DELETE] Erro: " << strerror(errno) << std::endl;
+        res.setErrorPage(404);
+        return res;
+    }
+    
+    // Verificar se é um arquivo regular (não diretório)
+    if (!S_ISREG(st.st_mode)) {
+        std::cerr << "[DELETE] ❌ Não é um arquivo regular: " << path << std::endl;
+        res.setErrorPage(403);
+        return res;
+    }
+    
+    // Tentar deletar
+    if (std::remove(path.c_str()) == 0)
+    {
+        std::cout << "[DELETE] ✅ Arquivo deletado com sucesso: " << path << std::endl;
+        res.setStatus(200, "OK");
+        res.setBody("<h1>✅ File deleted successfully</h1><p>File: " + uri + "</p>", "text/html");
+    }
+    else
+    {
+        std::cerr << "[DELETE] ❌ Erro ao deletar arquivo: " << path << std::endl;
+        std::cerr << "[DELETE] Erro: " << strerror(errno) << std::endl;
+        res.setErrorPage(500);
+    }
+    return res;
+}
 
 HttpResponse HttpResponse::dispatchRequest(const HttpRequest &req)
 {
