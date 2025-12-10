@@ -1,5 +1,5 @@
 #include "../includes/SignalHandler.hpp"
-#include"../inckudes/Logger.hpp"
+#include"../includes/Logger.hpp"
 
 volatile sig_atomic_t SignalHandler::_shutdownRequested = 0;
 
