@@ -1,5 +1,4 @@
 #include "../includes/SignalHandler.hpp"
-#include"../includes/Logger.hpp"
 
 volatile sig_atomic_t SignalHandler::_shutdownRequested = 0;
 
@@ -48,7 +47,7 @@ void SignalHandler::setupSignalHandlers() {
 
 	// Ignorar SIGPIPE (conexões fechadas abruptamente)
 	signal(SIGPIPE, SIG_IGN);
-	Logger::info("[SIGNAL] Handlers configured for SIGINT and SIGTERM");
+	std::cout << "Signal handlers set up successfully for SIGINT and SIGTERM." << std::endl;
 }
 
 bool SignalHandler::isShutdownRequested() {
