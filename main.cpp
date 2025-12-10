@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/09 15:22:22 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/10 13:55:05 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -154,7 +154,7 @@ int main(int ac, char **av)
 	if (RunTime::createRuntime(ac, av) != 0)
 	{
 		std::cout << "Entrou em create runtime" << std::endl;
-		StringUtils::errorAndCerr("Initializing runtime");
+		//StringUtils::errorAndCerr("Initializing runtime");
 		std::cout << "Saiu de errorAndCerr dentro do if de create runtime" << std::endl;
 		return 1;
 	}
