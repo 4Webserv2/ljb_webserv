@@ -47,7 +47,7 @@ void SignalHandler::setupSignalHandlers() {
 
 	// Ignorar SIGPIPE (conexões fechadas abruptamente)
 	signal(SIGPIPE, SIG_IGN);
-	std::cout << "[SIGNAL] Handlers configured for SIGINT and SIGTERM" << std::endl;
+	Logger::info("[SIGNAL] Handlers configured for SIGINT and SIGTERM");
 }
 
 bool SignalHandler::isShutdownRequested() {
