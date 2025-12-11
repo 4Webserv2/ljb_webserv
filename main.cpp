@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/11 11:07:54 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/11 11:57:50 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -129,24 +129,15 @@ void serverLoop()
 	Logger::info("[MAIN] Server loop terminated");
 }
 
-void	initLogger() {
-	CompositeLogHandler multi;
-    StdLogHandler console;
-    FileLogHandler file("app.log");
-
-    multi.addHandler(&console);
-    multi.addHandler(&file);
-
-    Logger::initializeLogger(DEBUG, &multi);
-
-    Logger::info("Logger initialized with stdout + file.");
-}
-
-
 int main(int ac, char **av)
 {
+	CompositeLogHandler compositeHandler;
+
+	compositeHandler.addHandler(new StdLogHandler());
+	compositeHandler.addHandler(new FileLogHandler("app.log"));
+
+	Logger::initializerLogger(DEBUG, &compositeHandler);
 	// 1. Configurar handlers de sinais ANTES de inicializar o runtime
-	initLogger();
 	SignalHandler::setupSignalHandlers();
 
 	std::cout << "Saiu de init logger" << std::endl;
