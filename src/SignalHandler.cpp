@@ -1,4 +1,6 @@
 #include "../includes/SignalHandler.hpp"
+#include "../includes/Logger.hpp"
+#include "../includes/StringUtils.hpp"
 
 volatile sig_atomic_t SignalHandler::_shutdownRequested = 0;
 
@@ -36,18 +38,16 @@ void SignalHandler::setupSignalHandlers() {
 
 	// Registrar handlers para SIGINT e SIGTERM
 	if (sigaction(SIGINT, &sa, NULL) == -1) {
-		std::cerr << "Error registering handler for SIGINT: "
-				<< strerror(errno) << std::endl;
+		StringUtils::errorAndCerr("Error registering handler for SIGINT: " + std::string(strerror(errno)));
 	}
 
 	if (sigaction(SIGTERM, &sa, NULL) == -1) {
-		std::cerr << "Error registering handler for SIGTERM: "
-				<< strerror(errno) << std::endl;
+		StringUtils::errorAndCerr("Error registering handler for SIGTERM: " + std::string(strerror(errno)));
 	}
 
 	// Ignorar SIGPIPE (conexões fechadas abruptamente)
 	signal(SIGPIPE, SIG_IGN);
-	std::cout << "Signal handlers set up successfully for SIGINT and SIGTERM." << std::endl;
+	Logger::info("Signal handlers set up successfully for SIGINT and SIGTERM.");
 }
 
 bool SignalHandler::isShutdownRequested() {
