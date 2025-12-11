@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/11 11:57:50 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/11 16:32:25 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,7 +136,7 @@ int main(int ac, char **av)
 	compositeHandler.addHandler(new StdLogHandler());
 	compositeHandler.addHandler(new FileLogHandler("app.log"));
 
-	Logger::initializerLogger(DEBUG, &compositeHandler);
+	Logger::initializeLoggerLogger(DEBUG, &compositeHandler);
 	// 1. Configurar handlers de sinais ANTES de inicializar o runtime
 	SignalHandler::setupSignalHandlers();
 
