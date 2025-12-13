@@ -6,7 +6,7 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 10:37:17 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/12 21:03:19 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -344,27 +344,90 @@ HttpResponse HttpResponse::handleCGI(const HttpRequest &req) {
 }
 
 
-HttpResponse	HttpResponse::handleGet(const HttpRequest &req){
-	HttpResponse res;
-	
-	// Copiar configuração de error pages
-	res.setErrorPageConfig(this->_errorPages, this->_rootPath);
-	
-	std::string path = this->_rootPath + req.getUri();
-
-	std::ifstream file(path.c_str(), std::ios::binary);
-	if (!file)
-	{
-		res.setStatus(404, "Not found");
-		res.setErrorPage(404);
-		return res;
-	}
-
-	std::ostringstream buffer;
-	buffer << file.rdbuf();
-	res.setStatus(200, "OK");
-	res.setBody(buffer.str(), "text/html");
-	return res;
+HttpResponse	HttpResponse::handleGet(const HttpRequest &req) {
+    HttpResponse res;
+    res.setErrorPageConfig(this->_errorPages, this->_rootPath);
+    
+    std::string path = this->_rootPath + req.getUri();
+    
+    // 1. Verificar se o path é um diretório
+    struct stat pathStat;
+    if (stat(path.c_str(), &pathStat) == 0 && S_ISDIR(pathStat.st_mode)) {
+        std::cout << "[GET] Path é um diretório: " << path << std::endl;
+        
+        // Lista de arquivos index para tentar (em ordem de prioridade)
+        std::vector<std::string> indexFiles;
+        indexFiles.push_back("index.html");
+        indexFiles.push_back("index.htm");
+        
+        // Tentar cada arquivo index
+        for (size_t i = 0; i < indexFiles.size(); i++) {
+            std::string indexPath = path;
+            
+            // Adicionar '/' se necessário
+            if (indexPath[indexPath.length() - 1] != '/')
+                indexPath += "/";
+            
+            indexPath += indexFiles[i];
+            
+            std::cout << "[GET] Tentando index: " << indexPath << std::endl;
+            
+            // Verificar se o arquivo existe
+            if (access(indexPath.c_str(), F_OK) == 0) {
+                std::cout << "[GET] ✅ Index encontrado: " << indexPath << std::endl;
+                path = indexPath;
+                break;
+            }
+        }
+    }
+    
+    // 2. Tentar abrir o arquivo
+    std::ifstream file(path.c_str(), std::ios::binary);
+    if (!file) {
+        std::cerr << "[GET] ❌ Arquivo não encontrado: " << path << std::endl;
+        res.setErrorPage(404);
+        return res;
+    }
+    
+    // 3. Ler conteúdo do arquivo
+    std::ostringstream buffer;
+    buffer << file.rdbuf();
+    file.close();
+    
+    // 4. Determinar Content-Type baseado na extensão
+    std::string contentType = "text/html; charset=utf-8";
+    
+    size_t dotPos = path.find_last_of('.');
+    if (dotPos != std::string::npos) {
+        std::string ext = path.substr(dotPos);
+        
+        if (ext == ".css")
+            contentType = "text/css";
+        else if (ext == ".js")
+            contentType = "application/javascript";
+        else if (ext == ".json")
+            contentType = "application/json";
+        else if (ext == ".png")
+            contentType = "image/png";
+        else if (ext == ".jpg" || ext == ".jpeg")
+            contentType = "image/jpeg";
+        else if (ext == ".gif")
+            contentType = "image/gif";
+        else if (ext == ".svg")
+            contentType = "image/svg+xml";
+        else if (ext == ".pdf")
+            contentType = "application/pdf";
+        else if (ext == ".txt")
+            contentType = "text/plain";
+    }
+    
+    std::cout << "[GET] ✅ Servindo arquivo: " << path 
+              << " (" << buffer.str().size() << " bytes, " 
+              << contentType << ")" << std::endl;
+    
+    res.setStatus(200, "OK");
+    res.setBody(buffer.str(), contentType);
+    return res;
 };
 
 HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
