@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/11 16:34:11 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/15 13:23:51 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -131,23 +131,19 @@ void serverLoop()
 
 int main(int ac, char **av)
 {
-	CompositeLogHandler compositeHandler;
+	CompositeLogHandler new compositeHandler;
 
 	compositeHandler.addHandler(new StdLogHandler());
 	compositeHandler.addHandler(new FileLogHandler("app.log"));
 
-	Logger::initializeLogger(DEBUG, &compositeHandler);
+	Logger::initializeLogger(DEBUG, compositeHandler);
 	// 1. Configurar handlers de sinais ANTES de inicializar o runtime
 	SignalHandler::setupSignalHandlers();
-
-	std::cout << "Saiu de init logger" << std::endl;
 
 	// 2. Inicializar runtime
 	if (RunTime::createRuntime(ac, av) != 0)
 	{
-		std::cout << "Entrou em create runtime" << std::endl;
 		StringUtils::errorAndCerr("Initializing runtime");
-		std::cout << "Saiu de errorAndCerr dentro do if de create runtime" << std::endl;
 		return 1;
 	}
 
@@ -158,13 +154,12 @@ int main(int ac, char **av)
 	catch (std::exception &e) {
 		StringUtils::errorAndCerr(std::string("Caught exception: ") + e.what());
 		RunTime::gracefulShutdown();
+		Logger::deleteInstance();
 		return 1;
 	}
-
-	// 4. Shutdown gracioso
-	Logger::info("Gracious Shutdown init..");
 	RunTime::gracefulShutdown();
-
 	Logger::info("[MAIN] Server finished with successfully. See you! 👋");
+
+	Logger::deleteInstance();
 	return 0;
 }
