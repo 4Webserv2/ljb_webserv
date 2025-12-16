@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationBlock.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:40 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/28 09:09:52 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:26:59 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@ LocationBlock::LocationBlock(ServerConfig &config) : _config(config), _autoIndex
 	this->_uri = this->_config.getTokens()[0];
 
 	this->_config.removeTokens(2); //| Remove o token de URI e '{'
-	this->_config.verifyToken(EMPTY, "Configuração inválida: location: não foi encontrado nenhum location");
+	this->_config.verifyToken(EMPTY, "Invalid configuration: no location block was found");
 
 	while (this->_config.getTokens().size() > 0)
 	{
@@ -43,7 +43,7 @@ LocationBlock::LocationBlock(ServerConfig &config) : _config(config), _autoIndex
 			break;
 		}
 		else {
-			throw std::runtime_error("Configuração inválida: token inválido");
+			throw std::runtime_error("Invalid configuration: invalid token");
 		}
 	}
 }
@@ -111,7 +111,7 @@ void LocationBlock::printLocationBlock()
 void LocationBlock::addAutoIndex()
 {
 	this->_config.removeTokens(1); //| Remove o token 'autoindex'
-	this->_config.verifyToken(SEMICOLON, "Configuração inválida: autoindex: não foi encontrado nenhum autoindex");
+	this->_config.verifyToken(SEMICOLON, "Invalid configuration: autoindex: no autoindex value found");
 
 	std::vector<std::string> tokens = this->_config.getTokens();
 	if (tokens[0] == "on")
@@ -119,17 +119,17 @@ void LocationBlock::addAutoIndex()
 	else if (tokens[0] == "off")
 		this->_autoIndex = false;
 	else
-		throw std::runtime_error("Configuração inválida: autoindex: deve ser 'on' ou 'off'");
+		throw std::runtime_error("Invalid configuration: autoindex: expected 'on' or 'off'");
 
 	this->_config.removeTokens(1); //| Removendo o argumento de autoindex
-	this->_config.verifyToken(DIFF_SEMICOLON, "Configuração inválida: autoindex: esperava um ponto e vírgula no final de autoindex");
+	this->_config.verifyToken(DIFF_SEMICOLON, "Invalid configuration: autoindex: expected ';' at the end of autoindex directive");
 	this->_config.removeTokens(1); //| Removendo o ponto e vírgula
 }
 
 void LocationBlock::addCanUpload()
 {
 	this->_config.removeTokens(1); //| Remove o token 'can_upload'
-	this->_config.verifyToken(SEMICOLON, "Configuração inválida: can_upload: não foi encontrado nenhum can_upload");
+	this->_config.verifyToken(SEMICOLON, "Invalid configuration: can_upload: no can_upload value found");
 
 	std::vector<std::string> tokens = this->_config.getTokens();
 	if (tokens[0] == "on")
@@ -137,67 +137,67 @@ void LocationBlock::addCanUpload()
 	else if (tokens[0] == "off")
 		this->_canUpload = false;
 	else
-		throw std::runtime_error("Configuração inválida: can_upload: deve ser 'on' ou 'off'");
+		throw std::runtime_error("Invalid configuration: can_upload: expected 'on' or 'off'");
 
 	this->_config.removeTokens(1); //| Removendo o argumento de can_upload
-	this->_config.verifyToken(DIFF_SEMICOLON, "Configuração inválida: can_upload: esperava um ponto e vírgula no final de can_upload");
+	this->_config.verifyToken(DIFF_SEMICOLON, "Invalid configuration: can_upload: expected ';' at the end of can_upload directive");
 	this->_config.removeTokens(1); //| Removendo o ponto e vírgula
 }
 
 void LocationBlock::addAlias()
 {
 	this->_config.removeTokens(1); //| Remove o token 'alias'
-	this->_config.verifyToken(SEMICOLON, "Configuração inválida: alias: não foi encontrado nenhum alias");
+	this->_config.verifyToken(SEMICOLON, "Invalid configuration: alias: no alias value found");
 
-	this->_config.verifyToken(END_OF_FILE, "Configuração inválida: alias: final do arquivo encontrado");
+	this->_config.verifyToken(END_OF_FILE, "Invalid configuration: alias: unexpected end of file");
 
 	std::vector<std::string> tokens = this->_config.getTokens();
 	this->_alias = tokens[0];
 
 	this->_config.removeTokens(1); //| Removendo o argumento de alias
-	this->_config.verifyToken(DIFF_SEMICOLON, "Configuração inválida: alias: esperava um ponto e vírgula no final de alias");
+	this->_config.verifyToken(DIFF_SEMICOLON, "Invalid configuration: alias: expected ';' at the end of alias directive");
 	this->_config.removeTokens(1); //| Removendo o ponto e vírgula
 }
 
 void LocationBlock::addReturn()
 {
 	this->_config.removeTokens(1); //| Remove o token 'return'
-	this->_config.verifyToken(SEMICOLON, "Configuração inválida: return: não foi encontrado nenhum return");
+	this->_config.verifyToken(SEMICOLON, "Invalid configuration: return: no return value found");
 
-	this->_config.verifyToken(END_OF_FILE, "Configuração inválida: return: final do arquivo encontrado");
+	this->_config.verifyToken(END_OF_FILE, "Invalid configuration: return: unexpected end of file");
 
 	std::vector<std::string> tokens = this->_config.getTokens();
 	this->_return = tokens[0];
 
 	this->_config.removeTokens(1); //| Removendo o argumento de return
-	this->_config.verifyToken(DIFF_SEMICOLON, "Configuração inválida: return: esperava um ponto e vírgula no final de return");
+	this->_config.verifyToken(DIFF_SEMICOLON, "Invalid configuration: return: expected ';' at the end of return directive");
 	this->_config.removeTokens(1); //| Removendo o ponto e vírgula
 }
 
 void LocationBlock::addUploadPath()
 {
 	this->_config.removeTokens(1); //| Remove o token 'upload_path'
-	this->_config.verifyToken(SEMICOLON, "Configuração inválida: upload_path: não foi encontrado nenhum upload_path");
+	this->_config.verifyToken(SEMICOLON, "Invalid configuration: upload_path: no upload_path value found");
 
-	this->_config.verifyToken(END_OF_FILE, "Configuração inválida: upload_path: final do arquivo encontrado");
+	this->_config.verifyToken(END_OF_FILE, "Invalid configuration: upload_path: unexpected end of file");
 
 	std::vector<std::string> tokens = this->_config.getTokens();
 	this->_uploadPath = tokens[0];
 
 	this->_config.removeTokens(1); //| Removendo o argumento de upload_path
-	this->_config.verifyToken(DIFF_SEMICOLON, "Configuração inválida: upload_path: esperava um ponto e vírgula no final de upload_path");
+	this->_config.verifyToken(DIFF_SEMICOLON, "Invalid configuration: upload_path: expected ';' at the end of upload_path directive");
 	this->_config.removeTokens(1); //| Removendo o ponto e vírgula
 }
 
 void LocationBlock::addIndex()
 {
 	this->_config.removeTokens(1); //| Remove o token 'index'
-	this->_config.verifyToken(SEMICOLON, "Configuração inválida: index: não foi encontrado nenhum index");
+	this->_config.verifyToken(SEMICOLON, "Invalid configuration: index: no index value found");
 
 	std::vector<std::string> indexes;
 	while (this->_config.getTokens()[0] != ";")
 	{
-		this->_config.verifyToken(END_OF_FILE, "Configuração inválida: index: final do arquivo encontrado");
+		this->_config.verifyToken(END_OF_FILE, "Invalid configuration: index: unexpected end of file");
 		indexes.push_back(this->_config.getTokens()[0]);
 		this->_config.removeTokens(1);
 	}
@@ -205,24 +205,24 @@ void LocationBlock::addIndex()
 	for (std::vector<std::string>::iterator it = indexes.begin(); it != indexes.end(); ++it)
 		this->_index.push_back(*it);
 
-	this->_config.verifyToken(DIFF_SEMICOLON, "Configuração inválida: index: esperava um ponto e vírgula no final de index");
+	this->_config.verifyToken(DIFF_SEMICOLON, "Invalid configuration: index: expected ';' at the end of index directive");
 	this->_config.removeTokens(1); //| Removendo o ponto e vírgula
 }
 
 void LocationBlock::addCgiExtensions()
 {
 	this->_config.removeTokens(1); //| Remove o token 'cgi_extensions'
-	this->_config.verifyToken(SEMICOLON, "Configuração inválida: cgi_extensions: não foi encontrado nenhum cgi_extensions");
+	this->_config.verifyToken(SEMICOLON, "Invalid configuration: cgi_extensions: no cgi_extensions value found");
 
 	std::vector<std::string> cgi_extensions;
 	while (this->_config.getTokens()[0] != ";")
 	{
 		std::vector<std::string> tokens = this->_config.getTokens();
-		this->_config.verifyToken(END_OF_FILE, "Configuração inválida: cgi_extensions: final do arquivo encontrado");
+		this->_config.verifyToken(END_OF_FILE, "Invalid configuration: cgi_extensions: unexpected end of file");
 		if (tokens[0][0] != '.') //| Adiciona o ponto na frente da extensão para ficar .php ou .py
 			tokens[0] = "." + tokens[0];
 		if (tokens[0] != ".php" && tokens[0] != ".py") //| Um dos bônus: multiplas extensões de cgi
-			throw std::runtime_error("Configuração inválida: cgi_extensions: extensão inválida");
+			throw std::runtime_error("Invalid configuration: cgi_extensions: invalid extension");
 		cgi_extensions.push_back(tokens[0]);
 		this->_config.removeTokens(1);
 	}
@@ -230,14 +230,14 @@ void LocationBlock::addCgiExtensions()
 	for (std::vector<std::string>::iterator it = cgi_extensions.begin(); it != cgi_extensions.end(); ++it)
 		this->_cgiExtensions.push_back(*it);
 
-	this->_config.verifyToken(DIFF_SEMICOLON, "Configuração inválida: cgi_extensions: esperava um ponto e vírgula no final de cgi_extensions");
+	this->_config.verifyToken(DIFF_SEMICOLON, "Invalid configuration: cgi_extensions: expected ';' at the end of cgi_extensions directive");
 	this->_config.removeTokens(1); //| Removendo o ponto e vírgula
 }
 
 void LocationBlock::addAllowMethods()
 {
 	this->_config.removeTokens(1); //| Remove o token 'allow_methods'
-	this->_config.verifyToken(SEMICOLON, "Configuração inválida: allow_methods: não foi encontrado nenhum allow_methods");
+	this->_config.verifyToken(SEMICOLON, "Invalid configuration: allow_methods: no allow_methods value found");
 
 	std::vector<std::string> allow_methods;
 	while (this->_config.getTokens()[0] != ";")
@@ -253,6 +253,6 @@ void LocationBlock::addAllowMethods()
 	for (std::vector<std::string>::iterator it = allow_methods.begin(); it != allow_methods.end(); ++it)
 		this->_allowMethods.push_back(*it);
 
-	this->_config.verifyToken(DIFF_SEMICOLON, "Configuração inválida: allow_methods: esperava um ponto e vírgula no final de allow_methods");
+	this->_config.verifyToken(DIFF_SEMICOLON, "Invalid configuration: allow_methods: expected ';' at the end of allow_methods directive");
 	this->_config.removeTokens(1); //| Removendo o ponto e vírgula
 }
