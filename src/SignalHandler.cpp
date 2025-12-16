@@ -55,6 +55,7 @@ void SignalHandler::handleShutdownMessage() {
 		else if (_shutdownRequested == SIGTERM) {
 			signalName = "SIGTERM";
 		}
+		std::cout << "\n";
 		Logger::info("[SIGNAL] Shutdown signal received: " + signalName);
 	}
 }
