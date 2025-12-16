@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:32:41 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 15:05:15 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/16 13:55:26 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -210,9 +210,8 @@ void RunTime::closeAllServers() {
 		epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_DEL, fd, NULL);
 		close(fd);
 
-		std::cout << "[SHUTDOWN] Server fd=" << fd
-				<< " (port " << _runtime->_sListeners[i].getPort()
-				<< ") closed" << std::endl;
+		Logger::info("[SHUTDOWN] Server fd=" + StringUtils::intToString(fd) +
+					" (port " + StringUtils::intToString(_runtime->_sListeners[i].getPort()) +") closed");
 	}
 
 	_runtime->_sListeners.clear();
