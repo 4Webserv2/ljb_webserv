@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/10 17:00:17 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/16 12:46:48 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/16 14:59:15 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,13 @@
 # include <string>
 # include <ctime>
 # include <ostream>
+
+# define RESET_COLOR "\033[0m"
+# define RED_COLOR "\033[31m"
+# define GREEN_COLOR "\033[32m"
+# define YELLOW_COLOR "\033[33m"
+# define BLUE_COLOR "\033[34m"
+
 
 /**
  * @enum LogLevel
