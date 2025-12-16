@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 20:58:51 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/16 13:50:18 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/16 13:51:44 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "../includes/Runtime.hpp"
 #include "../includes/EpollInstance.hpp"
 #include "../includes/Logger.hpp"
+#include "../includes/StringUtils.hpp"
 
 
 int make_nonblocking(int fd)
