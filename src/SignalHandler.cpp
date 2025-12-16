@@ -5,20 +5,7 @@
 volatile sig_atomic_t SignalHandler::_shutdownRequested = 0;
 
 void SignalHandler::signalCallback(int signum) {
-	const char* signalName = "UNKNOWN";
-
-	if (signum == SIGINT)
-		signalName = "SIGINT";
-	else if (signum == SIGTERM)
-		signalName = "SIGTERM";
-
-	// Usar write() pois é async-signal-safe (printf não é)
-	const char msg[] = "\n[SIGNAL] Shutdown signal received: ";
-	write(STDERR_FILENO, msg, sizeof(msg) - 1);
-	write(STDERR_FILENO, signalName, strlen(signalName));
-	write(STDERR_FILENO, "\n", 1);
-
-	_shutdownRequested = 1;
+	 _shutdownRequested = signum;
 }
 
 void SignalHandler::setupSignalHandlers() {
@@ -56,4 +43,18 @@ bool SignalHandler::isShutdownRequested() {
 
 void SignalHandler::requestShutdown() {
 	_shutdownRequested = 1;
+}
+
+void SignalHandler::handleShutdownMessage() {
+	if (_shutdownRequested) {
+		std::string signalName = "UNKNOWN";
+
+		if (_shutdownRequested == SIGINT) {
+			signalName = "SIGINT";
+		}
+		else if (_shutdownRequested == SIGTERM) {
+			signalName = "SIGTERM";
+		}
+		Logger::info(Logger::getTimestamp() + " [SIGNAL] Shutdown signal received: " + signalName);
+	}
 }

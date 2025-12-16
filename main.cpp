@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/15 13:23:51 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/16 12:15:19 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,11 +33,15 @@ int	clientLoop(const int& clientFd) {
 		bytesRead = recv(clientFd, buffer, BUFFER_SIZE - 1, 0);
 		if (bytesRead <= 0)
 		{
-			if (bytesRead == 0)
+			if (bytesRead == 0) {
+
 				Logger::info("Client disconnected");
-			else
+			}
+			else {
+
 				Logger::error("Error: client read");
-			close(clientFd);
+				close(clientFd);
+			}
 			return (bytesRead == 0 ? NO_ERROR : E_ERROR);
 		}
 		buffer[bytesRead] = '\0';
@@ -112,6 +116,7 @@ void serverLoop()
 			if (errno == EINTR) {
 				// Interrompido por sinal, verificar se é shutdown
 				if (SignalHandler::isShutdownRequested()) {
+					SignalHandler::handleShutdownMessage();
 					Logger::info("[MAIN] epoll_wait interrupted by shutdown signal");
 					break;
 				}
@@ -131,7 +136,7 @@ void serverLoop()
 
 int main(int ac, char **av)
 {
-	CompositeLogHandler new compositeHandler;
+	CompositeLogHandler* new compositeHandler();
 
 	compositeHandler.addHandler(new StdLogHandler());
 	compositeHandler.addHandler(new FileLogHandler("app.log"));

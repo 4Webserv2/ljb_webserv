@@ -11,4 +11,5 @@ class SignalHandler {
 		static void setupSignalHandlers();
 		static bool isShutdownRequested();
 		static void requestShutdown();
+		static void handleShutdownMessage();
 };
