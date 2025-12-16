@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/19 22:16:41 by lraggio           #+#    #+#             */
-/*   Updated: 2025/11/19 22:17:04 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/16 12:32:54 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,12 @@
 
 CompositeLogHandler::CompositeLogHandler() {}
 
-CompositeLogHandler::~CompositeLogHandler() {}
+CompositeLogHandler::~CompositeLogHandler() {
+	for (size_t i = 0; i < _handlers.size(); i++) {
+		delete _handlers[i];
+	}
+	_handlers.clear();
+}
 
 void CompositeLogHandler::addHandler(LogHandler *handler)
 {
