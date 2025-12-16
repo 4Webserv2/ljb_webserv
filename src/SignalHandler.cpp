@@ -55,6 +55,6 @@ void SignalHandler::handleShutdownMessage() {
 		else if (_shutdownRequested == SIGTERM) {
 			signalName = "SIGTERM";
 		}
-		Logger::info(Logger::getTimestamp() + " [SIGNAL] Shutdown signal received: " + signalName);
+		Logger::info("[SIGNAL] Shutdown signal received: " + signalName);
 	}
 }
