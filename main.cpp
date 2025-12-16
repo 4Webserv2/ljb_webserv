@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/16 12:27:25 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/16 12:45:53 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -158,12 +158,10 @@ int main(int ac, char **av)
 	catch (std::exception &e) {
 		StringUtils::errorAndCerr(std::string("Caught exception: ") + e.what());
 		RunTime::gracefulShutdown();
-		Logger::deleteInstance();
 		return 1;
 	}
 	RunTime::gracefulShutdown();
 	Logger::info("[MAIN] Server finished with successfully. See you! 👋");
 
-	Logger::deleteInstance();
 	return 0;
 }
