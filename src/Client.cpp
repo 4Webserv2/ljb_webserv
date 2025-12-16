@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/05 17:18:48 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/16 12:58:21 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -157,8 +157,7 @@ void Client::processRequest(void)
 	}
 	catch (std::exception &error)
 	{
-		std::cerr << "Error processing request: " << error.what() << std::endl;
-
+		Logger::error(std::string("Error processing request: ") + error.what());
 		// Garantir que error page config está disponível
 		ServerBlock block = this->_server.getBlock();
 		std::map<int, std::string> errorPages = block.getErrorPages();
@@ -194,7 +193,7 @@ bool Client::sendResponse(const std::string &responseStr)
 			EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
 			return false;
 		}
-		std::cerr << "Error sending response: " << strerror(errno) << std::endl;
+		Logger::error("Error sending response: " + std::string(strerror(errno)));
 		return false;
 	}
 
@@ -226,6 +225,7 @@ void Client::EpollInHandler(void)
 				this->request.setPar(this->request.httpParse(this->_rawRequest));
 			}
 			catch (std::exception &error) {
+				Logger::error("Failed to parse HTTP request");
 				this->response.setErrorPage(400);
 				std::string responseStr = this->response.toString();
 				if (!sendResponse(responseStr))
@@ -234,19 +234,22 @@ void Client::EpollInHandler(void)
 					RunTime::deleteClient(this->getSocketFd());
 				return;
 			}
-			std::cout << "----------------- REQUEST COMPLETE ------------------" << std::endl;
-			std::cout << this->request.getMethod() << std::endl;
-			std::cout << this->request.getUri() << std::endl;
+			Logger::debug("===== REQUEST COMPLETE =====");
+			Logger::debug(this->request.getMethod() + " " + this->request.getUri());
+
 			std::map<std::string, std::string> headers = this->request.getHeaders();
 			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
-				std::cout << it->first << ": " << it->second << std::endl;
-			std::cout << "Body: " << this->request.getBody() << std::endl;
-			std::cout << "-----------------------------------------------------" << std::endl;
+				Logger::debug(it->first + ": " + it->second);
+
+			Logger::debug("Body: " + this->request.getBody());
+			Logger::debug("============================");
+
 			this->response = this->response.dispatchRequest(this->request);
 			std::string responseStr = this->response.toString();
-			std::cout << "------------------- RESPONSE SEND -------------------" << std::endl;
-			Logger::info(responseStr);
-			std::cout << "-----------------------------------------------------" << std::endl;
+
+			Logger::debug("===== RESPONSE SEND =====");
+			Logger::debug(responseStr);
+			Logger::debug("=========================");
 			if (!sendResponse(responseStr))
 				return;
 			if (this->_pendingResponse.empty())
