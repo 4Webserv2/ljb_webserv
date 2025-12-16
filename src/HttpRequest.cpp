@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:32 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 14:23:12 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/16 13:48:09 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,7 +104,6 @@ void HttpRequest::parseHeaders(std::istringstream &stream, HttpParse &parse) {
         } else {
             // Header malformado - ignorar
 			Logger::warning(std::string("Malformed header ignored: ") + line);
-			std::cerr << "WARNING: Malformed header ignored: " << line << std::endl;
             currentHeader.clear();
             currentValue.clear();
         }

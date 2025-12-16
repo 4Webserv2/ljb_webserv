@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:50:29 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/05 16:50:14 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/16 13:46:46 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,6 @@
 # include <csignal>
 # include <sys/types.h>
 # include <sys/wait.h>
-# include <cerrno>
 # include <clocale>
 # include <cstring>
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerManage.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 20:58:51 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/04 10:33:22 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:50:18 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "../includes/Client.hpp"
 #include "../includes/Runtime.hpp"
 #include "../includes/EpollInstance.hpp"
+#include "../includes/Logger.hpp"
 
 
 int make_nonblocking(int fd)
@@ -58,8 +59,8 @@ void ServerManage::startSocket(int domain, int type)
 		this->bindServer();  // Pode lançar exceção agora
 		this->updateToNonBlocking();
 		this->listenSocket();
-		
-		std::cout << "[OK] Server started on port " << this->getPort() << std::endl;
+
+		Logger::info("[OK] Server started on port " + StringUtils::intToString(this->getPort()));
 	}
 	catch (const std::exception &e) {
 		// Fechar socket se algo falhar
@@ -67,7 +68,7 @@ void ServerManage::startSocket(int domain, int type)
 			close(this->getSocketFd());
 			this->setSocketFd(-1);
 		}
-		
+
 		// Re-lançar a exceção
 		throw;
 	}
@@ -76,10 +77,13 @@ void ServerManage::startSocket(int domain, int type)
 void	ServerManage::makeSocket(int domain, int type)
 {
 	int	initSocket = socket(domain, type, 0);
-	std::cout << "socket()" << this->getSocketFd() << std::endl;
+	Logger::debug("socket() created fd=" + StringUtils::intToString(this->getSocketFd()));
+
 	if (initSocket == -1)
 		throw(std::runtime_error("Cannot init Server socket!"));
 	this->setSocketFd(initSocket);
+
+	Logger::info("socket() created fd=" + StringUtils::intToString(this->getSocketFd()));
 }
 
 void ServerManage::setServerAddr(int domain)
@@ -103,33 +107,36 @@ void ServerManage::bindServer(void)
 	if (initBind == -1)
 	{
 		// Mensagem de erro mais detalhada
-		std::cerr << "[ERROR] Cannot bind Server socket on port " << this->getPort() 
-				<< ": " << strerror(errno) << std::endl;
-		
+		StringUtils::errorAndCerr("Cannot bind server socket on port "+
+								StringUtils::intToString(this->getPort()) +
+								": " + std::string(strerror(errno)));
+
 		// IMPORTANTE: Lançar exceção ao invés de apenas retornar
-		throw std::runtime_error("Failed to bind socket on port " + 
+		throw std::runtime_error("Failed to bind socket on port " +
 								std::string(1, '0' + this->getPort()));
 	}
-	
-	std::cout << "[OK] Socket bound successfully on port " << this->getPort() << std::endl;
+
+	Logger::info("[OK] Socket bound on port " +
+				 StringUtils::intToString(this->getPort()));
 }
 
 void ServerManage::updateToNonBlocking(void)
 {
 	try
 	{
-		std::cout << "nonblocking()" << this->getSocketFd() << std::endl;
+		Logger::debug("Setting socket to non-blocking mode");
 		make_nonblocking(this->getSocketFd());
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr << e.what() << '\n';
+		Logger::error(e.what());
 	}
 }
 
 void ServerManage::listenSocket(void)
 {
-	std::cout << "listen()" << this->getSocketFd() << std::endl;
+	Logger::info("listen() called on fd=" +
+	              StringUtils::intToString(this->getSocketFd()));
 	int initListen = listen(this->getSocketFd(), MAX_EVENTS);
 	if (initListen == -1)
 		throw(std::runtime_error("Cannot listen to Server socket!"));
@@ -157,7 +164,8 @@ int ServerManage::getFd() const
 
 void ServerManage::EpollInHandler(void)
 {
-	std::cout << "New connection incoming on server socket FD: " << this->getSocketFd() << std::endl;
+	Logger::info("New incoming connection on server FD " +
+				 StringUtils::intToString(this->getSocketFd()));
 	while (true)
 	{
 		struct sockaddr_in clientSocketAddr;
@@ -175,16 +183,18 @@ void ServerManage::EpollInHandler(void)
 			{
 				make_nonblocking(clientFd);
 				int flag = 1;
-				if (setsockopt(clientFd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int)) < 0)
-					std::cerr << "[Warning] Failed to set TCP_NODELAY on client socket" << std::endl;
+				if (setsockopt(clientFd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int)) < 0) {
+					Logger::warning("Failed to set TCP_NODELAY on client socket");
+				}
 
 				RunTime::getClients().insert(std::make_pair(clientFd, Client(clientFd, RunTime::getElementInServerList(this->getSocketFd()))));
-				std::cout << "inseriu novo client no map." << std::endl;
+				Logger::info("New client inserted into clients map (fd=" +
+							  StringUtils::intToString(clientFd) + ")");
 				EpollInstance::manipInterestList(EPOLL_CTL_ADD, &RunTime::getClient(clientFd));
 			}
 			catch (const std::exception &e)
 			{
-				std::cerr << e.what() << std::endl;
+				Logger::error(e.what());
 				close(clientFd);
 			}
 		}
