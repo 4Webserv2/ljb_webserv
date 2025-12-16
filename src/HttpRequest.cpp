@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:32 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/16 13:48:09 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/16 14:06:44 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -122,12 +122,65 @@ void HttpRequest::parseHeaders(std::istringstream &stream, HttpParse &parse) {
     }
 }
 
+std::string HttpRequest::decodeChunked(const std::string &chunkedBody) {
+    std::string decoded;
+    size_t pos = 0;
+
+    while (pos < chunkedBody.size()) {
+        // Ler tamanho do chunk (em hexadecimal)
+        size_t lineEnd = chunkedBody.find("\r\n", pos);
+        if (lineEnd == std::string::npos)
+            lineEnd = chunkedBody.find("\n", pos);
+
+        if (lineEnd == std::string::npos)
+            break;
+
+        std::string sizeStr = chunkedBody.substr(pos, lineEnd - pos);
+
+        // Converter hex para int
+        std::istringstream hexStream(sizeStr);
+        size_t chunkSize;
+        hexStream >> std::hex >> chunkSize;
+
+        if (chunkSize == 0)
+            break; // Último chunk
+
+        // Pular para o início dos dados
+        pos = lineEnd + (chunkedBody[lineEnd] == '\r' ? 2 : 1);
+
+        // Extrair dados do chunk
+        if (pos + chunkSize <= chunkedBody.size()) {
+            decoded.append(chunkedBody.substr(pos, chunkSize));
+            pos += chunkSize;
+
+            // Pular \r\n após os dados
+            if (pos < chunkedBody.size() && chunkedBody[pos] == '\r')
+                pos++;
+            if (pos < chunkedBody.size() && chunkedBody[pos] == '\n')
+                pos++;
+        } else {
+            break;
+        }
+    }
+
+    return decoded;
+}
+
 void HttpRequest::parseBody(std::istringstream &stream, HttpParse &parse) {
     std::string line, body;
     while (std::getline(stream, line)) {
         body += line + "\n";
     }
-    parse.body = body;
+
+    // ADICIONAR: Verificar se é chunked encoding
+    if (parse.headers.count("Transfer-Encoding") > 0 &&
+        parse.headers["Transfer-Encoding"].find("chunked") != std::string::npos) {
+        std::cout << "[HTTP] Decodificando chunked encoding..." << std::endl;
+        parse.body = decodeChunked(body);
+        std::cout << "[HTTP] Body decodificado: " << parse.body.size() << " bytes" << std::endl;
+    } else {
+        parse.body = body;
+    }
 }
 
 HttpParse HttpRequest::httpParse(const std::string &rawRequest) {
