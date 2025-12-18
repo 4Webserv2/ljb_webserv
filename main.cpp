@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/18 15:25:02 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/18 15:28:02 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -161,7 +161,7 @@ int main(int ac, char **av)
 		serverLoop();
 	}
 	catch (const std::exception &e) {
-		StringUtils::errorAndCerr(std::string("Caught exception: ") + e.what());
+		Logger::error(std::string("Caught exception: ") + e.what());
 		RunTime::gracefulShutdown();
 		return (1);
 	}
