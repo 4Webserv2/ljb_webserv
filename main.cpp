@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/18 13:51:34 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/18 15:25:02 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -156,22 +156,17 @@ int main(int ac, char **av)
 
 	SignalHandler::setupSignalHandlers();
 
-	if (RunTime::createRuntime(ac, av) != 0)
-	{
-		StringUtils::errorAndCerr("Initializing runtime");
-		return 1;
-	}
-
 	try {
+		RunTime::createRuntime(ac, av);
 		serverLoop();
 	}
-	catch (std::exception &e) {
+	catch (const std::exception &e) {
 		StringUtils::errorAndCerr(std::string("Caught exception: ") + e.what());
 		RunTime::gracefulShutdown();
-		return 1;
+		return (1);
 	}
 	RunTime::gracefulShutdown();
-	Logger::info("[MAIN] Server finished successfully. Bye, see you! 👋");
+	Logger::info("Server finished successfully. Bye, see you! 👋");
 
-	return 0;
+	return (0);
 }
