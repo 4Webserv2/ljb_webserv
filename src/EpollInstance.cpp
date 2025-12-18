@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/13 20:46:14 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 14:20:45 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/18 17:02:27 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,13 +17,19 @@
 
 EpollInstance *EpollInstance::_run = NULL;
 
+EpollInstance::EpollInstance() {}
+
 EpollInstance::~EpollInstance()
 {
-	close(this->_epollFd);
-}
+	for (std::map<int, EpollHandler*>::iterator it = _epollHandlers.begin(); it != _epollHandlers.end(); ++it) {
+		delete it->second;
+	}
+	_epollHandlers.clear();
 
-EpollInstance::EpollInstance()
-{}
+	if (_epollFd != -1) {
+		close(_epollFd);
+	}
+}
 
 EpollInstance::EpollInstance(const EpollInstance &src)
 {
