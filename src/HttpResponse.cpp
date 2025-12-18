@@ -6,13 +6,15 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/16 14:09:31 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/18 20:16:02 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 # include "../includes/HttpResponse.hpp"
 # include "../includes/StringUtils.hpp"
 # include "../includes/Logger.hpp"
+# include "../includes/ServerBlock.hpp"
+# include "../includes/LocationBlock.hpp"
 
 HttpResponse::HttpResponse()
 {
@@ -356,92 +358,109 @@ HttpResponse HttpResponse::handleCGI(const HttpRequest &req) {
 	return res;
 }
 
+std::string HttpResponse::getContentTypeFromPath(const std::string &path) {
+	std::string contentType = "text/html; charset=utf-8";
 
-HttpResponse	HttpResponse::handleGet(const HttpRequest &req) {
-    HttpResponse res;
-    res.setErrorPageConfig(this->_errorPages, this->_rootPath);
+	size_t dotPos = path.find_last_of('.');
+	if (dotPos == std::string::npos)
+		return contentType;
 
-    std::string path = this->_rootPath + req.getUri();
+	std::string ext = path.substr(dotPos);
 
-    // 1. Verificar se o path é um diretório
-    struct stat pathStat;
-    if (stat(path.c_str(), &pathStat) == 0 && S_ISDIR(pathStat.st_mode)) {
-        std::cout << "[GET] Path é um diretório: " << path << std::endl;
+	if (ext == ".css")
+		return "text/css";
+	else if (ext == ".js")
+		return "application/javascript";
+	else if (ext == ".json")
+		contentType = "application/json";
+	else if (ext == ".png")
+		contentType = "image/png";
+	else if (ext == ".jpg" || ext == ".jpeg")
+		contentType = "image/jpeg";
+	else if (ext == ".gif")
+		contentType = "image/gif";
+	else if (ext == ".svg")
+		contentType = "image/svg+xml";
+	else if (ext == ".pdf")
+		contentType = "application/pdf";
+	else if (ext == ".txt")
+		contentType = "text/plain";
 
-        // Lista de arquivos index para tentar (em ordem de prioridade)
-        std::vector<std::string> indexFiles;
-        indexFiles.push_back("index.html");
-        indexFiles.push_back("index.htm");
+	return(contentType);
+}
 
-        // Tentar cada arquivo index
-        for (size_t i = 0; i < indexFiles.size(); i++) {
-            std::string indexPath = path;
+HttpResponse HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &server, const LocationBlock &location) {
+	HttpResponse res;
+	res.setErrorPageConfig(this->_errorPages, this->_rootPath);
 
-            // Adicionar '/' se necessário
-            if (indexPath[indexPath.length() - 1] != '/')
-                indexPath += "/";
+	// Construir path completo
+	std::string path = this->_rootPath + req.getUri();
 
-            indexPath += indexFiles[i];
+	// Verificar se path existe e é diretório
+	struct stat pathStat;
+	if (stat(path.c_str(), &pathStat) == 0 && S_ISDIR(pathStat.st_mode)) {
+		Logger::info("[GET] Path is a directory: " + path);
 
-            std::cout << "[GET] Tentando index: " << indexPath << std::endl;
+		// Tentar arquivos de index
+		std::vector<std::string> indexFiles = location.getIndex();
+		bool foundIndex = false;
 
-            // Verificar se o arquivo existe
-            if (access(indexPath.c_str(), F_OK) == 0) {
-                std::cout << "[GET] ✅ Index encontrado: " << indexPath << std::endl;
-                path = indexPath;
-                break;
-            }
-        }
-    }
+		for (size_t i = 0; i < indexFiles.size(); i++) {
+			std::string indexPath = path;
+			if (indexPath[indexPath.length() - 1] != '/')
+				indexPath += "/";
+			indexPath += indexFiles[i];
 
-    // 2. Tentar abrir o arquivo
-    std::ifstream file(path.c_str(), std::ios::binary);
-    if (!file) {
-        std::cerr << "[GET] ❌ Arquivo não encontrado: " << path << std::endl;
-        res.setErrorPage(404);
-        return res;
-    }
+			Logger::info("[GET] Trying index: " + indexPath);
 
-    // 3. Ler conteúdo do arquivo
-    std::ostringstream buffer;
-    buffer << file.rdbuf();
-    file.close();
+			if (access(indexPath.c_str(), F_OK) == 0) {
+				Logger::info("[GET] Index found: " + indexPath);
+				path = indexPath;
+				foundIndex = true;
+				break;
+			}
+		}
 
-    // 4. Determinar Content-Type baseado na extensão
-    std::string contentType = "text/html; charset=utf-8";
+		// Se não encontrou index e autoindex ativo, gerar autoindex
+		if (!foundIndex && location.getAutoIndex()) {
+			Logger::info("[GET] Autoindex on for: " + path);
+			return (HttpResponse::generateAutoIndex(path, req.getUri()));
+		}
 
-    size_t dotPos = path.find_last_of('.');
-    if (dotPos != std::string::npos) {
-        std::string ext = path.substr(dotPos);
+		// Se não encontrou index e autoindex off → 403
+		if (!foundIndex) {
+			Logger::error("[GET] Directory with no index and autoindex off: " + path);
+			res.setErrorPage(403);
+			return res;
+		}
+	}
 
-        if (ext == ".css")
-            contentType = "text/css";
-        else if (ext == ".js")
-            contentType = "application/javascript";
-        else if (ext == ".json")
-            contentType = "application/json";
-        else if (ext == ".png")
-            contentType = "image/png";
-        else if (ext == ".jpg" || ext == ".jpeg")
-            contentType = "image/jpeg";
-        else if (ext == ".gif")
-            contentType = "image/gif";
-        else if (ext == ".svg")
-            contentType = "image/svg+xml";
-        else if (ext == ".pdf")
-            contentType = "application/pdf";
-        else if (ext == ".txt")
-            contentType = "text/plain";
-    }
+	// Abrir arquivo
+	std::ifstream file(path.c_str(), std::ios::binary);
+	if (!file) {
+		Logger::error("[GET] File not found: " + path);
+		res.setErrorPage(404);
+		return res;
+	}
 
-    std::cout << "[GET] ✅ Servindo arquivo: " << path
-              << " (" << buffer.str().size() << " bytes, "
-              << contentType << ")" << std::endl;
+	// Ler conteúdo
+	std::ostringstream buffer;
+	buffer << file.rdbuf();
+	file.close();
 
-    res.setStatus(200, "OK");
-    res.setBody(buffer.str(), contentType);
-    return res;
-};
+	// Determinar Content-Type
+	std::string contentType = HttpResponse::getContentTypeFromPath(path);
+
+	Logger::info("[GET] Servindo arquivo: " + path +
+				" (" + StringUtils::size_tToString(buffer.str().size()) +
+				" bytes, " + contentType + ")");
+
+	// Preencher resposta
+	res.setStatus(200, "OK");
+	res.setBody(buffer.str(), contentType);
+
+	return res;
+}
 
 HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
     HttpResponse res;
@@ -847,8 +866,7 @@ void HttpResponse::setErrorPage(int code)
 
 	if (!file)
 	{
-		Logger::warning("Error file not found: " + path);
-		std::cerr << "Warning: Error file not found: " << path << std::endl;
+		Logger::warning(std::string("Error file not found: ") + path);
 
 		// 3. Fallback final: página HTML genérica
 		setStatus(code, getDefaultStatusMessage(code));
