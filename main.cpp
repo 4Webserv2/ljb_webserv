@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/18 15:31:38 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/18 15:32:48 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -134,7 +134,7 @@ void serverLoop()
 	Logger::info("[MAIN] Server loop terminated");
 }
 
-bool verifyArguments(int argc, char **argv) {
+bool checkArguments(int argc, char **argv) {
 	if (argc > 2) {
 		std::cerr << "Wrong number of arguments. It must be: " << argv[0] <<
 			" <config_file>\n\tOR\nUsage: " << argv[0] << std::endl;
@@ -145,7 +145,7 @@ bool verifyArguments(int argc, char **argv) {
 
 int main(int ac, char **av)
 {
-	if (!verifyArguments(ac, av)) {
+	if (!checkArguments(ac, av)) {
 		return (1);
 	}
 
