@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/16 13:59:26 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/18 13:51:34 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -134,24 +134,34 @@ void serverLoop()
 	Logger::info("[MAIN] Server loop terminated");
 }
 
+bool verifyArguments(int argc, char **argv) {
+	if (argc > 2) {
+		std::cerr << "Wrong number of arguments. It must be: " << argv[0] <<
+			" <config_file>\n\tOR\nUsage: " << argv[0] << std::endl;
+		return (false);
+	}
+	return (true);
+}
+
 int main(int ac, char **av)
 {
+	if (!verifyArguments(ac, av)) {
+		return (1);
+	}
+
 	CompositeLogHandler* compositeHandler = new CompositeLogHandler();
 	compositeHandler->addHandler(new StdLogHandler());
 	compositeHandler->addHandler(new FileLogHandler("app.log"));
 	Logger::initializeLogger(DEBUG, compositeHandler);
 
-	// 1. Configurar handlers de sinais ANTES de inicializar o runtime
 	SignalHandler::setupSignalHandlers();
 
-	// 2. Inicializar runtime
 	if (RunTime::createRuntime(ac, av) != 0)
 	{
 		StringUtils::errorAndCerr("Initializing runtime");
 		return 1;
 	}
 
-	// 3. Executar loop principal
 	try {
 		serverLoop();
 	}
@@ -161,7 +171,7 @@ int main(int ac, char **av)
 		return 1;
 	}
 	RunTime::gracefulShutdown();
-	Logger::info("[MAIN] Server finished with successfully. See you! 👋");
+	Logger::info("[MAIN] Server finished successfully. Bye, see you! 👋");
 
 	return 0;
 }
