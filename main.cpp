@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/18 15:28:02 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/18 15:31:38 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -166,7 +166,7 @@ int main(int ac, char **av)
 		return (1);
 	}
 	RunTime::gracefulShutdown();
-	Logger::info("Server finished successfully. Bye, see you! 👋");
+	Logger::info("Server finished. Bye, see you! 👋");
 
 	return (0);
 }
