@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/10 17:00:17 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/18 16:12:10 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/18 17:13:58 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,6 @@ class Logger
   private:
 	Logger(enum LogLevel level, LogHandler *handler);
 	Logger(const Logger &);
-	Logger &operator=(const Logger &);
 
 	static Logger *_instance;
 	LogHandler *_handler;
