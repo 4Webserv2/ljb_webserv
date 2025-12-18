@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/10 17:07:18 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/16 14:55:35 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/18 16:16:01 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,10 @@ Logger *Logger::_instance = NULL;
 
 Logger::Logger(enum LogLevel level, LogHandler *handler) : _handler(handler), _level(level) {}
 
-Logger::~Logger() {}
+Logger::~Logger() {
+	delete _handler;
+	_handler = NULL;
+}
 
 int Logger::initializeLogger(enum LogLevel level, LogHandler *handler)
 {
@@ -28,6 +31,15 @@ int Logger::initializeLogger(enum LogLevel level, LogHandler *handler)
 	}
 	Logger::_instance = new Logger(level, handler);
 	return (0);
+}
+
+void Logger::shutdownLogger() {
+	if (!_instance) {
+		return ;
+	}
+
+	delete _instance;
+	_instance = NULL;
 }
 
 void Logger::debug(std::string message)

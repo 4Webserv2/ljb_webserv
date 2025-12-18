@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/10 17:00:17 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/16 14:59:15 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/18 16:12:10 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,6 +86,7 @@ class Logger
 	~Logger();
 
 	static int initializeLogger(enum LogLevel level, LogHandler *handler);
+	static void shutdownLogger();
 	static void debug(std::string message);
 	static void info(std::string message);
 	static void warning(std::string message);
