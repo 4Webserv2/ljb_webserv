@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/18 20:16:02 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/19 13:42:30 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -393,13 +393,20 @@ HttpResponse HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &
 	HttpResponse res;
 	res.setErrorPageConfig(this->_errorPages, this->_rootPath);
 
+	if (!location.getReturn().empty()) {
+		res.setStatus(302, "Found");
+		res.setHeader("Location", location.getReturn());
+		Logger::info("\033[35m[GET] Redirect to: " + location.getReturn() + "\033[0m");
+		return res;
+	}
+
 	// Construir path completo
 	std::string path = this->_rootPath + req.getUri();
 
 	// Verificar se path existe e é diretório
 	struct stat pathStat;
 	if (stat(path.c_str(), &pathStat) == 0 && S_ISDIR(pathStat.st_mode)) {
-		Logger::info("[GET] Path is a directory: " + path);
+		Logger::info("\033[35m[GET] Path is a directory: " + path + "\033[0m");
 
 		// Tentar arquivos de index
 		std::vector<std::string> indexFiles = location.getIndex();
@@ -411,10 +418,10 @@ HttpResponse HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &
 				indexPath += "/";
 			indexPath += indexFiles[i];
 
-			Logger::info("[GET] Trying index: " + indexPath);
+			Logger::info("\033[35m[GET] Trying index: " + indexPath + \033[0m);
 
 			if (access(indexPath.c_str(), F_OK) == 0) {
-				Logger::info("[GET] Index found: " + indexPath);
+				Logger::info("\033[35m[GET] Index found: " + indexPath + "\033[0m");
 				path = indexPath;
 				foundIndex = true;
 				break;
@@ -451,9 +458,9 @@ HttpResponse HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &
 	// Determinar Content-Type
 	std::string contentType = HttpResponse::getContentTypeFromPath(path);
 
-	Logger::info("[GET] Servindo arquivo: " + path +
+	Logger::info("\033[35m[GET] Servindo arquivo: " + path +
 				" (" + StringUtils::size_tToString(buffer.str().size()) +
-				" bytes, " + contentType + ")");
+				" bytes, " + contentType + ")" + "\033[0m");
 
 	// Preencher resposta
 	res.setStatus(200, "OK");
