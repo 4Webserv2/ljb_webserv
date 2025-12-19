@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationBlock.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:04 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/27 22:14:20 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/19 11:58:05 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,12 @@ class LocationBlock {
         std::vector<std::string>    _cgiExtensions;
         std::vector<std::string>    _allowMethods;
 
+    public:
+        LocationBlock(ServerConfig &config);
+        ~LocationBlock();
+        LocationBlock(const LocationBlock &src);
+        LocationBlock &operator=(const LocationBlock &src);
+
         void addAutoIndex();
         void addCanUpload();
         void addUri();
@@ -39,13 +45,6 @@ class LocationBlock {
         void addIndex();
         void addCgiExtensions();
         void addAllowMethods();
-
-    public:
-        LocationBlock(ServerConfig &config);
-        ~LocationBlock();
-
-        LocationBlock &operator=(const LocationBlock &src);
-
         void printLocationBlock();
         void addLocationBlock();
 

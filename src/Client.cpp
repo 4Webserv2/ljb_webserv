@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/16 14:04:11 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/19 12:05:04 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -195,53 +195,87 @@ bool Client::isRequestComplete(void)
 
 void Client::processRequest(void)
 {
-	try
-	{
-		HttpRequest req;
-		req.setPar(this->request.httpParse(this->_rawRequest));
+    try
+    {
+        HttpRequest req;
+        req.setPar(this->request.httpParse(this->_rawRequest));
 
-		// Configurar error pages do ServerBlock
-		ServerBlock block = this->_server.getBlock();
-		std::map<int, std::string> errorPages = block.getErrorPages();
-		std::string rootPath = block.getRoot().second;
+        // Configurar error pages do ServerBlock
+        ServerBlock block = this->_server.getBlock();
+        std::map<int, std::string> errorPages = block.getErrorPages();
+        std::string rootPath = block.getRoot().second;
 
-		this->response.setErrorPageConfig(&errorPages, rootPath);
+        this->response.setErrorPageConfig(&errorPages, rootPath);
 
-		// Validar URI
-		if (req.getUri().empty() || req.getUri()[0] != '/')
-		{
-			this->response.setErrorPage(404);
-			return;
-		}
+        // Validar URI
+        if (req.getUri().empty() || req.getUri()[0] != '/')
+        {
+            this->response.setErrorPage(404);
+            return;
+        }
 
-		// Validar método (retorna 405 se não suportado)
-		if (req.getMethod() != "GET" &&
-			req.getMethod() != "POST" &&
-			req.getMethod() != "DELETE")
-		{
-			std::string reqMethod = StringUtils::ostreamToString(req.getMethod());
-			Logger::error("Method not allowed: " + reqMethod);
-			this->response.setErrorPage(405);
-			return;
-		}
+        // Validar método
+        if (req.getMethod() != "GET" &&
+            req.getMethod() != "POST" &&
+            req.getMethod() != "DELETE")
+        {
+            std::string reqMethod = StringUtils::ostreamToString(req.getMethod());
+            Logger::error("Method not allowed: " + reqMethod);
+            this->response.setErrorPage(405);
+            return;
+        }
 
-		// Processar requisição
-		this->response = this->response.dispatchRequest(req);
+        // CORRIGIDO: Usar cópia ao invés de ponteiro
+        std::string uri = req.getUri();
+        std::map<std::string, LocationBlock> locations = block.getLocations();
+        
+        if (locations.empty()) {
+            Logger::error("No location blocks configured");
+            this->response.setErrorPage(500);
+            return;
+        }
 
-		// Manter a configuração de error pages após dispatch
-		this->response.setErrorPageConfig(&errorPages, rootPath);
-	}
-	catch (std::exception &error)
-	{
-		Logger::error(std::string("Error processing request: ") + error.what());
-		// Garantir que error page config está disponível
-		ServerBlock block = this->_server.getBlock();
-		std::map<int, std::string> errorPages = block.getErrorPages();
-		std::string rootPath = block.getRoot().second;
-		this->response.setErrorPageConfig(&errorPages, rootPath);
+        // Procurar melhor match e fazer CÓPIA
+        std::string bestMatch = "";
+        bool foundLocation = false;
+        LocationBlock bestLocation = locations.begin()->second; // Inicializar com primeiro location
+        
+        for (std::map<std::string, LocationBlock>::iterator it = locations.begin();
+             it != locations.end(); ++it) {
+            const std::string &path = it->first;
+            if (uri.compare(0, path.size(), path) == 0) {
+                if (path.size() > bestMatch.size()) {
+                    bestMatch = path;
+                    bestLocation = it->second; // CÓPIA, não ponteiro
+                    foundLocation = true;
+                }
+            }
+        }
+        
+        if (!foundLocation) {
+            Logger::warning("No location block found for URI: " + uri);
+            this->response.setErrorPage(404);
+            return;
+        }
 
-		this->response.setErrorPage(400);
-	}
+        Logger::debug("Best location match: " + bestMatch);
+
+        // Processar requisição com a CÓPIA do LocationBlock
+        this->response = this->response.dispatchRequest(req, bestLocation);
+
+        // Manter a configuração de error pages após dispatch
+        this->response.setErrorPageConfig(&errorPages, rootPath);
+    }
+    catch (std::exception &error)
+    {
+        Logger::error(std::string("Error processing request: ") + error.what());
+        ServerBlock block = this->_server.getBlock();
+        std::map<int, std::string> errorPages = block.getErrorPages();
+        std::string rootPath = block.getRoot().second;
+        this->response.setErrorPageConfig(&errorPages, rootPath);
+
+        this->response.setErrorPage(400);
+    }
 }
 
 bool Client::sendResponse(const std::string &responseStr)
@@ -289,55 +323,95 @@ bool Client::sendResponse(const std::string &responseStr)
 
 void Client::EpollInHandler(void)
 {
-	char buffer[4096] = {0};
-	int count = 0;
+    char buffer[4096] = {0};
+    int count = 0;
 
-	if ((count = read(this->getSocketFd(), buffer, sizeof(buffer))) > 0)
-	{
-		this->concatenateRequestData(std::string(buffer, count));
-		if (this->isRequestComplete())
-		{
-			try {
-				this->request.setPar(this->request.httpParse(this->_rawRequest));
-			}
-			catch (std::exception &error) {
-				Logger::error("Failed to parse HTTP request");
-				this->response.setErrorPage(400);
-				std::string responseStr = this->response.toString();
-				if (!sendResponse(responseStr))
-					return;
-				if (this->_pendingResponse.empty())
-					RunTime::deleteClient(this->getSocketFd());
-				return;
-			}
-			Logger::debug("===== REQUEST COMPLETE =====");
-			Logger::debug(this->request.getMethod() + " " + this->request.getUri());
+    if ((count = read(this->getSocketFd(), buffer, sizeof(buffer))) > 0)
+    {
+        this->concatenateRequestData(std::string(buffer, count));
+        if (this->isRequestComplete())
+        {
+            try {
+                this->request.setPar(this->request.httpParse(this->_rawRequest));
+            }
+            catch (std::exception &error) {
+                Logger::error("Failed to parse HTTP request");
+                this->response.setErrorPage(400);
+                std::string responseStr = this->response.toString();
+                if (!sendResponse(responseStr))
+                    return;
+                if (this->_pendingResponse.empty())
+                    RunTime::deleteClient(this->getSocketFd());
+                return;
+            }
+            
+            Logger::debug("===== REQUEST COMPLETE =====");
+            Logger::debug(this->request.getMethod() + " " + this->request.getUri());
 
-			std::map<std::string, std::string> headers = this->request.getHeaders();
-			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
-				Logger::debug(it->first + ": " + it->second);
+            std::map<std::string, std::string> headers = this->request.getHeaders();
+            for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
+                Logger::debug(it->first + ": " + it->second);
 
-			Logger::debug("Body: " + this->request.getBody());
-			Logger::debug("============================");
+            Logger::debug("Body: " + this->request.getBody());
+            Logger::debug("============================");
 
-			this->response = this->response.dispatchRequest(this->request);
-			std::string responseStr = this->response.toString();
+            // CORRIGIDO: Usar cópia ao invés de ponteiro
+            ServerBlock block = this->_server.getBlock();
+            std::map<int, std::string> errorPages = block.getErrorPages();
+            std::string rootPath = block.getRoot().second;
+            this->response.setErrorPageConfig(&errorPages, rootPath);
 
-			Logger::debug("===== RESPONSE SEND =====");
-			Logger::debug(responseStr);
-			Logger::debug("=========================");
-			if (!sendResponse(responseStr))
-				return;
-			if (this->_pendingResponse.empty())
-				RunTime::deleteClient(this->getSocketFd());
-		}
-	}
-	else if (count == 0)
-	{
-		Logger::info("Client closed the connection.");
-		std::cout << this->getRawRequest() << std::endl;
-		RunTime::deleteClient(this->getSocketFd());
-	}
+            std::string uri = this->request.getUri();
+            std::map<std::string, LocationBlock> locations = block.getLocations();
+            
+            if (locations.empty()) {
+                Logger::error("No location blocks configured");
+                this->response.setErrorPage(500);
+            } else {
+                // Procurar melhor match e fazer CÓPIA
+                std::string bestMatch = "";
+                bool foundLocation = false;
+                LocationBlock bestLocation = locations.begin()->second; // Inicializar
+                
+                for (std::map<std::string, LocationBlock>::iterator it = locations.begin();
+                     it != locations.end(); ++it) {
+                    const std::string &path = it->first;
+                    if (uri.compare(0, path.size(), path) == 0) {
+                        if (path.size() > bestMatch.size()) {
+                            bestMatch = path;
+                            bestLocation = it->second; // CÓPIA
+                            foundLocation = true;
+                        }
+                    }
+                }
+                
+                if (foundLocation) {
+                    Logger::debug("Best location match: " + bestMatch);
+                    this->response = this->response.dispatchRequest(this->request, bestLocation);
+                } else {
+                    Logger::warning("No location block found for URI: " + uri);
+                    this->response.setErrorPage(404);
+                }
+            }
+
+            std::string responseStr = this->response.toString();
+
+            Logger::debug("===== RESPONSE SEND =====");
+            Logger::debug(responseStr);
+            Logger::debug("=========================");
+            
+            if (!sendResponse(responseStr))
+                return;
+            if (this->_pendingResponse.empty())
+                RunTime::deleteClient(this->getSocketFd());
+        }
+    }
+    else if (count == 0)
+    {
+        Logger::info("Client closed the connection.");
+        std::cout << this->getRawRequest() << std::endl;
+        RunTime::deleteClient(this->getSocketFd());
+    }
 }
 
 void Client::EpollOutHandler(void)

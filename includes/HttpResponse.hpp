@@ -6,7 +6,7 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:08 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 09:23:39 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/19 11:10:20 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 
 # include "Webserv.hpp"
 # include "HttpRequest.hpp"
+# include "LocationBlock.hpp"
 # include <sys/stat.h>
 # include <sys/types.h>
 # include <unistd.h>
@@ -47,10 +48,10 @@ class HttpResponse{
         int status_code;
         
         HttpResponse handleGet(const HttpRequest &req);
-        HttpResponse handlePost(const HttpRequest &req);
+        HttpResponse handlePost(const HttpRequest &req, const LocationBlock &location);
         HttpResponse handleDelete(const HttpRequest &req);
         HttpResponse handleCGI(const HttpRequest &req);
-        HttpResponse dispatchRequest(const HttpRequest &req);
+        HttpResponse dispatchRequest(const HttpRequest &req, const LocationBlock &location);
 
         void setStatus(int code, const std::string &message);
         void setHeader(const std::string &key, const std::string &value);

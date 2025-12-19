@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/18 16:52:43 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/19 11:39:16 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,56 +22,56 @@
 #include "includes/FileLogHandler.hpp"
 #include "includes/StringUtils.hpp"
 
-int	clientLoop(const int& clientFd) {
-	char	buffer[BUFFER_SIZE];
-	HttpRequest request;
-	std::string rawRequest;
-	int bytesRead;
+// int	clientLoop(const int& clientFd) {
+// 	char	buffer[BUFFER_SIZE];
+// 	HttpRequest request;
+// 	std::string rawRequest;
+// 	int bytesRead;
 
-	do
-	{
-		bytesRead = recv(clientFd, buffer, BUFFER_SIZE - 1, 0);
-		if (bytesRead <= 0)
-		{
-			if (bytesRead == 0) {
+// 	do
+// 	{
+// 		bytesRead = recv(clientFd, buffer, BUFFER_SIZE - 1, 0);
+// 		if (bytesRead <= 0)
+// 		{
+// 			if (bytesRead == 0) {
 
-				Logger::info("Client disconnected");
-			}
-			else {
+// 				Logger::info("Client disconnected");
+// 			}
+// 			else {
 
-				Logger::error("Error: client read");
-				close(clientFd);
-			}
-			return (bytesRead == 0 ? NO_ERROR : E_ERROR);
-		}
-		buffer[bytesRead] = '\0';
-		rawRequest += buffer;
-		if (rawRequest.find("\r\n\r\n") != std::string::npos) {
-			break;
-		}
-	} while (bytesRead == BUFFER_SIZE - 1);
-	Logger::info("Request received, processing...");
-	try
-	{
+// 				Logger::error("Error: client read");
+// 				close(clientFd);
+// 			}
+// 			return (bytesRead == 0 ? NO_ERROR : E_ERROR);
+// 		}
+// 		buffer[bytesRead] = '\0';
+// 		rawRequest += buffer;
+// 		if (rawRequest.find("\r\n\r\n") != std::string::npos) {
+// 			break;
+// 		}
+// 	} while (bytesRead == BUFFER_SIZE - 1);
+// 	Logger::info("Request received, processing...");
+// 	try
+// 	{
 
-		request.setPar(request.httpParse(rawRequest));
-		HttpResponse response;
-		response = response.dispatchRequest(request);
-		std::string responseStr = response.toString();
-		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
-		Logger::info("Response sent successfully (status " + response.intToString(response.status_code) + ")");
-	}
-	catch (std::exception& e)
-	{
-		HttpResponse errorResponse;
-		errorResponse.setErrorPage(400);
-		std::string responseStr = errorResponse.toString();
-		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
-		Logger::error(std::string("Error while processing request: ") + e.what());
-	}
-	close(clientFd);
-	return NO_ERROR;
-}
+// 		request.setPar(request.httpParse(rawRequest));
+// 		HttpResponse response;
+// 		response = response.dispatchRequest(request);
+// 		std::string responseStr = response.toString();
+// 		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
+// 		Logger::info("Response sent successfully (status " + response.intToString(response.status_code) + ")");
+// 	}
+// 	catch (std::exception& e)
+// 	{
+// 		HttpResponse errorResponse;
+// 		errorResponse.setErrorPage(400);
+// 		std::string responseStr = errorResponse.toString();
+// 		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
+// 		Logger::error(std::string("Error while processing request: ") + e.what());
+// 	}
+// 	close(clientFd);
+// 	return NO_ERROR;
+// }
 
 void epollValidationLoop()
 {

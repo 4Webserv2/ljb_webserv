@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/16 14:09:31 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/19 11:41:58 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -443,7 +443,7 @@ HttpResponse	HttpResponse::handleGet(const HttpRequest &req) {
     return res;
 };
 
-HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
+HttpResponse	HttpResponse::handlePost(const HttpRequest &req, const LocationBlock &location){
     HttpResponse res;
     res.setErrorPageConfig(this->_errorPages, this->_rootPath);
 
@@ -484,7 +484,8 @@ HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
     }
 
     // Criar diretório uploads se não existir
-    std::string uploadDir = "./uploads";
+	std::cout << location.getUploadPath();
+    std::string uploadDir = "uploads";//location.getUploadPath();
     struct stat st;
     if (stat(uploadDir.c_str(), &st) == -1) {
         if (mkdir(uploadDir.c_str(), 0755) != 0) {
@@ -771,7 +772,7 @@ HttpResponse	HttpResponse::handleDelete(const HttpRequest &req){
     return res;
 }
 
-HttpResponse HttpResponse::dispatchRequest(const HttpRequest &req)
+HttpResponse HttpResponse::dispatchRequest(const HttpRequest &req, const LocationBlock &location)
 {
 	std::string extension;
 	size_t dotPos = req.getUri().find_last_of('.');
@@ -792,7 +793,7 @@ HttpResponse HttpResponse::dispatchRequest(const HttpRequest &req)
 		return handleGet(req);
 	}
 	else if (req.getMethod() == "POST") {
-		return handlePost(req);
+		return handlePost(req, location);
 	}
 	else if (req.getMethod() == "DELETE") {
 		return handleDelete(req);

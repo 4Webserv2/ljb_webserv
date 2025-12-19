@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationBlock.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:40 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/16 13:26:59 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/19 11:57:21 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,6 +49,20 @@ LocationBlock::LocationBlock(ServerConfig &config) : _config(config), _autoIndex
 }
 
 LocationBlock::~LocationBlock() {}
+
+LocationBlock::LocationBlock(const LocationBlock &src) 
+    : _config(src._config)  // ⚠️ Referência - OK se _config ainda existe
+{
+    this->_autoIndex = src._autoIndex;
+    this->_canUpload = src._canUpload;
+    this->_uri = src._uri;
+    this->_alias = src._alias;
+    this->_return = src._return;
+    this->_uploadPath = src._uploadPath;
+    this->_index = src._index;
+    this->_cgiExtensions = src._cgiExtensions;
+    this->_allowMethods = src._allowMethods;
+}
 
 LocationBlock &LocationBlock::operator=(const LocationBlock &src) {
 	if (this != &src) {
