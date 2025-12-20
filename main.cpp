@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/18 16:52:43 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/20 12:28:50 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,26 +109,25 @@ void serverLoop()
 	while (RunTime::isRunning() && !SignalHandler::isShutdownRequested())
 	{
 		int sockets = EpollInstance::manipEpollWait();
-
-		// Se epoll_wait foi interrompido por sinal
 		if (sockets == -1)
 		{
 			if (errno == EINTR) {
-				// Interrompido por sinal, verificar se é shutdown
 				if (SignalHandler::isShutdownRequested()) {
 					SignalHandler::handleShutdownMessage();
 					Logger::info("[MAIN] epoll_wait interrupted by shutdown signal");
 					break;
 				}
-				// Outro sinal, continuar
 				continue;
 			}
 			StringUtils::errorAndCerr("[ERROR] Error in epoll_wait: " + std::string(strerror(errno)));
 			break;
 		}
-
-		epollReadyListLoop(sockets);
-		epollValidationLoop();
+		else
+		{
+			epollReadyListLoop(sockets);
+			EpollInstance::deletePendingRemovals();
+			epollValidationLoop();
+		}
 	}
 
 	Logger::info("[MAIN] Server loop terminated");

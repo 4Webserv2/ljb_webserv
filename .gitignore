@@ -4,3 +4,4 @@
 *.o
 webserv
 uploads/
+app.log

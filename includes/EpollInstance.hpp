@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:15 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/28 09:14:20 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/20 12:20:16 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,11 +20,12 @@ class EpollHandler;
 class EpollInstance
 {
 	private:
-		static EpollInstance	*_run;
-		int	_epollFd;
+		static EpollInstance			*_run;
+		int								_epollFd;
 		std::map<int, EpollHandler*>	_epollHandlers;
-		struct epoll_event _epollEvents;
-		struct epoll_event _eventsList[MAX_EVENTS];
+		struct epoll_event				_epollEvents;
+		std::vector<int>				_pendingRemovals;
+		struct epoll_event				_eventsList[MAX_EVENTS];
 
 		EpollInstance();
 		EpollInstance(const EpollInstance &src);
@@ -33,15 +34,18 @@ class EpollInstance
 	public:
 		~EpollInstance();
 
+		static void initEpollRun();
+		static void deleteElementFromHandlers(int socketFd);
+		static void manipInterestList(int operation, EpollHandler *handler);
+		static int	manipEpollWait();
+		static void deletePendingRemovals();
+		static void replaceHandlerFd(EpollHandler *handler, int newFd, uint32_t newEvents);
+
 		static int getEpollFd();
 		static std::map<int, EpollHandler*> &getEpollHandlers();
 		static struct epoll_event getEpollEvents();
 		static struct epoll_event &getEpollEventsList();
 		static struct epoll_event &getElementFromEventsList(int i);
-		static void manipInterestList(int operation, EpollHandler *handler);
-		static void deleteElementFromHandlers(int socketFd);
-		static void initEpollRun();
-		static int manipEpollWait();
 
 		class CannotInitEpoll : public std::exception
 		{
