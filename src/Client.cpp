@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/16 14:04:11 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/19 11:36:51 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -317,14 +317,14 @@ void Client::EpollInHandler(void)
 			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
 				Logger::debug(it->first + ": " + it->second);
 
-			Logger::debug("Body: " + this->request.getBody());
+			//Logger::debug("Body: " + this->request.getBody());
 			Logger::debug("============================");
 
 			this->response = this->response.dispatchRequest(this->request);
 			std::string responseStr = this->response.toString();
 
 			Logger::debug("===== RESPONSE SEND =====");
-			Logger::debug(responseStr);
+			//Logger::debug(responseStr);
 			Logger::debug("=========================");
 			if (!sendResponse(responseStr))
 				return;

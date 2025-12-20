@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/16 14:09:31 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/19 11:33:18 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -358,417 +358,417 @@ HttpResponse HttpResponse::handleCGI(const HttpRequest &req) {
 
 
 HttpResponse	HttpResponse::handleGet(const HttpRequest &req) {
-    HttpResponse res;
-    res.setErrorPageConfig(this->_errorPages, this->_rootPath);
+	HttpResponse res;
+	res.setErrorPageConfig(this->_errorPages, this->_rootPath);
 
-    std::string path = this->_rootPath + req.getUri();
+	std::string path = this->_rootPath + req.getUri();
 
-    // 1. Verificar se o path é um diretório
-    struct stat pathStat;
-    if (stat(path.c_str(), &pathStat) == 0 && S_ISDIR(pathStat.st_mode)) {
-        std::cout << "[GET] Path é um diretório: " << path << std::endl;
+	// 1. Verificar se o path é um diretório
+	struct stat pathStat;
+	if (stat(path.c_str(), &pathStat) == 0 && S_ISDIR(pathStat.st_mode)) {
+		std::cout << "[GET] Path é um diretório: " << path << std::endl;
 
-        // Lista de arquivos index para tentar (em ordem de prioridade)
-        std::vector<std::string> indexFiles;
-        indexFiles.push_back("index.html");
-        indexFiles.push_back("index.htm");
+		// Lista de arquivos index para tentar (em ordem de prioridade)
+		std::vector<std::string> indexFiles;
+		indexFiles.push_back("index.html");
+		indexFiles.push_back("index.htm");
 
-        // Tentar cada arquivo index
-        for (size_t i = 0; i < indexFiles.size(); i++) {
-            std::string indexPath = path;
+		// Tentar cada arquivo index
+		for (size_t i = 0; i < indexFiles.size(); i++) {
+			std::string indexPath = path;
 
-            // Adicionar '/' se necessário
-            if (indexPath[indexPath.length() - 1] != '/')
-                indexPath += "/";
+			// Adicionar '/' se necessário
+			if (indexPath[indexPath.length() - 1] != '/')
+				indexPath += "/";
 
-            indexPath += indexFiles[i];
+			indexPath += indexFiles[i];
 
-            std::cout << "[GET] Tentando index: " << indexPath << std::endl;
+			std::cout << "[GET] Tentando index: " << indexPath << std::endl;
 
-            // Verificar se o arquivo existe
-            if (access(indexPath.c_str(), F_OK) == 0) {
-                std::cout << "[GET] ✅ Index encontrado: " << indexPath << std::endl;
-                path = indexPath;
-                break;
-            }
-        }
-    }
+			// Verificar se o arquivo existe
+			if (access(indexPath.c_str(), F_OK) == 0) {
+				std::cout << "[GET] ✅ Index encontrado: " << indexPath << std::endl;
+				path = indexPath;
+				break;
+			}
+		}
+	}
 
-    // 2. Tentar abrir o arquivo
-    std::ifstream file(path.c_str(), std::ios::binary);
-    if (!file) {
-        std::cerr << "[GET] ❌ Arquivo não encontrado: " << path << std::endl;
-        res.setErrorPage(404);
-        return res;
-    }
+	// 2. Tentar abrir o arquivo
+	std::ifstream file(path.c_str(), std::ios::binary);
+	if (!file) {
+		std::cerr << "[GET] ❌ Arquivo não encontrado: " << path << std::endl;
+		res.setErrorPage(404);
+		return res;
+	}
 
-    // 3. Ler conteúdo do arquivo
-    std::ostringstream buffer;
-    buffer << file.rdbuf();
-    file.close();
+	// 3. Ler conteúdo do arquivo
+	std::ostringstream buffer;
+	buffer << file.rdbuf();
+	file.close();
 
-    // 4. Determinar Content-Type baseado na extensão
-    std::string contentType = "text/html; charset=utf-8";
+	// 4. Determinar Content-Type baseado na extensão
+	std::string contentType = "text/html; charset=utf-8";
 
-    size_t dotPos = path.find_last_of('.');
-    if (dotPos != std::string::npos) {
-        std::string ext = path.substr(dotPos);
+	size_t dotPos = path.find_last_of('.');
+	if (dotPos != std::string::npos) {
+		std::string ext = path.substr(dotPos);
 
-        if (ext == ".css")
-            contentType = "text/css";
-        else if (ext == ".js")
-            contentType = "application/javascript";
-        else if (ext == ".json")
-            contentType = "application/json";
-        else if (ext == ".png")
-            contentType = "image/png";
-        else if (ext == ".jpg" || ext == ".jpeg")
-            contentType = "image/jpeg";
-        else if (ext == ".gif")
-            contentType = "image/gif";
-        else if (ext == ".svg")
-            contentType = "image/svg+xml";
-        else if (ext == ".pdf")
-            contentType = "application/pdf";
-        else if (ext == ".txt")
-            contentType = "text/plain";
-    }
+		if (ext == ".css")
+			contentType = "text/css";
+		else if (ext == ".js")
+			contentType = "application/javascript";
+		else if (ext == ".json")
+			contentType = "application/json";
+		else if (ext == ".png")
+			contentType = "image/png";
+		else if (ext == ".jpg" || ext == ".jpeg")
+			contentType = "image/jpeg";
+		else if (ext == ".gif")
+			contentType = "image/gif";
+		else if (ext == ".svg")
+			contentType = "image/svg+xml";
+		else if (ext == ".pdf")
+			contentType = "application/pdf";
+		else if (ext == ".txt")
+			contentType = "text/plain";
+	}
 
-    std::cout << "[GET] ✅ Servindo arquivo: " << path
-              << " (" << buffer.str().size() << " bytes, "
-              << contentType << ")" << std::endl;
+	std::cout << "[GET] ✅ Servindo arquivo: " << path
+			  << " (" << buffer.str().size() << " bytes, "
+			  << contentType << ")" << std::endl;
 
-    res.setStatus(200, "OK");
-    res.setBody(buffer.str(), contentType);
-    return res;
+	res.setStatus(200, "OK");
+	res.setBody(buffer.str(), contentType);
+	return res;
 };
 
 HttpResponse	HttpResponse::handlePost(const HttpRequest &req){
-    HttpResponse res;
-    res.setErrorPageConfig(this->_errorPages, this->_rootPath);
+	HttpResponse res;
+	res.setErrorPageConfig(this->_errorPages, this->_rootPath);
 
-    std::string uri = req.getUri();
+	std::string uri = req.getUri();
 
-    // 1. Verificar se a URI suporta POST
-    bool isUploadEndpoint = (uri.find("/upload") == 0);
-    bool isPythonScript = (uri.find(".py") != std::string::npos);
-    bool isBlaScript = (uri.find(".bla") != std::string::npos);
+	// 1. Verificar se a URI suporta POST
+	bool isUploadEndpoint = (uri.find("/upload") == 0);
+	bool isPythonScript = (uri.find(".py") != std::string::npos);
+	bool isBlaScript = (uri.find(".bla") != std::string::npos);
 
-    if (!isUploadEndpoint && !isPythonScript && !isBlaScript)
-    {
-        std::cerr << "[POST] URI não suporta POST: " << uri << std::endl;
-        res.setErrorPage(405);
-        return res;
-    }
+	if (!isUploadEndpoint && !isPythonScript && !isBlaScript)
+	{
+		std::cerr << "[POST] URI não suporta POST: " << uri << std::endl;
+		res.setErrorPage(405);
+		return res;
+	}
 
-    // 2. Se for script (.py ou .bla), redirecionar para CGI
-    if (isPythonScript || isBlaScript)
-    {
-        std::cout << "[POST] Redirecionando para handleCGI" << std::endl;
-        return handleCGI(req);
-    }
+	// 2. Se for script (.py ou .bla), redirecionar para CGI
+	if (isPythonScript || isBlaScript)
+	{
+		std::cout << "[POST] Redirecionando para handleCGI" << std::endl;
+		return handleCGI(req);
+	}
 
-    // 3. Processar upload (apenas para /upload)
+	// 3. Processar upload (apenas para /upload)
 
-    // Se o body estiver vazio, retornar 200 OK
-    if (req.getBody().empty()) {
-        std::cout << "[POST] Body vazio, retornando 200 OK" << std::endl;
-        res.setStatus(200, "OK");
-        res.setBody(
-            "<h1>200 OK</h1>"
-            "<p>POST request processed successfully.</p>"
-            "<p>No data was uploaded (empty body).</p>",
-            "text/html"
-        );
-        return res;
-    }
+	// Se o body estiver vazio, retornar 200 OK
+	if (req.getBody().empty()) {
+		std::cout << "[POST] Body vazio, retornando 200 OK" << std::endl;
+		res.setStatus(200, "OK");
+		res.setBody(
+			"<h1>200 OK</h1>"
+			"<p>POST request processed successfully.</p>"
+			"<p>No data was uploaded (empty body).</p>",
+			"text/html"
+		);
+		return res;
+	}
 
-    // Criar diretório uploads se não existir
-    std::string uploadDir = "./uploads";
-    struct stat st;
-    if (stat(uploadDir.c_str(), &st) == -1) {
-        if (mkdir(uploadDir.c_str(), 0755) != 0) {
-            std::cerr << "[POST] Erro ao criar diretório uploads: "
-                      << strerror(errno) << std::endl;
-            res.setErrorPage(500);
-            return res;
-        }
-    }
+	// Criar diretório uploads se não existir
+	std::string uploadDir = "./uploads";
+	struct stat st;
+	if (stat(uploadDir.c_str(), &st) == -1) {
+		if (mkdir(uploadDir.c_str(), 0755) != 0) {
+			std::cerr << "[POST] Erro ao criar diretório uploads: "
+					  << strerror(errno) << std::endl;
+			res.setErrorPage(500);
+			return res;
+		}
+	}
 
-    // Verificar se é multipart/form-data (upload de arquivo)
-    std::string contentType = req.getHeader("Content-Type");
+	// Verificar se é multipart/form-data (upload de arquivo)
+	std::string contentType = req.getHeader("Content-Type");
 
-    if (contentType.find("multipart/form-data") != std::string::npos) {
-        // Upload de arquivo com multipart
-        std::cout << "[POST] Processando multipart/form-data upload" << std::endl;
-        return handleMultipartUpload(req, uploadDir, res);
-    } else {
-        // Upload simples (texto/dados brutos)
-        std::cout << "[POST] Processando upload simples" << std::endl;
-        return handleSimpleUpload(req, uploadDir, res);
-    }
+	if (contentType.find("multipart/form-data") != std::string::npos) {
+		// Upload de arquivo com multipart
+		std::cout << "[POST] Processando multipart/form-data upload" << std::endl;
+		return handleMultipartUpload(req, uploadDir, res);
+	} else {
+		// Upload simples (texto/dados brutos)
+		std::cout << "[POST] Processando upload simples" << std::endl;
+		return handleSimpleUpload(req, uploadDir, res);
+	}
 }
 
 // Novo método: Upload simples
 HttpResponse HttpResponse::handleSimpleUpload(const HttpRequest &req,
-                                               const std::string &uploadDir,
-                                               HttpResponse &res)
+											   const std::string &uploadDir,
+											   HttpResponse &res)
 {
-    // Gerar nome de arquivo único (timestamp)
-    std::time_t now = std::time(0);
-    std::ostringstream filename;
-    filename << uploadDir << "/upload_" << now << ".txt";
+	// Gerar nome de arquivo único (timestamp)
+	std::time_t now = std::time(0);
+	std::ostringstream filename;
+	filename << uploadDir << "/upload_" << now << ".txt";
 
-    std::string path = filename.str();
+	std::string path = filename.str();
 
-    // Salvar arquivo
-    std::ofstream file(path.c_str(), std::ios::binary);
-    if (!file) {
-        std::cerr << "[POST] Erro ao criar arquivo: " << path << std::endl;
-        res.setErrorPage(500);
-        return res;
-    }
+	// Salvar arquivo
+	std::ofstream file(path.c_str(), std::ios::binary);
+	if (!file) {
+		std::cerr << "[POST] Erro ao criar arquivo: " << path << std::endl;
+		res.setErrorPage(500);
+		return res;
+	}
 
-    file << req.getBody();
-    file.close();
+	file << req.getBody();
+	file.close();
 
-    std::cout << "[POST] Upload concluído: " << path
-              << " (" << req.getBody().size() << " bytes)" << std::endl;
+	std::cout << "[POST] Upload concluído: " << path
+			  << " (" << req.getBody().size() << " bytes)" << std::endl;
 
-    res.setStatus(201, "Created");
-    std::ostringstream bodyMsg;
-    bodyMsg << "<h1>✅ File uploaded successfully!</h1>"
-            << "<p><strong>File saved to:</strong> " << path << "</p>"
-            << "<p><strong>Size:</strong> " << req.getBody().size() << " bytes</p>";
-    res.setBody(bodyMsg.str(), "text/html");
-    return res;
+	res.setStatus(201, "Created");
+	std::ostringstream bodyMsg;
+	bodyMsg << "<h1>✅ File uploaded successfully!</h1>"
+			<< "<p><strong>File saved to:</strong> " << path << "</p>"
+			<< "<p><strong>Size:</strong> " << req.getBody().size() << " bytes</p>";
+	res.setBody(bodyMsg.str(), "text/html");
+	return res;
 }
 
 // Novo método: Upload multipart (arquivos)
 HttpResponse HttpResponse::handleMultipartUpload(const HttpRequest &req,
-                                                  const std::string &uploadDir,
-                                                  HttpResponse &res)
+												  const std::string &uploadDir,
+												  HttpResponse &res)
 {
-    std::string contentType = req.getHeader("Content-Type");
-    std::string body = req.getBody();
+	std::string contentType = req.getHeader("Content-Type");
+	std::string body = req.getBody();
 
-    std::cout << "[Multipart] Content-Type: " << contentType << std::endl;
-    std::cout << "[Multipart] Body size: " << body.size() << " bytes" << std::endl;
+	std::cout << "[Multipart] Content-Type: " << contentType << std::endl;
+	std::cout << "[Multipart] Body size: " << body.size() << " bytes" << std::endl;
 
-    // Extrair boundary do Content-Type
-    // Ex: multipart/form-data; boundary=----WebKitFormBoundaryFR0Yj9bGrUMTGTjp
-    size_t boundaryPos = contentType.find("boundary=");
-    if (boundaryPos == std::string::npos) {
-        std::cerr << "[POST] Boundary não encontrado no Content-Type" << std::endl;
-        res.setErrorPage(400);
-        return res;
-    }
+	// Extrair boundary do Content-Type
+	// Ex: multipart/form-data; boundary=----WebKitFormBoundaryFR0Yj9bGrUMTGTjp
+	size_t boundaryPos = contentType.find("boundary=");
+	if (boundaryPos == std::string::npos) {
+		std::cerr << "[POST] Boundary não encontrado no Content-Type" << std::endl;
+		res.setErrorPage(400);
+		return res;
+	}
 
-    // MELHORAR: Remover possíveis aspas ao redor do boundary
-    std::string boundaryValue = contentType.substr(boundaryPos + 9);
+	// MELHORAR: Remover possíveis aspas ao redor do boundary
+	std::string boundaryValue = contentType.substr(boundaryPos + 9);
 
-    // Remover espaços, tabs, aspas
-    while (!boundaryValue.empty() &&
-           (boundaryValue[0] == ' ' || boundaryValue[0] == '\t' || boundaryValue[0] == '"')) {
-        boundaryValue.erase(0, 1);
-    }
-    while (!boundaryValue.empty() &&
-           (boundaryValue[boundaryValue.length()-1] == ' ' ||
-            boundaryValue[boundaryValue.length()-1] == '\t' ||
-            boundaryValue[boundaryValue.length()-1] == '"' ||
-            boundaryValue[boundaryValue.length()-1] == '\r' ||
-            boundaryValue[boundaryValue.length()-1] == '\n')) {
-        boundaryValue.erase(boundaryValue.length()-1);
-    }
+	// Remover espaços, tabs, aspas
+	while (!boundaryValue.empty() &&
+		   (boundaryValue[0] == ' ' || boundaryValue[0] == '\t' || boundaryValue[0] == '"')) {
+		boundaryValue.erase(0, 1);
+	}
+	while (!boundaryValue.empty() &&
+		   (boundaryValue[boundaryValue.length()-1] == ' ' ||
+			boundaryValue[boundaryValue.length()-1] == '\t' ||
+			boundaryValue[boundaryValue.length()-1] == '"' ||
+			boundaryValue[boundaryValue.length()-1] == '\r' ||
+			boundaryValue[boundaryValue.length()-1] == '\n')) {
+		boundaryValue.erase(boundaryValue.length()-1);
+	}
 
-    std::string boundary = "--" + boundaryValue;
-    std::cout << "[Multipart] Boundary: '" << boundary << "'" << std::endl;
+	std::string boundary = "--" + boundaryValue;
+	std::cout << "[Multipart] Boundary: '" << boundary << "'" << std::endl;
 
-    // Debug: Mostrar primeiros 200 chars do body
-    std::cout << "[Multipart] Body preview: "
-              << body.substr(0, std::min((size_t)200, body.size())) << std::endl;
+	// Debug: Mostrar primeiros 200 chars do body
+	std::cout << "[Multipart] Body preview: "
+			  << body.substr(0, std::min((size_t)200, body.size())) << std::endl;
 
-    // Procurar pelo primeiro boundary
-    size_t startPos = body.find(boundary);
-    if (startPos == std::string::npos) {
-        std::cerr << "[POST] Boundary '" << boundary << "' não encontrado no body" << std::endl;
-        res.setErrorPage(400);
-        return res;
-    }
+	// Procurar pelo primeiro boundary
+	size_t startPos = body.find(boundary);
+	if (startPos == std::string::npos) {
+		std::cerr << "[POST] Boundary '" << boundary << "' não encontrado no body" << std::endl;
+		res.setErrorPage(400);
+		return res;
+	}
 
-    std::cout << "[Multipart] Primeiro boundary encontrado na posição: " << startPos << std::endl;
+	std::cout << "[Multipart] Primeiro boundary encontrado na posição: " << startPos << std::endl;
 
-    std::vector<std::string> uploadedFiles;
-    int partCount = 0;
+	std::vector<std::string> uploadedFiles;
+	int partCount = 0;
 
-    // Processar cada parte do multipart
-    while (startPos != std::string::npos) {
-        partCount++;
-        std::cout << "[Multipart] Processando parte #" << partCount << std::endl;
+	// Processar cada parte do multipart
+	while (startPos != std::string::npos) {
+		partCount++;
+		std::cout << "[Multipart] Processando parte #" << partCount << std::endl;
 
-        // Encontrar o próximo boundary
-        size_t nextBoundary = body.find(boundary, startPos + boundary.length());
-        if (nextBoundary == std::string::npos)
-            break;
+		// Encontrar o próximo boundary
+		size_t nextBoundary = body.find(boundary, startPos + boundary.length());
+		if (nextBoundary == std::string::npos)
+			break;
 
-        // Extrair a parte entre os boundaries
-        std::string part = body.substr(startPos + boundary.length(),
-                                       nextBoundary - startPos - boundary.length());
+		// Extrair a parte entre os boundaries
+		std::string part = body.substr(startPos + boundary.length(),
+									   nextBoundary - startPos - boundary.length());
 
-        std::cout << "[Multipart] Tamanho da parte: " << part.size() << " bytes" << std::endl;
+		std::cout << "[Multipart] Tamanho da parte: " << part.size() << " bytes" << std::endl;
 
-        // Procurar pelos headers da parte (terminam com \r\n\r\n)
-        size_t headerEnd = part.find("\r\n\r\n");
-        if (headerEnd == std::string::npos)
-            headerEnd = part.find("\n\n");
+		// Procurar pelos headers da parte (terminam com \r\n\r\n)
+		size_t headerEnd = part.find("\r\n\r\n");
+		if (headerEnd == std::string::npos)
+			headerEnd = part.find("\n\n");
 
-        if (headerEnd != std::string::npos) {
-            std::string headers = part.substr(0, headerEnd);
-            std::string fileData = part.substr(headerEnd +
-                                              (part[headerEnd] == '\r' ? 4 : 2));
+		if (headerEnd != std::string::npos) {
+			std::string headers = part.substr(0, headerEnd);
+			std::string fileData = part.substr(headerEnd +
+											  (part[headerEnd] == '\r' ? 4 : 2));
 
-            std::cout << "[Multipart] Headers da parte: " << headers << std::endl;
+			std::cout << "[Multipart] Headers da parte: " << headers << std::endl;
 
-            // Remover \r\n no final do fileData
-            while (!fileData.empty() &&
-                   (fileData[fileData.length() - 1] == '\r' ||
-                    fileData[fileData.length() - 1] == '\n')) {
-                fileData.erase(fileData.length() - 1);
-            }
+			// Remover \r\n no final do fileData
+			while (!fileData.empty() &&
+				   (fileData[fileData.length() - 1] == '\r' ||
+					fileData[fileData.length() - 1] == '\n')) {
+				fileData.erase(fileData.length() - 1);
+			}
 
-            std::cout << "[Multipart] Dados do arquivo: " << fileData.size() << " bytes" << std::endl;
+			std::cout << "[Multipart] Dados do arquivo: " << fileData.size() << " bytes" << std::endl;
 
-            // Extrair filename do header Content-Disposition
-            std::string filename = extractFilename(headers);
-            std::cout << "[Multipart] Filename extraído: '" << filename << "'" << std::endl;
+			// Extrair filename do header Content-Disposition
+			std::string filename = extractFilename(headers);
+			std::cout << "[Multipart] Filename extraído: '" << filename << "'" << std::endl;
 
-            if (!filename.empty() && !fileData.empty()) {
-                // Gerar path único
-                std::time_t now = std::time(0);
-                std::ostringstream filepath;
-                filepath << uploadDir << "/" << now << "_" << filename;
+			if (!filename.empty() && !fileData.empty()) {
+				// Gerar path único
+				std::time_t now = std::time(0);
+				std::ostringstream filepath;
+				filepath << uploadDir << "/" << now << "_" << filename;
 
-                // Salvar arquivo
-                std::ofstream file(filepath.str().c_str(), std::ios::binary);
-                if (file) {
-                    file.write(fileData.c_str(), fileData.size());
-                    file.close();
+				// Salvar arquivo
+				std::ofstream file(filepath.str().c_str(), std::ios::binary);
+				if (file) {
+					file.write(fileData.c_str(), fileData.size());
+					file.close();
 
-                    uploadedFiles.push_back(filepath.str());
-                    std::cout << "[POST] ✅ Arquivo salvo: " << filepath.str()
-                              << " (" << fileData.size() << " bytes)" << std::endl;
-                } else {
-                    std::cerr << "[POST] ❌ Erro ao salvar arquivo: "
-                              << filepath.str() << std::endl;
-                }
-            } else {
-                std::cout << "[Multipart] ⚠️ Parte ignorada (filename vazio ou sem dados)" << std::endl;
-            }
-        }
+					uploadedFiles.push_back(filepath.str());
+					std::cout << "[POST] ✅ Arquivo salvo: " << filepath.str()
+							  << " (" << fileData.size() << " bytes)" << std::endl;
+				} else {
+					std::cerr << "[POST] ❌ Erro ao salvar arquivo: "
+							  << filepath.str() << std::endl;
+				}
+			} else {
+				std::cout << "[Multipart] ⚠️ Parte ignorada (filename vazio ou sem dados)" << std::endl;
+			}
+		}
 
-        startPos = nextBoundary;
-    }
+		startPos = nextBoundary;
+	}
 
-    std::cout << "[Multipart] Total de partes processadas: " << partCount << std::endl;
-    std::cout << "[Multipart] Arquivos salvos: " << uploadedFiles.size() << std::endl;
+	std::cout << "[Multipart] Total de partes processadas: " << partCount << std::endl;
+	std::cout << "[Multipart] Arquivos salvos: " << uploadedFiles.size() << std::endl;
 
-    // Montar resposta
-    if (uploadedFiles.empty()) {
-        res.setStatus(400, "Bad Request");
-        res.setBody("<h1>❌ No files uploaded</h1>"
-                   "<p>No valid files were found in the request.</p>", "text/html");
-        return res;
-    }
+	// Montar resposta
+	if (uploadedFiles.empty()) {
+		res.setStatus(400, "Bad Request");
+		res.setBody("<h1>❌ No files uploaded</h1>"
+				   "<p>No valid files were found in the request.</p>", "text/html");
+		return res;
+	}
 
-    res.setStatus(201, "Created");
-    std::ostringstream bodyMsg;
-    bodyMsg << "<h1>✅ Files uploaded successfully!</h1>";
-    bodyMsg << "<p><strong>Total files:</strong> " << uploadedFiles.size() << "</p>";
-    bodyMsg << "<h2>Uploaded files:</h2><ul>";
+	res.setStatus(201, "Created");
+	std::ostringstream bodyMsg;
+	bodyMsg << "<h1>✅ Files uploaded successfully!</h1>";
+	bodyMsg << "<p><strong>Total files:</strong> " << uploadedFiles.size() << "</p>";
+	bodyMsg << "<h2>Uploaded files:</h2><ul>";
 
-    for (size_t i = 0; i < uploadedFiles.size(); i++) {
-        bodyMsg << "<li>" << uploadedFiles[i] << "</li>";
-    }
-    bodyMsg << "</ul>";
+	for (size_t i = 0; i < uploadedFiles.size(); i++) {
+		bodyMsg << "<li>" << uploadedFiles[i] << "</li>";
+	}
+	bodyMsg << "</ul>";
 
-    res.setBody(bodyMsg.str(), "text/html");
-    return res;
+	res.setBody(bodyMsg.str(), "text/html");
+	return res;
 }
 
 // Função auxiliar: extrair filename do header Content-Disposition
 std::string HttpResponse::extractFilename(const std::string &headers)
 {
-    // Procurar por filename="..."
-    size_t filenamePos = headers.find("filename=\"");
-    if (filenamePos == std::string::npos)
-        return "";
+	// Procurar por filename="..."
+	size_t filenamePos = headers.find("filename=\"");
+	if (filenamePos == std::string::npos)
+		return "";
 
-    size_t start = filenamePos + 10; // Pular filename="
-    size_t end = headers.find("\"", start);
+	size_t start = filenamePos + 10; // Pular filename="
+	size_t end = headers.find("\"", start);
 
-    if (end == std::string::npos)
-        return "";
+	if (end == std::string::npos)
+		return "";
 
-    std::string filename = headers.substr(start, end - start);
+	std::string filename = headers.substr(start, end - start);
 
-    // Sanitizar filename (remover path traversal)
-    size_t lastSlash = filename.find_last_of("/\\");
-    if (lastSlash != std::string::npos)
-        filename = filename.substr(lastSlash + 1);
+	// Sanitizar filename (remover path traversal)
+	size_t lastSlash = filename.find_last_of("/\\");
+	if (lastSlash != std::string::npos)
+		filename = filename.substr(lastSlash + 1);
 
-    return filename;
+	return filename;
 }
 
 HttpResponse	HttpResponse::handleDelete(const HttpRequest &req){
-    HttpResponse res;
-    res.setErrorPageConfig(this->_errorPages, this->_rootPath);
+	HttpResponse res;
+	res.setErrorPageConfig(this->_errorPages, this->_rootPath);
 
-    std::string uri = req.getUri();
-    std::string path;
+	std::string uri = req.getUri();
+	std::string path;
 
-    std::cout << "[DELETE] URI: " << uri << std::endl;
+	std::cout << "[DELETE] URI: " << uri << std::endl;
 
-    // ADICIONAR: Verificar se é um arquivo em /uploads (fora de www/)
-    if (uri.find("/uploads/") == 0) {
-        // Arquivo está em ./uploads/ (raiz do projeto)
-        path = "." + uri; // ./uploads/arquivo.pdf
-        std::cout << "[DELETE] Caminho de upload: " << path << std::endl;
-    } else {
-        // Arquivo está em ./www/
-        path = this->_rootPath + uri;
-        std::cout << "[DELETE] Caminho em www: " << path << std::endl;
-    }
+	// ADICIONAR: Verificar se é um arquivo em /uploads (fora de www/)
+	if (uri.find("/uploads/") == 0) {
+		// Arquivo está em ./uploads/ (raiz do projeto)
+		path = "." + uri; // ./uploads/arquivo.pdf
+		std::cout << "[DELETE] Caminho de upload: " << path << std::endl;
+	} else {
+		// Arquivo está em ./www/
+		path = this->_rootPath + uri;
+		std::cout << "[DELETE] Caminho em www: " << path << std::endl;
+	}
 
-    // Verificar se o arquivo existe
-    struct stat st;
-    if (stat(path.c_str(), &st) != 0) {
-        std::cerr << "[DELETE] ❌ Arquivo não encontrado: " << path << std::endl;
-        std::cerr << "[DELETE] Erro: " << strerror(errno) << std::endl;
-        res.setErrorPage(404);
-        return res;
-    }
+	// Verificar se o arquivo existe
+	struct stat st;
+	if (stat(path.c_str(), &st) != 0) {
+		std::cerr << "[DELETE] ❌ Arquivo não encontrado: " << path << std::endl;
+		std::cerr << "[DELETE] Erro: " << strerror(errno) << std::endl;
+		res.setErrorPage(404);
+		return res;
+	}
 
-    // Verificar se é um arquivo regular (não diretório)
-    if (!S_ISREG(st.st_mode)) {
-        std::cerr << "[DELETE] ❌ Não é um arquivo regular: " << path << std::endl;
-        res.setErrorPage(403);
-        return res;
-    }
+	// Verificar se é um arquivo regular (não diretório)
+	if (!S_ISREG(st.st_mode)) {
+		std::cerr << "[DELETE] ❌ Não é um arquivo regular: " << path << std::endl;
+		res.setErrorPage(403);
+		return res;
+	}
 
-    // Tentar deletar
-    if (std::remove(path.c_str()) == 0)
-    {
-        std::cout << "[DELETE] ✅ Arquivo deletado com sucesso: " << path << std::endl;
-        res.setStatus(200, "OK");
-        res.setBody("<h1>✅ File deleted successfully</h1><p>File: " + uri + "</p>", "text/html");
-    }
-    else
-    {
-        std::cerr << "[DELETE] ❌ Erro ao deletar arquivo: " << path << std::endl;
-        std::cerr << "[DELETE] Erro: " << strerror(errno) << std::endl;
-        res.setErrorPage(500);
-    }
-    return res;
+	// Tentar deletar
+	if (std::remove(path.c_str()) == 0)
+	{
+		std::cout << "[DELETE] ✅ Arquivo deletado com sucesso: " << path << std::endl;
+		res.setStatus(200, "OK");
+		res.setBody("<h1>✅ File deleted successfully</h1><p>File: " + uri + "</p>", "text/html");
+	}
+	else
+	{
+		std::cerr << "[DELETE] ❌ Erro ao deletar arquivo: " << path << std::endl;
+		std::cerr << "[DELETE] Erro: " << strerror(errno) << std::endl;
+		res.setErrorPage(500);
+	}
+	return res;
 }
 
 HttpResponse HttpResponse::dispatchRequest(const HttpRequest &req)
