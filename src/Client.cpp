@@ -6,7 +6,7 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/19 12:05:04 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/21 12:25:39 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -354,48 +354,55 @@ void Client::EpollInHandler(void)
 
             Logger::debug("Body: " + this->request.getBody());
             Logger::debug("============================");
-
+			Logger::info("deu merda aqui @@@@@@");
             // CORRIGIDO: Usar cópia ao invés de ponteiro
-            ServerBlock block = this->_server.getBlock();
-            std::map<int, std::string> errorPages = block.getErrorPages();
+            const ServerBlock& block = this->_server.getBlock();
+			Logger::info("aqui deu merda tbm");
+            const std::map<int, std::string>& errorPages = block.getErrorPages();
+			Logger::info("aqui deu merda tbm2");
             std::string rootPath = block.getRoot().second;
+			Logger::info("aqui deu merda tbm3");
             this->response.setErrorPageConfig(&errorPages, rootPath);
+			Logger::info("aqui deu merda tbm4");
 
             std::string uri = this->request.getUri();
-            std::map<std::string, LocationBlock> locations = block.getLocations();
-            
+            Logger::info("aqui deu merda tbm5");
+            const std::map<std::string, LocationBlock>& locations = block.getLocations();
+            Logger::info("aqui deu merda tbm6");
             if (locations.empty()) {
                 Logger::error("No location blocks configured");
+                Logger::info("teste de erro");
                 this->response.setErrorPage(500);
             } else {
-                // Procurar melhor match e fazer CÓPIA
+                // CORRIGIDO: Procurar melhor match SEM inicializar bestLocation antecipadamente
                 std::string bestMatch = "";
-                bool foundLocation = false;
-                LocationBlock bestLocation = locations.begin()->second; // Inicializar
+                const LocationBlock* bestLocationPtr = NULL;
                 
-                for (std::map<std::string, LocationBlock>::iterator it = locations.begin();
+                for (std::map<std::string, LocationBlock>::const_iterator it = locations.begin();
                      it != locations.end(); ++it) {
                     const std::string &path = it->first;
                     if (uri.compare(0, path.size(), path) == 0) {
                         if (path.size() > bestMatch.size()) {
                             bestMatch = path;
-                            bestLocation = it->second; // CÓPIA
-                            foundLocation = true;
+                            bestLocationPtr = &(it->second);
                         }
                     }
                 }
                 
-                if (foundLocation) {
+                if (bestLocationPtr != NULL) {
                     Logger::debug("Best location match: " + bestMatch);
+                    
+                    // Fazer cópia APENAS quando necessário
+                    LocationBlock bestLocation = *bestLocationPtr;
                     this->response = this->response.dispatchRequest(this->request, bestLocation);
                 } else {
                     Logger::warning("No location block found for URI: " + uri);
                     this->response.setErrorPage(404);
                 }
             }
-
+            Logger::info("aqui deu merda tbm8");
             std::string responseStr = this->response.toString();
-
+            Logger::info("aqui deu merda tbm9");
             Logger::debug("===== RESPONSE SEND =====");
             Logger::debug(responseStr);
             Logger::debug("=========================");

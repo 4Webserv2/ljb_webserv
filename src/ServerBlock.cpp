@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerBlock.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:59 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 14:56:23 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/21 10:02:45 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,12 +89,17 @@ ServerBlock &ServerBlock::operator=(const ServerBlock &src)
 
 ServerBlock::~ServerBlock() {}
 
-std::vector<std::string> ServerBlock::getServerNames() const { return this->_serverNames; }
-std::vector<t_listen> ServerBlock::getListen() const { return this->_listen; }
-std::pair<bool, size_t> ServerBlock::getMaxBodySize() const { return this->_maxBodySize; }
-std::pair<bool, std::string> ServerBlock::getRoot() const { return this->_root; }
-std::map<int, std::string> ServerBlock::getErrorPages() const { return this->_errorPages; }
-std::map<std::string, LocationBlock> ServerBlock::getLocations() const { return this->_locations; }
+const std::vector<std::string>& ServerBlock::getServerNames() const { return this->_serverNames; }
+
+const std::vector<t_listen>& ServerBlock::getListen() const { return this->_listen; }
+
+const std::pair<bool, size_t>& ServerBlock::getMaxBodySize() const { return this->_maxBodySize; }
+
+const std::pair<bool, std::string>& ServerBlock::getRoot() const { return this->_root; }
+
+const std::map<int, std::string>& ServerBlock::getErrorPages() const { return this->_errorPages; }
+
+const std::map<std::string, LocationBlock>& ServerBlock::getLocations() const { return this->_locations; }
 
 void ServerBlock::printServerBlock()
 {
