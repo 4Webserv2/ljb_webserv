@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/22 21:39:04 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/23 19:53:33 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -402,11 +402,11 @@ void Client::EpollInHandler(void)
 				const LocationBlock *bestLocationPtr = NULL;
 
 				//ERRO NESSE FOR
+				std::cout << "CARALHOOOOOOOOOOOOOOO" << std::endl;
 				for (std::map<std::string, LocationBlock>::const_iterator it = locations.begin(); it != locations.end(); ++it)
 				{
 					const std::string &path = it->first;
 					size_t pathLen = path.size();
-					// evitar comparar além do tamanho da URI e entradas vazias
 					if (pathLen == 0 || uri.size() < pathLen)
 						continue;
 					if (uri.compare(0, pathLen, path) == 0)
@@ -418,7 +418,6 @@ void Client::EpollInHandler(void)
 						}
 					}
 				}
-				std::cout << "CARALHOOOOOOOOOOOOOOO" << std::endl;
 
 				if (bestLocationPtr != NULL)
 				{
@@ -453,7 +452,8 @@ void Client::EpollInHandler(void)
 	{
 		Logger::info("Client closed the connection.");
 		std::cout << this->getRawRequest() << std::endl;
-		RunTime::deleteClient(this->getSocketFd());
+		//RunTime::deleteClient(this->getSocketFd());
+		EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
 	}
 }
 
@@ -475,7 +475,7 @@ void Client::EpollOutHandler(void)
 		events &= ~EPOLLOUT;
 		this->setActiveEvents(events);
 		EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
-		EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
+		//EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
 		return;
 	}
 }
@@ -486,5 +486,4 @@ void Client::deleteHandler(void)
 
 	epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_DEL, this->getSocketFd(), NULL);
 	close(this->getSocketFd());
-	RunTime::getClients().erase(this->getSocketFd());
 }

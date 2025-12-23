@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:04 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/22 20:52:58 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/23 19:32:41 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@ class ServerConfig;
 
 class LocationBlock {
 	private:
-		ServerConfig                  &_config;
+		ServerConfig                &_config;
 		bool                        _autoIndex;
 		bool                        _canUpload;
 		std::string                 _uri;

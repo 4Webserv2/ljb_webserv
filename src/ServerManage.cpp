@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerManage.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 20:58:51 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/21 09:51:59 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/23 19:51:04 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,9 @@ ServerManage::~ServerManage(){}
 
 ServerManage::ServerManage(unsigned int host, int port, const ServerBlock &block)
 	: EpollHandler(EPOLLIN | EPOLLRDHUP), _host(host), _port(port), _block(block)
-{}
+{
+	startSocket(AF_INET, SOCK_STREAM);
+}
 
 ServerManage::ServerManage(const ServerManage &src)
 	: EpollHandler(src.getSocketFd(), src.getActiveEvents(), src.getEventsTimeout()),
@@ -188,10 +190,9 @@ void ServerManage::EpollInHandler(void)
 					Logger::warning("Failed to set TCP_NODELAY on client socket");
 				}
 
-				RunTime::getClients().insert(std::make_pair(clientFd, Client(clientFd, RunTime::getElementInServerList(this->getSocketFd()))));
-				Logger::info("New client inserted into clients map (fd=" +
-							  StringUtils::intToString(clientFd) + ")");
-				EpollInstance::manipInterestList(EPOLL_CTL_ADD, &RunTime::getClient(clientFd));
+				//RunTime::getClients().insert(std::make_pair(clientFd, Client(clientFd, RunTime::getElementInServerList(this->getSocketFd()))));
+				Logger::info("New client inserted into clients map (fd=" + StringUtils::intToString(clientFd) + ")");
+				EpollInstance::manipInterestList(EPOLL_CTL_ADD, new Client(clientFd, *this));
 			}
 			catch (const std::exception &e)
 			{

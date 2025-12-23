@@ -1,8 +1,8 @@
 NAME = webserv
 
-CC = c++
+CC = clang++
 
-C_FLAGS = -Wall -Wextra -Werror -std=c++98
+C_FLAGS = -Wall -g -Wextra -Werror -std=c++98
 
 SRC_DIR = src/
 

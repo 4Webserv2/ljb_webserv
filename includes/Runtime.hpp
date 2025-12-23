@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Runtime.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:45:55 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/04 10:09:49 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/23 19:47:19 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,8 +23,8 @@ class RunTime {
 	private:
 		static RunTime *_runtime;
 		ServerConfig _config;
-		std::map<int, Client> _clients;
-		std::vector<ServerManage> _sListeners;
+		/*std::map<int, Client> _clients;
+		std::vector<ServerManage> _sListeners;*/
 		bool _running;
 
 		RunTime();
@@ -38,19 +38,18 @@ class RunTime {
 		static void destroyRuntime(void);
 
 		static void initListeners(void);
-		static void initSockets(int domain, int type);
-		static void deleteClient(int client_fd);
+		//static void deleteClient(int client_fd);
 
 		static void gracefulShutdown();
-		static void closeAllClients();
-		static void closeAllServers();
+		//static void closeAllClients();
+		//static void closeAllServers();
 		static bool isRunning();
 		static void setRunning(bool running);
 
 		static RunTime &getRuntime();
 		static ServerConfig &getServerConfig();
-		static std::vector<ServerManage> &getListeners();
-		static std::map<int, Client> &getClients();
-		static Client &getClient(int client_fd);
-		static ServerManage &getElementInServerList(int serverSocketFd);
+		//static std::vector<ServerManage> &getListeners();
+		//static std::map<int, Client> &getClients();
+		//static Client &getClient(int client_fd);
+		//static ServerManage &getElementInServerList(int serverSocketFd);
 };

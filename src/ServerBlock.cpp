@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:59 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/22 20:49:30 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/23 20:00:28 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,15 +44,15 @@ ServerBlock::ServerBlock(ServerConfig &config)
 		else
 			throw std::runtime_error("Invalid configuration: server: invalid token");
 	}
-	for (std::map<std::string, LocationBlock>::iterator it = this->_locations.begin(); it != this->_locations.end(); ++it)
+/*	for (std::map<std::string, LocationBlock>::iterator it = this->_locations.begin(); it != this->_locations.end(); ++it)
 	{
 		std::cout << "Location: " << it->first << " with methods: ";
 		std::vector<std::string> methods = it->second.getAllowMethods();
 		for (size_t i = 0; i < methods.size(); i++)
 			std::cout << methods[i] << " ";
 		std::cout << std::endl;
-	}
-
+	}*/
+	std::cout << "SAIU FOR" << std::endl;
 	//| Fazer verificação para ver se os atributos estão corretos.
 	if (this->_maxBodySize.second == 0)
 		throw std::runtime_error("Invalid configuration: server: client_max_body_size cannot be zero.");
@@ -73,8 +73,6 @@ ServerBlock &ServerBlock::operator=(const ServerBlock &src)
 {
 	if (this != &src)
 	{
-		// NÃO pode reatribuir _config (é referência)
-		// Só copia os outros membros
 		this->_serverNames = src._serverNames;
 		this->_listen = src._listen;
 		this->_maxBodySize = src._maxBodySize;
@@ -85,7 +83,9 @@ ServerBlock &ServerBlock::operator=(const ServerBlock &src)
 	return *this;
 }
 
-ServerBlock::~ServerBlock() {}
+ServerBlock::~ServerBlock() {
+	std::cout << "Server Block destructor" << std::endl;
+}
 
 const std::vector<std::string>& ServerBlock::getServerNames() const { return this->_serverNames; }
 

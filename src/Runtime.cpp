@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Runtime.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:32:41 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/16 13:55:26 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/23 19:50:00 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,6 @@ int RunTime::createRuntime(int ac, char **av)
 		_runtime = new RunTime(ac, av);
 		EpollInstance::initEpollRun();
 		_runtime->initListeners();
-		_runtime->initSockets(AF_INET, SOCK_STREAM);
 		Logger::info("Runtime Initiated");
 		return (0);
 	}
@@ -56,23 +55,14 @@ void RunTime::initListeners(void)
 	for (size_t i = 0; i < _runtime->_config.getServerBlocks().size(); i++)
 	{
 		Logger::info("Loading server block " + StringUtils::intToString(i + 1) + "...");
-		std::vector<t_listen> listens = _runtime->_config.getServerBlocks()[i].getListen();
+		std::vector<t_listen> listens = _runtime->_config.getServerBlocks()[i]->getListen();
 
 		for (size_t j = 0; j < listens.size(); j++)
 		{
 			std::pair<unsigned int, int> key(listens[j].host, listens[j].port);
 			if (uniqueListens.insert(key).second)
-				_runtime->_sListeners.push_back(ServerManage(listens[j].host, listens[j].port, _runtime->_config.getServerBlocks()[i]));
+				EpollInstance::manipInterestList(EPOLL_CTL_ADD, new ServerManage(listens[j].host, listens[j].port, *_runtime->_config.getServerBlocks()[i]));
 		}
-	}
-}
-
-void RunTime::initSockets(int domain, int type)
-{
-	for (unsigned int i = 0; i < _runtime->_sListeners.size(); i++)
-	{
-		_runtime->_sListeners[i].startSocket(domain, type);
-		EpollInstance::manipInterestList(EPOLL_CTL_ADD, &_runtime->_sListeners[i]);
 	}
 }
 
@@ -95,7 +85,7 @@ ServerConfig &RunTime::getServerConfig(void)
 	return (_runtime->_config);
 }
 
-std::vector<ServerManage> &RunTime::getListeners(void)
+/*std::vector<ServerManage> &RunTime::getListeners(void)
 {
 	return (_runtime->_sListeners);
 }
@@ -103,9 +93,9 @@ std::vector<ServerManage> &RunTime::getListeners(void)
 std::map<int, Client> &RunTime::getClients(void)
 {
 	return (_runtime->_clients);
-}
+}*/
 
-Client &RunTime::getClient(int client_fd)
+/*Client &RunTime::getClient(int client_fd)
 {
 	std::map<int, Client>::iterator clients = _runtime->_clients.find(client_fd);
 	if (clients == _runtime->_clients.end())
@@ -137,7 +127,7 @@ void RunTime::deleteClient(int client_fd)
 	epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_DEL, client_fd, NULL);
 	close(client_fd);
 	_runtime->_clients.erase(it);
-}
+}*/
 
 bool RunTime::isRunning() {
     if (_runtime == NULL)
@@ -150,7 +140,7 @@ void RunTime::setRunning(bool running) {
         _runtime->_running = running;
 }
 
-void RunTime::closeAllClients() {
+/*void RunTime::closeAllClients() {
 	if (_runtime == NULL) {
 		return;
 	}
@@ -193,9 +183,9 @@ void RunTime::closeAllClients() {
 
 	_runtime->_clients.clear();
 	Logger::info("[SHUTDOWN] All clients have been disconnected");
-}
+}*/
 
-void RunTime::closeAllServers() {
+/*void RunTime::closeAllServers() {
 	if (_runtime == NULL) {
 		return;
 	}
@@ -217,7 +207,7 @@ void RunTime::closeAllServers() {
 	_runtime->_sListeners.clear();
 	Logger::info("[SHUTDOWN] All server sockets have been closed");
 }
-
+*/
 void RunTime::gracefulShutdown() {
 	if (_runtime == NULL) {
 		return;
@@ -229,8 +219,8 @@ void RunTime::gracefulShutdown() {
 
 	_runtime->_running = false;
 
-	closeAllServers();
-	closeAllClients();
+	//closeAllServers();
+	//closeAllClients();
 
 	Logger::info("[SHUTDOWN] Closing epoll...");
 	close(EpollInstance::getEpollFd());
