@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/20 12:33:09 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/22 21:39:04 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ Client::Client(int clientFd, ServerManage &server)
 }
 
 Client::Client(const Client &src)
-	: EpollHandler(src.getActiveEvents(), src.getSocketFd(), src.getEventsTimeout()),
+	: EpollHandler(src.getSocketFd(), src.getActiveEvents(), src.getEventsTimeout()),
 	  _server(src._server)
 {
 	*this = src;
@@ -97,7 +97,8 @@ void Client::concatenateRequestData(const std::string &data)
 	{
 		// Encontrar fim dos headers
 		size_t headerEnd = this->_rawRequest.find("\r\n\r\n");
-		if (headerEnd == std::string::npos) {
+		if (headerEnd == std::string::npos)
+		{
 			std::cerr << "[Client] ❌ ERRO: STATE_READING_BODY mas headers não encontrados!" << std::endl;
 			return;
 		}
@@ -116,7 +117,8 @@ void Client::concatenateRequestData(const std::string &data)
 		std::getline(headerStream, line);
 
 		// Ler headers
-		while (std::getline(headerStream, line)) {
+		while (std::getline(headerStream, line))
+		{
 			// Remover \r se existir
 			if (!line.empty() && line[line.size() - 1] == '\r')
 				line.erase(line.size() - 1);
@@ -125,7 +127,8 @@ void Client::concatenateRequestData(const std::string &data)
 				break;
 
 			// Procurar por Content-Length ou Transfer-Encoding
-			if (line.find("content-length:") == 0 || line.find("Content-Length:") == 0) {
+			if (line.find("content-length:") == 0 || line.find("Content-Length:") == 0)
+			{
 				size_t colonPos = line.find(':');
 				contentLengthStr = line.substr(colonPos + 1);
 				// Trim
@@ -135,7 +138,8 @@ void Client::concatenateRequestData(const std::string &data)
 					contentLengthStr.erase(contentLengthStr.length() - 1);
 			}
 
-			if (line.find("transfer-encoding:") == 0 || line.find("Transfer-Encoding:") == 0) {
+			if (line.find("transfer-encoding:") == 0 || line.find("Transfer-Encoding:") == 0)
+			{
 				size_t colonPos = line.find(':');
 				transferEncoding = line.substr(colonPos + 1);
 				// Trim
@@ -149,17 +153,23 @@ void Client::concatenateRequestData(const std::string &data)
 		// Verificar se é chunked
 		bool isChunked = (transferEncoding.find("chunked") != std::string::npos);
 
-		if (isChunked) {
+		if (isChunked)
+		{
 			std::cout << "[Client] Transfer-Encoding: chunked" << std::endl;
 			// Para chunked, verificar se termina com "0\r\n\r\n"
 			if (this->_rawRequest.find("\r\n0\r\n\r\n") != std::string::npos ||
-				this->_rawRequest.find("\n0\n\n") != std::string::npos) {
+				this->_rawRequest.find("\n0\n\n") != std::string::npos)
+			{
 				std::cout << "[Client] ✅ Chunked encoding completo!" << std::endl;
 				this->setState(STATE_COMPLETE);
-			} else {
+			}
+			else
+			{
 				std::cout << "[Client] ⏳ Chunked: aguardando último chunk (0)..." << std::endl;
 			}
-		} else if (!contentLengthStr.empty()) {
+		}
+		else if (!contentLengthStr.empty())
+		{
 			// Usar Content-Length
 			int contentLength = std::atoi(contentLengthStr.c_str());
 			size_t bodyStart = headerEnd + 4;
@@ -200,9 +210,9 @@ void Client::processRequest(void)
 		HttpRequest req;
 		req.setPar(this->request.httpParse(this->_rawRequest));
 
-		// Configurar error pages do ServerBlock
-		ServerBlock block = this->_server.getBlock();
-		std::map<int, std::string> errorPages = block.getErrorPages();
+		// Configurar error pages do ServerBlock (usar referências para evitar cópias)
+		const ServerBlock &block = this->_server.getBlock();
+		const std::map<int, std::string> &errorPages = block.getErrorPages();
 		std::string rootPath = block.getRoot().second;
 
 		this->response.setErrorPageConfig(&errorPages, rootPath);
@@ -213,8 +223,6 @@ void Client::processRequest(void)
 			this->response.setErrorPage(404);
 			return;
 		}
-
-		// Validar método (retorna 405 se não suportado)
 		if (req.getMethod() != "GET" &&
 			req.getMethod() != "POST" &&
 			req.getMethod() != "DELETE")
@@ -225,8 +233,49 @@ void Client::processRequest(void)
 			return;
 		}
 
-		// Processar requisição
-		this->response = this->response.dispatchRequest(req);
+		// Procurar melhor match sem copiar LocationBlock (usar ponteiro para o entry const)
+		std::string uri = req.getUri();
+		std::map<std::string, LocationBlock> locations = block.getLocations();
+
+		if (locations.empty())
+		{
+			Logger::error("No location blocks configured");
+			this->response.setErrorPage(500);
+			return;
+		}
+
+		std::string bestMatch = "";
+		const LocationBlock *bestLocationPtr = NULL;
+
+		for (std::map<std::string, LocationBlock>::const_iterator it = locations.begin();
+			 it != locations.end(); ++it)
+		{
+			const std::string &path = it->first;
+			size_t pathLen = path.size();
+			// evitar comparar além do tamanho da URI e entradas vazias
+			if (pathLen == 0 || uri.size() < pathLen)
+				continue;
+			if (uri.compare(0, pathLen, path) == 0)
+			{
+				if (pathLen > bestMatch.size())
+				{
+					bestMatch = path;
+					bestLocationPtr = &(it->second);
+				}
+			}
+		}
+
+		if (bestLocationPtr == NULL)
+		{
+			Logger::warning("No location block found for URI: " + uri);
+			this->response.setErrorPage(404);
+			return;
+		}
+
+		Logger::debug("Best location match: " + bestMatch);
+
+		// Processar requisição passando referência (sem cópia)
+		this->response = this->response.dispatchRequest(req, *bestLocationPtr);
 
 		// Manter a configuração de error pages após dispatch
 		this->response.setErrorPageConfig(&errorPages, rootPath);
@@ -234,7 +283,6 @@ void Client::processRequest(void)
 	catch (std::exception &error)
 	{
 		Logger::error(std::string("Error processing request: ") + error.what());
-		// Garantir que error page config está disponível
 		ServerBlock block = this->_server.getBlock();
 		std::map<int, std::string> errorPages = block.getErrorPages();
 		std::string rootPath = block.getRoot().second;
@@ -256,8 +304,7 @@ bool Client::sendResponse(const std::string &responseStr)
 		this->getSocketFd(),
 		this->_pendingResponse.c_str() + this->_responseOffset,
 		this->_pendingResponse.size() - this->_responseOffset,
-		MSG_NOSIGNAL
-	);
+		MSG_NOSIGNAL);
 
 	if (bytesSent < 0)
 	{
@@ -287,6 +334,8 @@ bool Client::sendResponse(const std::string &responseStr)
 	return false;
 }
 
+#include <iostream>
+
 void Client::EpollInHandler(void)
 {
 	char buffer[4096] = {0};
@@ -297,19 +346,25 @@ void Client::EpollInHandler(void)
 		this->concatenateRequestData(std::string(buffer, count));
 		if (this->isRequestComplete())
 		{
-			try {
+			try
+			{
 				this->request.setPar(this->request.httpParse(this->_rawRequest));
 			}
-			catch (std::exception &error) {
+			catch (std::exception &error)
+			{
 				Logger::error("Failed to parse HTTP request");
 				this->response.setErrorPage(400);
 				std::string responseStr = this->response.toString();
 				if (!sendResponse(responseStr))
 					return;
 				if (this->_pendingResponse.empty())
-					RunTime::deleteClient(this->getSocketFd());
+				{
+					EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
+					return;
+				}
 				return;
 			}
+
 			Logger::debug("===== REQUEST COMPLETE =====");
 			Logger::debug(this->request.getMethod() + " " + this->request.getUri());
 
@@ -317,19 +372,81 @@ void Client::EpollInHandler(void)
 			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
 				Logger::debug(it->first + ": " + it->second);
 
-			//Logger::debug("Body: " + this->request.getBody());
+			Logger::debug("Body: " + this->request.getBody());
 			Logger::debug("============================");
+			Logger::info("deu merda aqui @@@@@@");
+			// CORRIGIDO: Usar cópia ao invés de ponteiro
+			const ServerBlock &block = this->_server.getBlock();
+			Logger::info("aqui deu merda tbm");
+			const std::map<int, std::string> &errorPages = block.getErrorPages();
+			Logger::info("aqui deu merda tbm2");
+			std::string rootPath = block.getRoot().second;
+			Logger::info("aqui deu merda tbm3");
+			this->response.setErrorPageConfig(&errorPages, rootPath);
+			Logger::info("aqui deu merda tbm4");
 
-			this->response = this->response.dispatchRequest(this->request);
+			std::string uri = this->request.getUri();
+			Logger::info("aqui deu merda tbm5");
+			std::map<std::string, LocationBlock> locations = block.getLocations();
+			Logger::info("aqui deu merda tbm6");
+			if (locations.empty())
+			{
+				Logger::error("No location blocks configured");
+				Logger::info("teste de erro");
+				this->response.setErrorPage(500);
+			}
+			else
+			{
+				// CORRIGIDO: Procurar melhor match SEM inicializar bestLocation antecipadamente
+				std::string bestMatch = "";
+				const LocationBlock *bestLocationPtr = NULL;
+
+				//ERRO NESSE FOR
+				for (std::map<std::string, LocationBlock>::const_iterator it = locations.begin(); it != locations.end(); ++it)
+				{
+					const std::string &path = it->first;
+					size_t pathLen = path.size();
+					// evitar comparar além do tamanho da URI e entradas vazias
+					if (pathLen == 0 || uri.size() < pathLen)
+						continue;
+					if (uri.compare(0, pathLen, path) == 0)
+					{
+						if (pathLen > bestMatch.size())
+						{
+							bestMatch = path;
+							bestLocationPtr = &(it->second);
+						}
+					}
+				}
+				std::cout << "CARALHOOOOOOOOOOOOOOO" << std::endl;
+
+				if (bestLocationPtr != NULL)
+				{
+					Logger::debug("Best location match: " + bestMatch);
+
+					// Passar referência direta para evitar copia/desalocação
+					this->response = this->response.dispatchRequest(this->request, *bestLocationPtr);
+				}
+				else
+				{
+					Logger::warning("No location block found for URI: " + uri);
+					this->response.setErrorPage(404);
+				}
+			}
+			Logger::info("aqui deu merda tbm8");
 			std::string responseStr = this->response.toString();
-
+			Logger::info("aqui deu merda tbm9");
 			Logger::debug("===== RESPONSE SEND =====");
 			//Logger::debug(responseStr);
 			Logger::debug("=========================");
+
 			if (!sendResponse(responseStr))
 				return;
 			if (this->_pendingResponse.empty())
-				RunTime::deleteClient(this->getSocketFd());
+			{
+				EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
+				return;
+			}
 		}
 	}
 	else if (count == 0)
@@ -358,7 +475,8 @@ void Client::EpollOutHandler(void)
 		events &= ~EPOLLOUT;
 		this->setActiveEvents(events);
 		EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
-		RunTime::deleteClient(this->getSocketFd());
+		EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
+		return;
 	}
 }
 

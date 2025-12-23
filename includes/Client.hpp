@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:18 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 09:52:09 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/22 20:48:03 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,10 +16,10 @@
 # include "HttpRequest.hpp"
 # include "HttpResponse.hpp"
 # include "EpollHandler.hpp"
+# include "LocationBlock.hpp"
 
 class ServerManage;
 
-// Estados do cliente
 enum ClientState {
 	STATE_READING_HEADER = 0,
 	STATE_READING_BODY = 1,

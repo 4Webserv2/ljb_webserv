@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerManage.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 20:58:51 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/16 13:51:44 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/21 09:51:59 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,7 +153,7 @@ int ServerManage::getPort() const
 	return (this->_port);
 }
 
-ServerBlock ServerManage::getBlock() const
+const ServerBlock& ServerManage::getBlock() const
 {
 	return (this->_block);
 }

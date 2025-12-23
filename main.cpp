@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/20 12:28:50 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/22 20:45:10 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@
 #include "includes/FileLogHandler.hpp"
 #include "includes/StringUtils.hpp"
 
-int	clientLoop(const int& clientFd) {
+/*int	clientLoop(const int& clientFd) {
 	char	buffer[BUFFER_SIZE];
 	HttpRequest request;
 	std::string rawRequest;
@@ -71,7 +71,7 @@ int	clientLoop(const int& clientFd) {
 	}
 	close(clientFd);
 	return NO_ERROR;
-}
+}*/
 
 void epollValidationLoop()
 {
@@ -80,7 +80,6 @@ void epollValidationLoop()
 		Logger::info("[MAIN] Shutdown requested, stopping loop...");
 		return;
 	}
-
 	std::map<int, EpollHandler *> &handlers = EpollInstance::getEpollHandlers();
 	for (std::map<int, EpollHandler *>::iterator it = handlers.begin();
 		 it != handlers.end(); ++it)
@@ -135,8 +134,7 @@ void serverLoop()
 
 bool checkArguments(int argc, char **argv) {
 	if (argc > 2) {
-		std::cerr << "Wrong number of arguments. It must be: " << argv[0] <<
-			" <config_file>\n\tOR\nUsage: " << argv[0] << std::endl;
+		std::cerr << "Wrong number of arguments. It must be: " << argv[0] << " <config_file>\n\tOR\nUsage: " << argv[0] << std::endl;
 		return (false);
 	}
 	return (true);
@@ -144,9 +142,8 @@ bool checkArguments(int argc, char **argv) {
 
 int main(int ac, char **av)
 {
-	if (!checkArguments(ac, av)) {
+	if (!checkArguments(ac, av))
 		return (1);
-	}
 
 	CompositeLogHandler* compositeHandler = new CompositeLogHandler();
 	compositeHandler->addHandler(new StdLogHandler());
@@ -155,11 +152,13 @@ int main(int ac, char **av)
 
 	SignalHandler::setupSignalHandlers();
 
-	try {
+	try
+	{
 		RunTime::createRuntime(ac, av);
 		serverLoop();
 	}
-	catch (const std::exception &e) {
+	catch (const std::exception &e)
+	{
 		Logger::error(std::string("Caught exception: ") + e.what());
 		RunTime::gracefulShutdown();
 		Logger::shutdownLogger();

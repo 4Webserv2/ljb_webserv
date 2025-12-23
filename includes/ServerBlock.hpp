@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerBlock.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:38:08 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/04 10:24:39 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/22 20:30:49 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ class ServerBlock
 	public:
 		ServerBlock(ServerConfig &config);
 		ServerBlock(const ServerBlock &src);
-		ServerBlock &operator=(const ServerBlock &src); 
+		ServerBlock &operator=(const ServerBlock &src);
 		~ServerBlock();
 
 		void printServerBlock();
@@ -57,10 +57,10 @@ class ServerBlock
 		void setCgiTimeout(unsigned int timeout);
 
 		//| Getters
-		std::vector<std::string> getServerNames() const;
-		std::vector<t_listen> getListen() const;
-		std::pair<bool, size_t> getMaxBodySize() const;
-		std::pair<bool, std::string> getRoot() const;
-		std::map<int, std::string> getErrorPages() const;
-		std::map<std::string, LocationBlock> getLocations() const;
+		const std::vector<std::string>& getServerNames() const;
+		const std::vector<t_listen>& getListen() const;
+		const std::pair<bool, size_t>& getMaxBodySize() const;
+		const std::pair<bool, std::string>& getRoot() const;
+		const std::map<int, std::string>& getErrorPages() const;
+		const std::map<std::string, LocationBlock>& getLocations() const;
 };
