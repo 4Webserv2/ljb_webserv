@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerManage.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 20:58:51 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/23 19:51:04 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/23 21:39:22 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -143,6 +143,10 @@ void ServerManage::listenSocket(void)
 	int initListen = listen(this->getSocketFd(), MAX_EVENTS);
 	if (initListen == -1)
 		throw(std::runtime_error("Cannot listen to Server socket!"));
+}
+
+ServerBlock ServerManage::getServerBlock(void) const {
+    return (this->_block);
 }
 
 unsigned int ServerManage::getHost() const

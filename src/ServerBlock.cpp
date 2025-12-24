@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerBlock.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:59 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/23 20:00:28 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/23 21:30:59 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,6 +98,65 @@ const std::pair<bool, std::string>& ServerBlock::getRoot() const { return this->
 const std::map<int, std::string>& ServerBlock::getErrorPages() const { return this->_errorPages; }
 
 const std::map<std::string, LocationBlock>& ServerBlock::getLocations() const { return this->_locations; }
+
+const LocationBlock *ServerBlock::getValidLocation(const std::string uri, const std::string method) const
+{
+    const LocationBlock *location = NULL;
+
+    if (method != "GET" && method != "POST" && method != "DELETE")
+        return location;
+
+    // Verificar se URI exato existe
+    std::map<std::string, LocationBlock>::const_iterator it = this->_locations.find(uri);
+    if (it != this->_locations.end())
+    {
+        std::vector<std::string> allowedMethods = it->second.getAllowMethods();
+        if (allowedMethods.empty()) {
+            return &(it->second);
+        }
+        for (size_t i = 0; i < allowedMethods.size(); i++)
+        {
+            if (allowedMethods[i] == method)
+                return &(it->second);
+        }
+        return NULL;
+    }
+    
+    // Verificar se URI começa com alguma location válida
+    // Ex: /test.css deve casar com location /
+    std::string bestMatch = "";
+    for (std::map<std::string, LocationBlock>::const_iterator it = this->_locations.begin(); it != this->_locations.end(); ++it)
+    {
+        std::string locationPath = it->first;
+        // Verificar se URI começa com este location path
+        if (uri.compare(0, locationPath.size(), locationPath) == 0) {
+            if (locationPath.size() > bestMatch.size()) {
+                bool methodAllowed = false;
+                bestMatch = locationPath;
+                location = &(it->second);
+
+                std::vector<std::string> allowedMethods = it->second.getAllowMethods();
+                if (allowedMethods.empty()) {
+                    methodAllowed = true;
+                } else {
+                    for (size_t i = 0; i < allowedMethods.size(); i++)
+                    {
+                        if (allowedMethods[i] == method) {
+                            methodAllowed = true;
+                            break;
+                        }
+                    }
+                }
+                if (!methodAllowed) {
+                    bestMatch = "";
+                    location = NULL;
+                }
+            }
+        }
+    }
+    
+    return location;
+}
 
 void ServerBlock::printServerBlock()
 {

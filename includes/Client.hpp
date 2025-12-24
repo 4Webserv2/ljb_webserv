@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:18 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/22 20:48:03 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/23 21:41:47 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,45 +17,48 @@
 # include "HttpResponse.hpp"
 # include "EpollHandler.hpp"
 # include "LocationBlock.hpp"
+# include "ServerManage.hpp"
 
 class ServerManage;
+class HttpResponse;
 
-enum ClientState {
-	STATE_READING_HEADER = 0,
-	STATE_READING_BODY = 1,
-	STATE_COMPLETE = 2
-};
+class Client : public EpollHandler {
+    private:
+        int             _state;
+        std::string     _rawRequest;
+        size_t          _responseOffset;   // Offset atual da resposta sendo enviada
+        std::string     _pendingResponse;  // Resposta pendente de envio (caso send() parcial)
+        ServerManage    &_serverManage;
+        public:
+        HttpRequest     request;
+        HttpResponse    response;
+        // CgiHandler    *cgiHandler;
+        bool            logged;
 
-class Client: public EpollHandler
-{
-	private:
-		int _state;
-		std::string _rawRequest;
-		ServerManage &_server;
-		std::string _pendingResponse;
-		size_t _responseOffset;
+        Client(int clientFd, ServerManage &serverManage);
+        Client(const Client &src);
+        Client &operator=(const Client &src);
+        ~Client(void);
 
-	public:
-		HttpResponse	response;
-		HttpRequest		request;
+        virtual void handleEpollIn(void);
+        virtual void handleEpollOut(void);  // Para envio assíncrono quando socket está pronto
 
-		~Client();
-		Client(int clientFd, ServerManage &server);
-		Client(const Client &src);
-		Client &operator=(const Client &src);
+        void concatenateRequestData(std::string data);
+        bool isRequestComplete(void);
+        bool sendResponse(const std::string &responseStr);  // Envia resposta com tratamento correto de erros
+        
+        int getState(void) const;
+        std::string &getRawRequest(void);
+        HttpRequest &getRequest(void);
+        HttpResponse &getResponse(void);
 
-		virtual void EpollInHandler(void);
-		virtual void EpollOutHandler(void);
-		virtual void deleteHandler(void);
+        void setState(int state);
 
-		void concatenateRequestData(const std::string &data);
-		bool isRequestComplete(void);
-		bool sendResponse(const std::string &responseStr);
-		void processRequest(void);
-
-		int getState(void) const;
-		std::string &getRawRequest(void);
-		HttpRequest &getRequest(void);
-		HttpResponse &getResponse(void);
-		void setState(int state);
+        std::string toString(void) const;
+        // Metodo para validar antes de executar o POST, DELETE e GET
+        bool validateMethodAllowed(LocationBlock &location);
+        bool validatingUriWithLocation(ServerBlock &serverBlock, LocationBlock &location);
+        bool validateGet(ServerBlock &serverBlock, LocationBlock &location);
+        bool validatePost(ServerBlock &serverBlock, LocationBlock &location);
+        bool validateDelete(ServerBlock &serverBlock, LocationBlock &location);
 };

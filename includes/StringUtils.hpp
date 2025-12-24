@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cctype>
 #include <sstream>
+# include "LocationBlock.hpp"
 
 class StringUtils {
 public:
@@ -28,4 +29,7 @@ public:
 	static void errorAndCerr(const std::string &msg);
 	//Passa size_t para string
 	static std::string size_tToString(size_t n);
+	static std::string extractUriWithoutQuery(const std::string &uri);
+	static std::string extractQueryFromUri(const std::string &uri);
+	static std::string extractUriPathInfo(const std::string &uri, const LocationBlock &location);
 };

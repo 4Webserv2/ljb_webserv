@@ -5,6 +5,7 @@
 # include "Runtime.hpp"
 
 class Client;
+class ServerBlock;
 
 class ServerManage: public EpollHandler
 {
@@ -19,7 +20,7 @@ class ServerManage: public EpollHandler
 		ServerManage(const ServerManage &src);
 		ServerManage &operator=(const ServerManage &src);
 		~ServerManage();
-
+		ServerBlock getServerBlock(void) const;
 		void EpollInHandler(void);
 
 		void startSocket(int domain, int type);

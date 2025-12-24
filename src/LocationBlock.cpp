@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationBlock.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:40 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/23 18:57:42 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/23 21:34:31 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -269,4 +269,92 @@ void LocationBlock::addAllowMethods()
 
 	this->_config.verifyToken(DIFF_SEMICOLON, "Invalid configuration: allow_methods: expected ';' at the end of allow_methods directive");
 	this->_config.removeTokens(1); //| Removendo o ponto e vírgula
+}
+
+bool LocationBlock::validatePath(const std::string &path) const {
+    bool isValid = false;
+    std::ifstream file(path.c_str(), std::ios::binary);
+
+    isValid = file.good();
+    file.close();
+    return isValid;
+}
+
+std::string LocationBlock::getPath(const std::string &root, const std::string &requestUri) const {
+    std::string serverRoot = root;
+    std::string locationAlias = this->getAlias();
+    std::string locationUri = this->getUri();
+    std::string request = requestUri;
+    std::string finalPath;
+     
+    if (locationAlias.empty()) {
+        finalPath = serverRoot + request;
+        Logger::debug("Nao temos alias. FinalPath = " + finalPath);
+    }
+    else {
+        // Tem alias
+        // O alias tem preferencia em cima do root
+        // remove o prefixo da location
+        if (request.find(locationUri) == 0)
+            request = request.substr(locationUri.size());
+        finalPath = locationAlias + '/' + request;
+        Logger::debug("Temos alias. FinalPath = " + finalPath);
+    }
+
+
+
+    // std::string locationUri = this->getUri(); // "/"
+    // std::string relativeUri = requestUri;
+
+
+    // std::string fullPath = root;
+    // if (!fullPath.empty() && fullPath[fullPath.size() - 1] != '/')
+    //     fullPath += "/";
+
+    // fullPath += relativeUri;
+
+    if (!finalPath.empty() && finalPath[finalPath.size() - 1] == '/') {
+        std::vector<std::string> indexes = getIndex();
+        if (indexes.empty())
+            indexes.push_back("index.html");
+
+        for (size_t i = 0; i < indexes.size(); i++) {
+            std::string test = finalPath + indexes[i];
+            if (validatePath(test))
+                return test;
+        }
+    }
+
+    // se terminar com / → tenta index
+    // if (fullPath[fullPath.size() - 1] == '/') {
+    //     std::vector<std::string> indexes = getIndex();
+    //     if (indexes.empty())
+    //         indexes.push_back("index.html");
+
+    //     for (size_t i = 0; i < indexes.size(); i++) {
+    //         std::string test = fullPath + indexes[i];
+    //         if (validatePath(test))
+    //             return test;
+    //     }
+    //     return "";
+    // }
+
+    Logger::debug("Final Path dentro do getPath: " + finalPath);
+    // arquivo direto
+    if (validatePath(finalPath))
+        return finalPath;
+
+    return "";
+}
+
+bool LocationBlock::checkHttpMethodInLocation(std::string method) {
+    if (this->_allowMethods.empty()) {
+        return (true);
+    }
+    for (std::vector<std::string>::iterator it = this->_allowMethods.begin(); it != this->_allowMethods.end(); it++) {
+        if (*it == method) {
+            return (true);
+        }
+    }
+    return (false);
 }

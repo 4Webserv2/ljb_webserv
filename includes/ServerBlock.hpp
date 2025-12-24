@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerBlock.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:38:08 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/23 19:35:03 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/23 21:30:37 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,6 +46,7 @@ class ServerBlock
 
 		bool isUriValid(const std::string uri);
 		bool isLocationValid(const std::string uri, const std::string method);
+		const LocationBlock *getValidLocation(const std::string uri, const std::string method) const;
 
 		void addListens();
 		void addServerNames();
