@@ -6,7 +6,7 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 20:58:51 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/23 21:39:22 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/23 21:54:29 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -187,22 +187,30 @@ void ServerManage::EpollInHandler(void)
 		else
 		{
 			try
-			{
-				make_nonblocking(clientFd);
-				int flag = 1;
-				if (setsockopt(clientFd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int)) < 0) {
-					Logger::warning("Failed to set TCP_NODELAY on client socket");
-				}
+            {
+                make_nonblocking(clientFd);
+                int flag = 1;
+                if (setsockopt(clientFd, IPPROTO_TCP, TCP_NODELAY, 
+                              &flag, sizeof(int)) < 0) {
+                    Logger::warning("Failed to set TCP_NODELAY on client socket");
+                }
 
-				//RunTime::getClients().insert(std::make_pair(clientFd, Client(clientFd, RunTime::getElementInServerList(this->getSocketFd()))));
-				Logger::info("New client inserted into clients map (fd=" + StringUtils::intToString(clientFd) + ")");
-				EpollInstance::manipInterestList(EPOLL_CTL_ADD, new Client(clientFd, *this));
-			}
-			catch (const std::exception &e)
-			{
-				Logger::error(e.what());
-				close(clientFd);
-			}
+                Logger::info("New client inserted into clients map (fd=" + 
+                           StringUtils::intToString(clientFd) + ")");
+                
+                // ✅ CORRETO: Adiciona apenas o novo Client
+                EpollInstance::manipInterestList(EPOLL_CTL_ADD, 
+                                               new Client(clientFd, *this));
+                
+                // ❌ NÃO FAÇA ISTO:
+                // EpollInstance::manipInterestList(EPOLL_CTL_ADD, this);
+                // EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
+            }
+            catch (const std::exception &e)
+            {
+                Logger::error(e.what());
+                close(clientFd);
+            }
 		}
 	}
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   EpollHandler.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 07:47:56 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 09:56:35 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/24 09:19:08 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@ EpollHandler::EpollHandler(uint32_t activeEvents)
 	this->_eventsTimeout = -1;
 }
 
-EpollHandler::EpollHandler(int socketFd, uint32_t activeEvents, int eventsTimeout)
+EpollHandler::EpollHandler(uint32_t activeEvents, int socketFd, int eventsTimeout)
 {
 	this->_socketFd = socketFd;
 	this->_activeEvents = activeEvents;
