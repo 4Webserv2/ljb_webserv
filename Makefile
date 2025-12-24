@@ -1,6 +1,6 @@
 NAME = webserv
 
-CC = clang++
+CC = c++
 
 C_FLAGS = -Wall -g -Wextra -Werror -std=c++98
 

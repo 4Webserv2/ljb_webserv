@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerManage.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 20:58:51 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/23 21:54:29 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/24 09:27:33 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -139,14 +139,14 @@ void ServerManage::updateToNonBlocking(void)
 void ServerManage::listenSocket(void)
 {
 	Logger::info("listen() called on fd=" +
-	              StringUtils::intToString(this->getSocketFd()));
+				  StringUtils::intToString(this->getSocketFd()));
 	int initListen = listen(this->getSocketFd(), MAX_EVENTS);
 	if (initListen == -1)
 		throw(std::runtime_error("Cannot listen to Server socket!"));
 }
 
 ServerBlock ServerManage::getServerBlock(void) const {
-    return (this->_block);
+	return (this->_block);
 }
 
 unsigned int ServerManage::getHost() const
@@ -187,30 +187,21 @@ void ServerManage::EpollInHandler(void)
 		else
 		{
 			try
-            {
-                make_nonblocking(clientFd);
-                int flag = 1;
-                if (setsockopt(clientFd, IPPROTO_TCP, TCP_NODELAY, 
-                              &flag, sizeof(int)) < 0) {
-                    Logger::warning("Failed to set TCP_NODELAY on client socket");
-                }
-
-                Logger::info("New client inserted into clients map (fd=" + 
-                           StringUtils::intToString(clientFd) + ")");
-                
-                // ✅ CORRETO: Adiciona apenas o novo Client
-                EpollInstance::manipInterestList(EPOLL_CTL_ADD, 
-                                               new Client(clientFd, *this));
-                
-                // ❌ NÃO FAÇA ISTO:
-                // EpollInstance::manipInterestList(EPOLL_CTL_ADD, this);
-                // EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
-            }
-            catch (const std::exception &e)
-            {
-                Logger::error(e.what());
-                close(clientFd);
-            }
+			{
+				make_nonblocking(clientFd);
+				int flag = 1;
+				if (setsockopt(clientFd, IPPROTO_TCP, TCP_NODELAY,
+							  &flag, sizeof(int)) < 0) {
+					Logger::warning("Failed to set TCP_NODELAY on client socket");
+				}
+				Logger::info("New client inserted into clients map (fd=" + StringUtils::intToString(clientFd) + ")");
+				EpollInstance::manipInterestList(EPOLL_CTL_ADD, new Client(clientFd, *this));
+			}
+			catch (const std::exception &e)
+			{
+				Logger::error(e.what());
+				close(clientFd);
+			}
 		}
 	}
 }
