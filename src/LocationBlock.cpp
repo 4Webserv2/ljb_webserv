@@ -3,16 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   LocationBlock.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:40 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/16 13:26:59 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/24 15:59:35 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/LocationBlock.hpp"
 
-LocationBlock::LocationBlock(ServerConfig &config) : _config(config), _autoIndex(false), _canUpload(false), _uploadPath("./") {
+LocationBlock::LocationBlock(ServerConfig &config) : _config(config), _autoIndex(false), _canUpload(false), _uploadPath("./")
+{
 	this->_uri = this->_config.getTokens()[0];
 
 	this->_config.removeTokens(2); //| Remove o token de URI e '{'
@@ -42,7 +43,8 @@ LocationBlock::LocationBlock(ServerConfig &config) : _config(config), _autoIndex
 			this->_config.removeTokens(1);
 			break;
 		}
-		else {
+		else
+		{
 			throw std::runtime_error("Invalid configuration: invalid token");
 		}
 	}
@@ -50,8 +52,24 @@ LocationBlock::LocationBlock(ServerConfig &config) : _config(config), _autoIndex
 
 LocationBlock::~LocationBlock() {}
 
-LocationBlock &LocationBlock::operator=(const LocationBlock &src) {
-	if (this != &src) {
+LocationBlock::LocationBlock(const LocationBlock &src)
+	: _config(src._config),
+	  _autoIndex(src._autoIndex),
+	  _canUpload(src._canUpload),
+	  _uri(src._uri),
+	  _alias(src._alias),
+	  _return(src._return),
+	  _uploadPath(src._uploadPath),
+	  _index(src._index),
+	  _cgiExtensions(src._cgiExtensions),
+	  _allowMethods(src._allowMethods)
+{
+}
+
+LocationBlock &LocationBlock::operator=(const LocationBlock &src)
+{
+	if (this != &src)
+	{
 		this->_autoIndex = src._autoIndex;
 		this->_canUpload = src._canUpload;
 		this->_uri = src._uri;
@@ -255,4 +273,134 @@ void LocationBlock::addAllowMethods()
 
 	this->_config.verifyToken(DIFF_SEMICOLON, "Invalid configuration: allow_methods: expected ';' at the end of allow_methods directive");
 	this->_config.removeTokens(1); //| Removendo o ponto e vírgula
+}
+
+bool LocationBlock::validatePath(const std::string &path) const
+{
+	bool isValid = false;
+	std::ifstream file(path.c_str(), std::ios::binary);
+
+	isValid = file.good();
+	file.close();
+	return isValid;
+}
+
+std::string LocationBlock::getPath(const std::string &root, const std::string &requestUri) const
+{
+	std::string serverRoot = root;
+	std::string locationAlias = this->getAlias();
+	std::string locationUri = this->getUri();
+	std::string request = requestUri;
+	std::string finalPath;
+
+	// Helper: join two path components ensuring exactly one '/' between them
+	// C++98 compatible (no lambdas)
+	struct PathUtils
+	{
+		static std::string joinPaths(const std::string &a, const std::string &b)
+		{
+			if (a.empty())
+				return b;
+			if (b.empty())
+				return a;
+			std::string left = a;
+			std::string right = b;
+			// remove trailing slash from left except when left == "/"
+			if (left.size() > 1 && left[left.size() - 1] == '/')
+				left.erase(left.size() - 1);
+			// remove leading slash from right
+			if (!right.empty() && right[0] == '/')
+				right.erase(0, 1);
+			return left + "/" + right;
+		}
+		static std::string collapseSlashes(const std::string &s)
+		{
+			std::string out;
+			out.reserve(s.size());
+			bool lastWasSlash = false;
+			for (size_t i = 0; i < s.size(); ++i)
+			{
+				char c = s[i];
+				if (c == '/')
+				{
+					if (!lastWasSlash)
+					{
+						out.push_back(c);
+						lastWasSlash = true;
+					}
+				}
+				else
+				{
+					out.push_back(c);
+					lastWasSlash = false;
+				}
+			}
+			// preserve single leading "/" if present, otherwise return as built
+			return out;
+		}
+	};
+
+	if (!locationAlias.empty())
+	{
+		// remove locationUri prefix from request if present
+		if (request.find(locationUri) == 0)
+			request = request.substr(locationUri.size());
+		// build finalPath from alias and request
+		finalPath = PathUtils::joinPaths(locationAlias, request);
+		Logger::debug("Temos alias. FinalPath = " + finalPath);
+	}
+	else
+	{
+		finalPath = PathUtils::joinPaths(serverRoot, request);
+		Logger::debug("Nao temos alias. FinalPath = " + finalPath);
+	}
+
+	// Collapse repeated slashes to normalize path (e.g. .// -> ./)
+	finalPath = PathUtils::collapseSlashes(finalPath);
+	Logger::debug("Final Path dentro do getPath (normalizado): " + finalPath);
+
+	// Prepare directory candidate (ensure it ends with one '/')
+	std::string dirCandidate = finalPath;
+	if (dirCandidate.empty() || dirCandidate[dirCandidate.size() - 1] != '/')
+		dirCandidate += '/';
+	dirCandidate = PathUtils::collapseSlashes(dirCandidate);
+
+	// Ensure we have at least one index to try
+	std::vector<std::string> indexes = getIndex();
+	if (indexes.empty())
+	{
+		indexes.push_back(std::string("index.html"));
+	}
+
+	// Try each index inside the directory candidate
+	for (size_t i = 0; i < indexes.size(); ++i)
+	{
+		std::string test = PathUtils::joinPaths(dirCandidate, indexes[i]);
+		test = PathUtils::collapseSlashes(test);
+		Logger::debug("Testing index candidate: " + test);
+		if (validatePath(test))
+			return test;
+	}
+
+	// If no index found, accept direct file path (e.g., /file.txt)
+	if (validatePath(finalPath))
+		return finalPath;
+
+	return std::string("");
+}
+
+bool LocationBlock::checkHttpMethodInLocation(std::string method)
+{
+	if (this->_allowMethods.empty())
+	{
+		return (true);
+	}
+	for (std::vector<std::string>::iterator it = this->_allowMethods.begin(); it != this->_allowMethods.end(); it++)
+	{
+		if (*it == method)
+		{
+			return (true);
+		}
+	}
+	return (false);
 }

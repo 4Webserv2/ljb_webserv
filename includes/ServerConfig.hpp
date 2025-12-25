@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:38:12 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/27 11:36:57 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/23 19:57:27 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ class ServerBlock;
 class ServerConfig {
 	private:
 		std::vector<std::string>	_tokens;
-		std::vector<ServerBlock>	 _serverBlocks;
+		std::vector<ServerBlock*>	_serverBlocks;
 	public:
 		ServerConfig(void);
 		ServerConfig(int ac, char **av);
@@ -45,7 +45,7 @@ class ServerConfig {
 		static void cleanFile(const std::string &filename, std::string &content);
 
 		std::vector<std::string> getTokens(void);
-		std::vector<ServerBlock> getServerBlocks(void) const;
+		std::vector<ServerBlock*> getServerBlocks(void) const;
 
 		// void initServerSockets(int socketDomain, int socketType);
 };

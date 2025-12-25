@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/14 16:50:29 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/16 13:46:46 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/23 20:54:57 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,13 +56,25 @@
 # define PORT 8080
 # define BACKLOG 10
 # define MAX_EVENTS 10
-# define BUFFER_SIZE 4096
+# define MAX_BUFFER_SIZE 4096
 
 enum e_status {
 	E_ERROR = -1,
 	NO_ERROR = 0
 };
 
+enum clientBufferState {
+    READING_HEADER = 9, //Lendo o header da request ainda
+    READING_BODY = 10, //Lendo o conteudo da request ainda
+    WAITING_CGI = 11, //Aguardando resposta do CGI
+    COMPLETE = 12, //Ja lemos todo o conteudo da request
+};
+
+enum cgiBufferState {
+    IN_PROGRESS = 25,
+    FAILED = 26,
+    COMPLETED = 27
+};
 int test();
 
 #endif

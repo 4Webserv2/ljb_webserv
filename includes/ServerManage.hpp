@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ServerManage.hpp                                   :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/28 18:36:40 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 08:06:24 by jbergfel         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #pragma once
 
 # include "EpollHandler.hpp"
@@ -17,6 +5,7 @@
 # include "Runtime.hpp"
 
 class Client;
+class ServerBlock;
 
 class ServerManage: public EpollHandler
 {
@@ -31,8 +20,7 @@ class ServerManage: public EpollHandler
 		ServerManage(const ServerManage &src);
 		ServerManage &operator=(const ServerManage &src);
 		~ServerManage();
-
-
+		ServerBlock getServerBlock(void) const;
 		void EpollInHandler(void);
 
 		void startSocket(int domain, int type);
@@ -46,5 +34,7 @@ class ServerManage: public EpollHandler
 
 		unsigned int getHost() const;
 		int getPort() const;
-		ServerBlock getBlock() const;
+
+		// ALTERADO: Retornar referência constante ao invés de cópia
+		const ServerBlock& getBlock() const;
 };

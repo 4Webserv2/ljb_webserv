@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   EpollHandler.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 18:37:48 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 09:55:11 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/24 09:19:27 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@ class EpollHandler
 	public:
 		virtual ~EpollHandler();
 		EpollHandler(uint32_t activeEvents);
-		EpollHandler(int fd, uint32_t activeEvents, int eventsTimeout);
+		EpollHandler( uint32_t activeEvents,int fd, int eventsTimeout);
 
 		int		EpollEventHandler(struct epoll_event &event);
 		void	handleTimeout();

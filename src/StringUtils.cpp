@@ -60,3 +60,28 @@ std::string StringUtils::size_tToString(size_t n) {
 	return oss.str();
 }
 
+std::string StringUtils::extractUriWithoutQuery(const std::string &uri) {
+    size_t pos = uri.find('?');
+    if (pos != std::string::npos) {
+        return uri.substr(0, pos);
+    }
+    return uri;
+}
+
+std::string StringUtils::extractQueryFromUri(const std::string &uri) {
+    size_t pos = uri.find('?');
+    if (pos != std::string::npos && pos + 1 < uri.size()) {
+        return uri.substr(pos + 1);
+    }
+    return "";
+}
+
+std::string StringUtils::extractUriPathInfo(const std::string &uri, const LocationBlock &location) {
+    std::string path = extractUriWithoutQuery(uri);
+    size_t locUriLen = location.getUri().length();
+
+    if (path.length() > locUriLen) {
+        return path.substr(locUriLen);
+    }
+    return "";
+}

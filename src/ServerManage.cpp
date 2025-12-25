@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerManage.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 20:58:51 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/16 13:51:44 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/24 09:27:33 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,9 @@ ServerManage::~ServerManage(){}
 
 ServerManage::ServerManage(unsigned int host, int port, const ServerBlock &block)
 	: EpollHandler(EPOLLIN | EPOLLRDHUP), _host(host), _port(port), _block(block)
-{}
+{
+	startSocket(AF_INET, SOCK_STREAM);
+}
 
 ServerManage::ServerManage(const ServerManage &src)
 	: EpollHandler(src.getSocketFd(), src.getActiveEvents(), src.getEventsTimeout()),
@@ -137,10 +139,14 @@ void ServerManage::updateToNonBlocking(void)
 void ServerManage::listenSocket(void)
 {
 	Logger::info("listen() called on fd=" +
-	              StringUtils::intToString(this->getSocketFd()));
+				  StringUtils::intToString(this->getSocketFd()));
 	int initListen = listen(this->getSocketFd(), MAX_EVENTS);
 	if (initListen == -1)
 		throw(std::runtime_error("Cannot listen to Server socket!"));
+}
+
+ServerBlock ServerManage::getServerBlock(void) const {
+	return (this->_block);
 }
 
 unsigned int ServerManage::getHost() const
@@ -153,7 +159,7 @@ int ServerManage::getPort() const
 	return (this->_port);
 }
 
-ServerBlock ServerManage::getBlock() const
+const ServerBlock& ServerManage::getBlock() const
 {
 	return (this->_block);
 }
@@ -184,14 +190,12 @@ void ServerManage::EpollInHandler(void)
 			{
 				make_nonblocking(clientFd);
 				int flag = 1;
-				if (setsockopt(clientFd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int)) < 0) {
+				if (setsockopt(clientFd, IPPROTO_TCP, TCP_NODELAY,
+							  &flag, sizeof(int)) < 0) {
 					Logger::warning("Failed to set TCP_NODELAY on client socket");
 				}
-
-				RunTime::getClients().insert(std::make_pair(clientFd, Client(clientFd, RunTime::getElementInServerList(this->getSocketFd()))));
-				Logger::info("New client inserted into clients map (fd=" +
-							  StringUtils::intToString(clientFd) + ")");
-				EpollInstance::manipInterestList(EPOLL_CTL_ADD, &RunTime::getClient(clientFd));
+				Logger::info("New client inserted into clients map (fd=" + StringUtils::intToString(clientFd) + ")");
+				EpollInstance::manipInterestList(EPOLL_CTL_ADD, new Client(clientFd, *this));
 			}
 			catch (const std::exception &e)
 			{

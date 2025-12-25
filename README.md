@@ -123,8 +123,14 @@ This project can be stress-tested using **Siege**, a HTTP load testing and bench
 
 Install Siege (if not already installed):
 
+for macOS
 ```bash
 brew install siege
+```
+
+or linux
+```bash
+apt-install siege
 ```
 
 Run a basic stress test:
@@ -180,3 +186,4 @@ AI tools were used as a support resource, not as code generators. The usage was 
 - Reviewing architectural decisions
 - Explaining differences between design patterns and applications
 - Assisting with documentation and tests
+

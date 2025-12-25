@@ -3,20 +3,20 @@
 /*                                                        :::      ::::::::   */
 /*   ServerBlock.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:59 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 14:56:23 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/23 21:30:59 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/ServerBlock.hpp"
 
 ServerBlock::ServerBlock(ServerConfig &config)
-    : _config(config),
-      _maxBodySize(std::make_pair(false, 0)),
-      _root(std::make_pair(false, "")),
-      _cgiTimeout(30)  // ADICIONAR: Timeout padrão de 30 segundos
+	: _config(config),
+	  _maxBodySize(std::make_pair(false, 0)),
+	  _root(std::make_pair(false, "")),
+	  _cgiTimeout(30)  // ADICIONAR: Timeout padrão de 30 segundos
 {
 	this->_config.removeTokens(2); //| Remove os 2 primeiros tokens ('server' e '{')
 	this->_config.verifyToken(EMPTY, "Invalid configuration: server: no server block found");
@@ -42,19 +42,17 @@ ServerBlock::ServerBlock(ServerConfig &config)
 			break;
 		}
 		else
-		{
 			throw std::runtime_error("Invalid configuration: server: invalid token");
-		}
 	}
-	for (std::map<std::string, LocationBlock>::iterator it = this->_locations.begin(); it != this->_locations.end(); ++it)
+/*	for (std::map<std::string, LocationBlock>::iterator it = this->_locations.begin(); it != this->_locations.end(); ++it)
 	{
 		std::cout << "Location: " << it->first << " with methods: ";
 		std::vector<std::string> methods = it->second.getAllowMethods();
 		for (size_t i = 0; i < methods.size(); i++)
 			std::cout << methods[i] << " ";
 		std::cout << std::endl;
-	}
-
+	}*/
+	std::cout << "SAIU FOR" << std::endl;
 	//| Fazer verificação para ver se os atributos estão corretos.
 	if (this->_maxBodySize.second == 0)
 		throw std::runtime_error("Invalid configuration: server: client_max_body_size cannot be zero.");
@@ -75,8 +73,6 @@ ServerBlock &ServerBlock::operator=(const ServerBlock &src)
 {
 	if (this != &src)
 	{
-		// NÃO pode reatribuir _config (é referência)
-		// Só copia os outros membros
 		this->_serverNames = src._serverNames;
 		this->_listen = src._listen;
 		this->_maxBodySize = src._maxBodySize;
@@ -87,14 +83,80 @@ ServerBlock &ServerBlock::operator=(const ServerBlock &src)
 	return *this;
 }
 
-ServerBlock::~ServerBlock() {}
+ServerBlock::~ServerBlock() {
+	std::cout << "Server Block destructor" << std::endl;
+}
 
-std::vector<std::string> ServerBlock::getServerNames() const { return this->_serverNames; }
-std::vector<t_listen> ServerBlock::getListen() const { return this->_listen; }
-std::pair<bool, size_t> ServerBlock::getMaxBodySize() const { return this->_maxBodySize; }
-std::pair<bool, std::string> ServerBlock::getRoot() const { return this->_root; }
-std::map<int, std::string> ServerBlock::getErrorPages() const { return this->_errorPages; }
-std::map<std::string, LocationBlock> ServerBlock::getLocations() const { return this->_locations; }
+const std::vector<std::string>& ServerBlock::getServerNames() const { return this->_serverNames; }
+
+const std::vector<t_listen>& ServerBlock::getListen() const { return this->_listen; }
+
+const std::pair<bool, size_t>& ServerBlock::getMaxBodySize() const { return this->_maxBodySize; }
+
+const std::pair<bool, std::string>& ServerBlock::getRoot() const { return this->_root; }
+
+const std::map<int, std::string>& ServerBlock::getErrorPages() const { return this->_errorPages; }
+
+const std::map<std::string, LocationBlock>& ServerBlock::getLocations() const { return this->_locations; }
+
+const LocationBlock *ServerBlock::getValidLocation(const std::string uri, const std::string method) const
+{
+    const LocationBlock *location = NULL;
+
+    if (method != "GET" && method != "POST" && method != "DELETE")
+        return location;
+
+    // Verificar se URI exato existe
+    std::map<std::string, LocationBlock>::const_iterator it = this->_locations.find(uri);
+    if (it != this->_locations.end())
+    {
+        std::vector<std::string> allowedMethods = it->second.getAllowMethods();
+        if (allowedMethods.empty()) {
+            return &(it->second);
+        }
+        for (size_t i = 0; i < allowedMethods.size(); i++)
+        {
+            if (allowedMethods[i] == method)
+                return &(it->second);
+        }
+        return NULL;
+    }
+    
+    // Verificar se URI começa com alguma location válida
+    // Ex: /test.css deve casar com location /
+    std::string bestMatch = "";
+    for (std::map<std::string, LocationBlock>::const_iterator it = this->_locations.begin(); it != this->_locations.end(); ++it)
+    {
+        std::string locationPath = it->first;
+        // Verificar se URI começa com este location path
+        if (uri.compare(0, locationPath.size(), locationPath) == 0) {
+            if (locationPath.size() > bestMatch.size()) {
+                bool methodAllowed = false;
+                bestMatch = locationPath;
+                location = &(it->second);
+
+                std::vector<std::string> allowedMethods = it->second.getAllowMethods();
+                if (allowedMethods.empty()) {
+                    methodAllowed = true;
+                } else {
+                    for (size_t i = 0; i < allowedMethods.size(); i++)
+                    {
+                        if (allowedMethods[i] == method) {
+                            methodAllowed = true;
+                            break;
+                        }
+                    }
+                }
+                if (!methodAllowed) {
+                    bestMatch = "";
+                    location = NULL;
+                }
+            }
+        }
+    }
+    
+    return location;
+}
 
 void ServerBlock::printServerBlock()
 {

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:40:04 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 15:12:10 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/23 20:02:02 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,13 @@
 
 ServerConfig::ServerConfig(void) {}
 
-ServerConfig::~ServerConfig(void) {}
+ServerConfig::~ServerConfig(void) {
+	std::cout << "Server Config destructor" << std::endl;
+	for (size_t i = 0; i < this->_serverBlocks.size(); ++i) {
+		delete this->_serverBlocks[i];
+	}
+	this->_serverBlocks.clear();
+}
 
 ServerConfig::ServerConfig(int ac, char **av) {
 	std::string configFile;
@@ -30,8 +36,7 @@ ServerConfig::ServerConfig(int ac, char **av) {
 
 	this->parser(configFile);
 
-	Logger::info("Configuration successfully read! Servers found: " +
-                 StringUtils::size_tToString(this->_serverBlocks.size()));
+	Logger::info("Configuration successfully read! Servers found: " + StringUtils::size_tToString(this->_serverBlocks.size()));
 }
 
 void ServerConfig::readFile(const std::string &filename, std::string &content)
@@ -178,7 +183,11 @@ void ServerConfig::parser(const std::string &filename)
 		Logger::info("DEBUG: Processing token: " + this->_tokens[0]);
 
 		if (this->_tokens[0] == "server" && this->_tokens[1] == "{")
-			this->_serverBlocks.push_back(ServerBlock(*this));
+		{
+			std::cout << "Antes push back" << std::endl;
+			this->_serverBlocks.push_back(new ServerBlock(*this));
+			std::cout << "Após push back" << std::endl;
+		}
 		else
 			throw std::runtime_error("Invalid configuration: server not found");
 	}
@@ -221,7 +230,7 @@ std::vector<std::string> ServerConfig::getTokens(void)
 	return this->_tokens;
 }
 
-std::vector<ServerBlock> ServerConfig::getServerBlocks(void) const
+std::vector<ServerBlock*> ServerConfig::getServerBlocks(void) const
 {
 	return this->_serverBlocks;
 }
