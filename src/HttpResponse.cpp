@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/19 13:42:30 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/19 13:49:31 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -401,7 +401,7 @@ HttpResponse HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &
 	}
 
 	// Construir path completo
-	std::string path = this->_rootPath + req.getUri();
+	std::string path = location.getPath(serverBlock.getRoot().second, req.getUri());
 
 	// Verificar se path existe e é diretório
 	struct stat pathStat;
@@ -418,7 +418,7 @@ HttpResponse HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &
 				indexPath += "/";
 			indexPath += indexFiles[i];
 
-			Logger::info("\033[35m[GET] Trying index: " + indexPath + \033[0m);
+			Logger::info("\033[35m[GET] Trying index: " + indexPath + "\033[0m");
 
 			if (access(indexPath.c_str(), F_OK) == 0) {
 				Logger::info("\033[35m[GET] Index found: " + indexPath + "\033[0m");
