@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/25 14:45:24 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/25 15:12:20 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,40 +25,73 @@ HttpResponse::HttpResponse()
 
 HttpResponse::~HttpResponse() {};
 
-void HttpResponse::generateAutoIndexHTML(const HttpRequest &req, const ServerBlock &serverBlock, const LocationBlock &location)
-{
+void HttpResponse::generateAutoIndexHTML(const HttpRequest &req, const ServerBlock &serverBlock, const LocationBlock &location) {
+
 	std::stringstream output;
 	std::string normalizedUri = StringUtils::extractUriWithoutQuery(req.getUri());
+
+	// getPath aqui DEVE retornar o diretório físico
 	std::string path = location.getPath(serverBlock.getRoot().second, normalizedUri);
-	Logger::debug("PAth dentro do generateAutoIndex: " + path);
+	Logger::debug("Path dentro do generateAutoIndexHTML: " + path);
+
 	if (path.empty()) {
 		return setResponseByStatus(404, &serverBlock);
 	}
+
+	struct stat st;
+	if (stat(path.c_str(), &st) != 0 || !S_ISDIR(st.st_mode)) {
+		return setResponseByStatus(404, &serverBlock);
+	}
+
 	DIR *dir = opendir(path.c_str());
 	if (dir == NULL) {
-		return;
+		return setResponseByStatus(403, &serverBlock);
 	}
-	output << "<html><head><title>Autoindex</title></head><body><h1>Autoindex</h1><ul>";
-	dirent *entry;
+
+	output << "<html>";
+	output << "<head><title>Index of " << normalizedUri << "</title></head>";
+	output << "<body>";
+	output << "<h1>Index of " << normalizedUri << "</h1>";
+	output << "<ul>";
+
+	struct dirent *entry;
 	while ((entry = readdir(dir)) != NULL) {
 		std::string name = entry->d_name;
-		if (name != "." && name != "..") {
-			output << "<li>";
-			// Check if is a directory
-			if (entry->d_type == DT_DIR) {
-				// if is a directory, needs to create a link for this directory
-				output << "<a href=\"" << name << "/\">" << name << " (directory)</a>";
-			}
-			else {
-				// for files, create a link for download
-				output << "<a href=\"" << name << "\">" << name << "</a>";
-			}
-			output << "</li>";
+
+		if (name == "." || name == "..") {
+			continue;
 		}
+
+		output << "<li>";
+
+		output << "<a href=\"";
+		output << normalizedUri;
+		if (!normalizedUri.empty() && normalizedUri[normalizedUri.size() - 1] != '/') {
+			output << "/";
+		}
+		output << name;
+
+		if (entry->d_type == DT_DIR) {
+			output << "/";
+		}
+
+		output << "\">";
+		output << name;
+
+		if (entry->d_type == DT_DIR) {
+			output << "/";
+		}
+
+		output << "</a>";
+		output << "</li>";
 	}
-	output << "</ul></body></html>";
+
+	output << "</ul>";
+	output << "</body></html>";
+
 	closedir(dir);
-	setResponseByStatus(200, &serverBlock, output.str());
+
+	setResponseByStatus(200, &serverBlock, output.str(), "text/html");
 }
 
 void HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &serverBlock, const LocationBlock &location)

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationBlock.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:40 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/24 15:59:35 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/25 15:07:30 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -318,6 +318,7 @@ std::string LocationBlock::getPath(const std::string &root, const std::string &r
 			std::string out;
 			out.reserve(s.size());
 			bool lastWasSlash = false;
+
 			for (size_t i = 0; i < s.size(); ++i)
 			{
 				char c = s[i];
@@ -340,54 +341,24 @@ std::string LocationBlock::getPath(const std::string &root, const std::string &r
 		}
 	};
 
-	if (!locationAlias.empty())
-	{
+	if (!locationAlias.empty()) {
 		// remove locationUri prefix from request if present
 		if (request.find(locationUri) == 0)
 			request = request.substr(locationUri.size());
 		// build finalPath from alias and request
 		finalPath = PathUtils::joinPaths(locationAlias, request);
-		Logger::debug("Temos alias. FinalPath = " + finalPath);
+		Logger::debug("[getPath] using alias → " + finalPath);
 	}
-	else
-	{
+	else {
 		finalPath = PathUtils::joinPaths(serverRoot, request);
-		Logger::debug("Nao temos alias. FinalPath = " + finalPath);
+		Logger::debug("[getPath] using root → " + finalPath);
 	}
 
 	// Collapse repeated slashes to normalize path (e.g. .// -> ./)
 	finalPath = PathUtils::collapseSlashes(finalPath);
-	Logger::debug("Final Path dentro do getPath (normalizado): " + finalPath);
+	Logger::debug("[getPath] finalPath normalized → " + finalPath);
 
-	// Prepare directory candidate (ensure it ends with one '/')
-	std::string dirCandidate = finalPath;
-	if (dirCandidate.empty() || dirCandidate[dirCandidate.size() - 1] != '/')
-		dirCandidate += '/';
-	dirCandidate = PathUtils::collapseSlashes(dirCandidate);
-
-	// Ensure we have at least one index to try
-	std::vector<std::string> indexes = getIndex();
-	if (indexes.empty())
-	{
-		indexes.push_back(std::string("index.html"));
-	}
-
-	// Try each index inside the directory candidate
-	for (size_t i = 0; i < indexes.size(); ++i)
-	{
-		std::string test = PathUtils::joinPaths(dirCandidate, indexes[i]);
-		test = PathUtils::collapseSlashes(test);
-		Logger::debug("Testing index candidate: " + test);
-		if (validatePath(test))
-			return test;
-	}
-
-	// If no index found, accept direct file path (e.g., /file.txt)
-	if (validatePath(finalPath))
-		return finalPath;
-
-	return std::string("");
-}
+	return (finalPath);
 
 bool LocationBlock::checkHttpMethodInLocation(std::string method)
 {
