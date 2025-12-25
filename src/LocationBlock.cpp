@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:40 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/25 15:19:14 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/25 15:29:13 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -295,66 +295,64 @@ std::string LocationBlock::getPath(const std::string &root, const std::string &r
 
 	struct PathUtils
 	{
-		static std::string joinPaths(const std::string &a, const std::string &b)
-		{
-			if (a.empty())
+		static std::string joinPaths(const std::string &a, const std::string &b) {
+			if (a.empty()) {
 				return b;
-			if (b.empty())
+			}
+			if (b.empty()) {
 				return a;
+			}
 
 			std::string left = a;
 			std::string right = b;
 
-			if (left.size() > 1 && left[left.size() - 1] == '/')
+			if (left.size() > 1 && left[left.size() - 1] == '/') {
 				left.erase(left.size() - 1);
+			}
 
-			if (!right.empty() && right[0] == '/')
+			if (!right.empty() && right[0] == '/') {
 				right.erase(0, 1);
+			}
 
-			return left + "/" + right;
+			return (left + "/" + right);
 		}
 
-		static std::string collapseSlashes(const std::string &s)
-		{
+		static std::string collapseSlashes(const std::string &s) {
 			std::string out;
 			bool lastWasSlash = false;
 
-			for (size_t i = 0; i < s.size(); ++i)
-			{
-				if (s[i] == '/')
-				{
-					if (!lastWasSlash)
-					{
+			for (size_t i = 0; i < s.size(); ++i) {
+				if (s[i] == '/') {
+					if (!lastWasSlash) {
 						out += '/';
 						lastWasSlash = true;
 					}
 				}
-				else
-				{
+				else {
 					out += s[i];
 					lastWasSlash = false;
 				}
 			}
-			return out;
+			return (out);
 		}
 	};
 
-	if (!locationAlias.empty())
-	{
+	if (!locationAlias.empty()) {
 		// remove locationUri prefix from request if present
-		if (request.find(locationUri) == 0)
+		if (request.find(locationUri) == 0) {
 			request = request.substr(locationUri.size());
+		}
 
 		// alias absoluto → relativo ao root
-		if (locationAlias[0] == '/')
+		if (locationAlias[0] == '/') {
 			finalPath = PathUtils::joinPaths(serverRoot, locationAlias + request);
-		else
+		}
+		else {
 			finalPath = PathUtils::joinPaths(locationAlias, request);
-
+		}
 		Logger::debug("[getPath] using alias → " + finalPath);
 	}
-	else
-	{
+	else {
 		finalPath = PathUtils::joinPaths(serverRoot, request);
 		Logger::debug("[getPath] using root → " + finalPath);
 	}
@@ -362,19 +360,16 @@ std::string LocationBlock::getPath(const std::string &root, const std::string &r
 	finalPath = PathUtils::collapseSlashes(finalPath);
 	Logger::debug("[getPath] finalPath normalized → " + finalPath);
 
-	return finalPath;
+	return (finalPath);
 }
 
 bool LocationBlock::checkHttpMethodInLocation(std::string method)
 {
-	if (this->_allowMethods.empty())
-	{
+	if (this->_allowMethods.empty()) {
 		return (true);
 	}
-	for (std::vector<std::string>::iterator it = this->_allowMethods.begin(); it != this->_allowMethods.end(); it++)
-	{
-		if (*it == method)
-		{
+	for (std::vector<std::string>::iterator it = this->_allowMethods.begin(); it != this->_allowMethods.end(); it++) {
+		if (*it == method) {
 			return (true);
 		}
 	}
