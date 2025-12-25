@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/25 15:12:20 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/25 15:42:13 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@ void HttpResponse::generateAutoIndexHTML(const HttpRequest &req, const ServerBlo
 
 	// getPath aqui DEVE retornar o diretório físico
 	std::string path = location.getPath(serverBlock.getRoot().second, normalizedUri);
-	Logger::debug("Path dentro do generateAutoIndexHTML: " + path);
+	Logger::debug("Path in generateAutoIndexHTML: " + path);
 
 	if (path.empty()) {
 		return setResponseByStatus(404, &serverBlock);
@@ -106,7 +106,7 @@ void HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &serverBl
 	}
 
 	std::string path = location.getPath(serverBlock.getRoot().second, normalizedUri);
-	Logger::debug("Path dentro do delete: " + path);
+	Logger::debug("Path in delete (handleGet): " + path);
 	if (path.empty()) {
 		return setResponseByStatus(404, &serverBlock);
 	}
@@ -136,7 +136,7 @@ void HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &serverBl
 		}
 	}
 
-	// Verify the file last read
+	// Verify file last read in file
 	if (access(path.c_str(), R_OK) != 0) {
 		return setResponseByStatus(403, &serverBlock);
 	}
@@ -156,32 +156,31 @@ void HttpResponse::handleDelete(const HttpRequest &req, const ServerBlock &serve
 {
 	(void)serverBlock;
 	std::string locationUploadDir = location.getUploadPath();
-	if (locationUploadDir.empty())
+	if (locationUploadDir.empty()) {
 		return (setResponseByStatus(404, &serverBlock));
+	}
 
 	std::string uri = StringUtils::extractUriWithoutQuery(req.getUri());
-	if (uri[uri.size() - 1] == '/')
+	if (uri[uri.size() - 1] == '/') {
 		return (setResponseByStatus(404, &serverBlock));
+	}
 
 	size_t filePos = uri.rfind('/');
 	std::string fileName = uri.substr(filePos);
 	std::string path = "";
 
-	if (locationUploadDir[locationUploadDir.size() - 1] == '/')
+	if (locationUploadDir[locationUploadDir.size() - 1] == '/') {
 		path = locationUploadDir + fileName;
-	else
+	}
+	else {
 		path = locationUploadDir + "/" + fileName;
+	}
 
-	// std::cout << serverBlock.getRoot().second << std::endl;
-	// std::cout << uri << std::endl;
-	// std::string path = location.getPath(location.getUploadPath(), uri);
-	Logger::debug("Path dentro do delete: " + path);
-	if (std::remove(path.c_str()) == 0)
-	{
+	Logger::debug("Path in delete: (handleDelete) " + path);
+	if (std::remove(path.c_str()) == 0) {
 		setResponseByStatus(200, &serverBlock);
 	}
-	else
-	{
+	else {
 		setResponseByStatus(404, &serverBlock);
 	}
 };
