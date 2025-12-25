@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:40 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/25 15:07:30 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/25 15:14:10 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -359,6 +359,7 @@ std::string LocationBlock::getPath(const std::string &root, const std::string &r
 	Logger::debug("[getPath] finalPath normalized → " + finalPath);
 
 	return (finalPath);
+}
 
 bool LocationBlock::checkHttpMethodInLocation(std::string method)
 {
