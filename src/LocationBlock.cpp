@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:40 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/25 15:14:10 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/25 15:19:14 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -293,8 +293,6 @@ std::string LocationBlock::getPath(const std::string &root, const std::string &r
 	std::string request = requestUri;
 	std::string finalPath;
 
-	// Helper: join two path components ensuring exactly one '/' between them
-	// C++98 compatible (no lambdas)
 	struct PathUtils
 	{
 		static std::string joinPaths(const std::string &a, const std::string &b)
@@ -303,62 +301,68 @@ std::string LocationBlock::getPath(const std::string &root, const std::string &r
 				return b;
 			if (b.empty())
 				return a;
+
 			std::string left = a;
 			std::string right = b;
-			// remove trailing slash from left except when left == "/"
+
 			if (left.size() > 1 && left[left.size() - 1] == '/')
 				left.erase(left.size() - 1);
-			// remove leading slash from right
+
 			if (!right.empty() && right[0] == '/')
 				right.erase(0, 1);
+
 			return left + "/" + right;
 		}
+
 		static std::string collapseSlashes(const std::string &s)
 		{
 			std::string out;
-			out.reserve(s.size());
 			bool lastWasSlash = false;
 
 			for (size_t i = 0; i < s.size(); ++i)
 			{
-				char c = s[i];
-				if (c == '/')
+				if (s[i] == '/')
 				{
 					if (!lastWasSlash)
 					{
-						out.push_back(c);
+						out += '/';
 						lastWasSlash = true;
 					}
 				}
 				else
 				{
-					out.push_back(c);
+					out += s[i];
 					lastWasSlash = false;
 				}
 			}
-			// preserve single leading "/" if present, otherwise return as built
 			return out;
 		}
 	};
 
-	if (!locationAlias.empty()) {
+	if (!locationAlias.empty())
+	{
 		// remove locationUri prefix from request if present
 		if (request.find(locationUri) == 0)
 			request = request.substr(locationUri.size());
-		// build finalPath from alias and request
-		finalPath = PathUtils::joinPaths(locationAlias, request);
+
+		// alias absoluto → relativo ao root
+		if (locationAlias[0] == '/')
+			finalPath = PathUtils::joinPaths(serverRoot, locationAlias + request);
+		else
+			finalPath = PathUtils::joinPaths(locationAlias, request);
+
 		Logger::debug("[getPath] using alias → " + finalPath);
 	}
-	else {
+	else
+	{
 		finalPath = PathUtils::joinPaths(serverRoot, request);
 		Logger::debug("[getPath] using root → " + finalPath);
 	}
 
-	// Collapse repeated slashes to normalize path (e.g. .// -> ./)
 	finalPath = PathUtils::collapseSlashes(finalPath);
 	Logger::debug("[getPath] finalPath normalized → " + finalPath);
 
-	return (finalPath);
+	return finalPath;
 }
 
 bool LocationBlock::checkHttpMethodInLocation(std::string method)
