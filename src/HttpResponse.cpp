@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/24 15:53:50 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/25 14:45:24 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,32 +28,29 @@ HttpResponse::~HttpResponse() {};
 void HttpResponse::generateAutoIndexHTML(const HttpRequest &req, const ServerBlock &serverBlock, const LocationBlock &location)
 {
 	std::stringstream output;
-	std::string path = location.getPath(serverBlock.getRoot().second, req.getUri());
+	std::string normalizedUri = StringUtils::extractUriWithoutQuery(req.getUri());
+	std::string path = location.getPath(serverBlock.getRoot().second, normalizedUri);
 	Logger::debug("PAth dentro do generateAutoIndex: " + path);
-	if (path.empty())
+	if (path.empty()) {
 		return setResponseByStatus(404, &serverBlock);
+	}
 	DIR *dir = opendir(path.c_str());
-	if (dir == NULL)
-	{
+	if (dir == NULL) {
 		return;
 	}
 	output << "<html><head><title>Autoindex</title></head><body><h1>Autoindex</h1><ul>";
 	dirent *entry;
-	while ((entry = readdir(dir)) != NULL)
-	{
+	while ((entry = readdir(dir)) != NULL) {
 		std::string name = entry->d_name;
-		if (name != "." && name != "..")
-		{
+		if (name != "." && name != "..") {
 			output << "<li>";
-			// Checando se e um diretorio
-			if (entry->d_type == DT_DIR)
-			{
-				// se for diretorio, criar um link direto para ele
+			// Check if is a directory
+			if (entry->d_type == DT_DIR) {
+				// if is a directory, needs to create a link for this directory
 				output << "<a href=\"" << name << "/\">" << name << " (directory)</a>";
 			}
-			else
-			{
-				// Para arquivos, gera um link para download
+			else {
+				// for files, create a link for download
 				output << "<a href=\"" << name << "\">" << name << "</a>";
 			}
 			output << "</li>";
@@ -68,39 +65,37 @@ void HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &serverBl
 {
 	std::string normalizedUri = StringUtils::extractUriWithoutQuery(req.getUri());
 
-	Logger::debug("handleGet: req.uri=" + req.getUri() + " normalizedUri=" + normalizedUri + " serverRoot=" + serverBlock.getRoot().second + " locationUri=" + location.getUri() + " locationReturn=" + location.getReturn());
+	Logger::debug("handleGet: req.uri = " + req.getUri() + " normalizedUri = " + normalizedUri + " serverRoot = " + serverBlock.getRoot().second + " locationUri = " + location.getUri() + " locationReturn = " + location.getReturn());
 
-	if (!location.getReturn().empty() && normalizedUri == location.getUri() && location.getUri() != "/")
-	{
+	if (!location.getReturn().empty() && normalizedUri == location.getUri() && location.getUri() != "/") {
 		Logger::debug("Redirecting (location.return present and exact match): " + location.getReturn());
-		return setResponseByStatus(302, &serverBlock, location.getReturn());
+		return (setResponseByStatus(302, &serverBlock, location.getReturn()));
 	}
+
 	std::string path = location.getPath(serverBlock.getRoot().second, normalizedUri);
 	Logger::debug("Path dentro do delete: " + path);
-	if (path.empty())
+	if (path.empty()) {
 		return setResponseByStatus(404, &serverBlock);
+	}
 
 	struct stat st;
-	if (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
-	{
+	if (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
 		std::vector<std::string> locationIndexes = location.getIndex();
-		for (size_t i = 0; i < locationIndexes.size(); ++i)
-		{
+
+		for (size_t i = 0; i < locationIndexes.size(); ++i) {
 			std::string candidate = path;
-			if (candidate.empty() || candidate[candidate.size() - 1] != '/')
+			if (candidate.empty() || candidate[candidate.size() - 1] != '/') {
 				candidate += '/';
+			}
 			candidate += locationIndexes[i];
 
-			if (access(candidate.c_str(), R_OK) == 0)
-			{
+			if (access(candidate.c_str(), R_OK) == 0) {
 				path = candidate;
 				break;
 			}
 		}
-		if (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
-		{
-			if (this->getExecAutoIndex())
-			{
+		if (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
+			if (this->getExecAutoIndex()) {
 				this->generateAutoIndexHTML(req, serverBlock, location);
 				return;
 			}
@@ -108,13 +103,15 @@ void HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &serverBl
 		}
 	}
 
-	// Verifica leitura do arquivo final
-	if (access(path.c_str(), R_OK) != 0)
+	// Verify the file last read
+	if (access(path.c_str(), R_OK) != 0) {
 		return setResponseByStatus(403, &serverBlock);
+	}
 
 	std::ifstream file(path.c_str(), std::ios::binary);
-	if (!file)
+	if (!file) {
 		return setResponseByStatus(404, &serverBlock);
+	}
 
 	std::ostringstream buffer;
 	buffer << file.rdbuf();
@@ -262,32 +259,32 @@ std::string HttpResponse::intToString(int n) const
 
 std::string HttpResponse::getMimeType(const std::string &path) const
 {
-	// Encontrar a extensão
+	// Find extension
 	size_t dotPos = path.rfind('.');
 	if (dotPos == std::string::npos)
-		return "application/octet-stream"; // Tipo binário genérico
+		return "application/octet-stream"; //
 
 	std::string ext = path.substr(dotPos);
 
-	// HTML e XML
+	// html and xml
 	if (ext == ".html" || ext == ".htm" || ext == ".php")
 		return "text/html";
 	if (ext == ".xml")
 		return "application/xml";
 
-	// Texto
+	// text
 	if (ext == ".txt")
 		return "text/plain";
 	if (ext == ".css")
 		return "text/css";
 
-	// JavaScript
+	// javascript
 	if (ext == ".js")
 		return "application/javascript";
 	if (ext == ".json")
 		return "application/json";
 
-	// Imagens
+	// images
 	if (ext == ".png")
 		return "image/png";
 	if (ext == ".jpg" || ext == ".jpeg")
@@ -301,7 +298,7 @@ std::string HttpResponse::getMimeType(const std::string &path) const
 	if (ext == ".webp")
 		return "image/webp";
 
-	// Fontes
+	// scrs
 	if (ext == ".woff")
 		return "font/woff";
 	if (ext == ".woff2")
@@ -311,7 +308,7 @@ std::string HttpResponse::getMimeType(const std::string &path) const
 	if (ext == ".otf")
 		return "font/otf";
 
-	// Documentos
+	// docs
 	if (ext == ".pdf")
 		return "application/pdf";
 	if (ext == ".zip")
@@ -321,7 +318,7 @@ std::string HttpResponse::getMimeType(const std::string &path) const
 	if (ext == ".gz")
 		return "application/gzip";
 
-	// Vídeo
+	// videos
 	if (ext == ".mp4")
 		return "video/mp4";
 	if (ext == ".webm")
@@ -329,7 +326,7 @@ std::string HttpResponse::getMimeType(const std::string &path) const
 	if (ext == ".avi")
 		return "video/x-msvideo";
 
-	// Áudio
+	// audios
 	if (ext == ".mp3")
 		return "audio/mpeg";
 	if (ext == ".wav")
@@ -337,8 +334,8 @@ std::string HttpResponse::getMimeType(const std::string &path) const
 	if (ext == ".ogg")
 		return "audio/ogg";
 
-	// Default
-	return "application/octet-stream";
+	// default
+	return ("application/octet-stream");
 }
 
 std::string HttpResponse::getStatusMessageForCode(int code) const
