@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/24 15:27:54 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/25 22:43:47 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -330,24 +330,16 @@ bool Client::validateGet(ServerBlock &serverBlock, LocationBlock &location)
 	path = StringUtils::extractUriWithoutQuery(path);
 	Logger::debug("String contendo alias + uri para o GET: " + path);
 
-	if (access(path.c_str(), R_OK) != 0)
-	{
-		Logger::debug("Acesso ao recurso " + path + " negado.");
-		this->response.setResponseByStatus(403, &serverBlock);
-		return false;
-	}
-
-	if (!path.empty() && path[path.size() - 1] == '/')
-	{
+	if (!path.empty() && path[path.size() - 1] == '/') {
 		std::vector<std::string> indexes = location.getIndex();
 		for (size_t i = 0; i < indexes.size(); i++)
 		{
-			if (access((path + indexes[i]).c_str(), R_OK) == 0)
+			if (access((path + indexes[i]).c_str(), R_OK) == 0) {
 				return true;
+			}
 		}
 
-		if (!location.getAutoIndex())
-		{
+		if (!location.getAutoIndex()) {
 			Logger::debug("Autoindex desabilitado e nenhum index encontrado.");
 			this->response.setResponseByStatus(403, &serverBlock);
 			return false;
@@ -358,9 +350,14 @@ bool Client::validateGet(ServerBlock &serverBlock, LocationBlock &location)
 		return true;
 	}
 
-	if (isDirectory(path))
-	{
+	if (isDirectory(path)) {
 		Logger::debug("Acesso ao diretorio " + path + " negado.");
+		this->response.setResponseByStatus(403, &serverBlock);
+		return false;
+	}
+
+	if (access(path.c_str(), R_OK) != 0) {
+		Logger::debug("Acesso ao recurso " + path + " negado.");
 		this->response.setResponseByStatus(403, &serverBlock);
 		return false;
 	}
