@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/25 23:05:16 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/25 23:06:28 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -326,7 +326,7 @@ bool Client::validatingUriWithLocation(ServerBlock &serverBlock, LocationBlock &
 
 bool Client::validateGet(ServerBlock &serverBlock, LocationBlock &location) {
 	std::string path = serverBlock.getRoot().second + this->request.getUri();
-	path = extractUriWithoutQuery(path);
+	path = StringUtils::extractUriWithoutQuery(path);
 	Logger::debug("String contendo alias + uri para o GET: " + path);
 
 	if (access(path.c_str(), R_OK) != 0) {
