@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/25 22:57:17 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/25 23:00:03 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -326,41 +326,29 @@ bool Client::validatingUriWithLocation(ServerBlock &serverBlock, LocationBlock &
 
 bool Client::validateGet(ServerBlock &serverBlock, LocationBlock &location)
 {
-	std::string path = serverBlock.getRoot().second + this->request.getUri();
-	path = StringUtils::extractUriWithoutQuery(path);
-	Logger::debug("String contendo alias + uri para o GET: " + path);
+	std::string uri = this->request.getUri();
+	uri = StringUtils::extractUriWithoutQuery(uri);
 
-	struct stat st;
-	if (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
+	Logger::debug("Validating GET for uri: " + uri);
+
+	if (!uri.empty() && uri[uri.size() - 1] == '/')
 	{
-		if (!path.empty() && path[path.size() - 1] == '/')
+		std::vector<std::string> indexes = location.getIndex();
+		for (size_t i = 0; i < indexes.size(); i++)
 		{
-			std::vector<std::string> indexes = location.getIndex();
-			for (size_t i = 0; i < indexes.size(); i++)
-			{
-				if (access((path + indexes[i]).c_str(), R_OK) == 0)
-					return true;
-			}
-
-			if (!location.getAutoIndex())
-			{
-				Logger::debug("Autoindex desabilitado e nenhum index encontrado.");
-				this->response.setResponseByStatus(403, &serverBlock);
-				return false;
-			}
-
-			Logger::debug("Autoindex habilitado.");
-			this->response.setExecAutoIndex(true);
 			return true;
 		}
-		return true;
-	}
 
-	if (access(path.c_str(), R_OK) != 0)
-	{
-		Logger::debug("Acesso ao recurso " + path + " negado.");
-		this->response.setResponseByStatus(403, &serverBlock);
-		return false;
+		if (!location.getAutoIndex())
+		{
+			Logger::debug("Autoindex desabilitado e nenhum index encontrado.");
+			this->response.setResponseByStatus(403, &serverBlock);
+			return false;
+		}
+
+		Logger::debug("Autoindex habilitado.");
+		this->response.setExecAutoIndex(true);
+		return true;
 	}
 
 	return true;
