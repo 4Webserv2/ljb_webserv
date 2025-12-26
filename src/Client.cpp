@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/25 22:55:18 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/25 22:57:17 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -326,33 +326,43 @@ bool Client::validatingUriWithLocation(ServerBlock &serverBlock, LocationBlock &
 
 bool Client::validateGet(ServerBlock &serverBlock, LocationBlock &location)
 {
-	std::string uri = this->request.getUri();
-	uri = StringUtils::extractUriWithoutQuery(uri);
+	std::string path = serverBlock.getRoot().second + this->request.getUri();
+	path = StringUtils::extractUriWithoutQuery(path);
+	Logger::debug("String contendo alias + uri para o GET: " + path);
 
-	Logger::debug("String contendo uri para o GET: " + uri);
-
-	// Se termina com '/', pode ser diretório
-	if (!uri.empty() && uri[uri.size() - 1] == '/')
+	struct stat st;
+	if (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
 	{
-		std::vector<std::string> indexes = location.getIndex();
-		for (size_t i = 0; i < indexes.size(); i++)
+		if (!path.empty() && path[path.size() - 1] == '/')
 		{
+			std::vector<std::string> indexes = location.getIndex();
+			for (size_t i = 0; i < indexes.size(); i++)
+			{
+				if (access((path + indexes[i]).c_str(), R_OK) == 0)
+					return true;
+			}
+
+			if (!location.getAutoIndex())
+			{
+				Logger::debug("Autoindex desabilitado e nenhum index encontrado.");
+				this->response.setResponseByStatus(403, &serverBlock);
+				return false;
+			}
+
+			Logger::debug("Autoindex habilitado.");
+			this->response.setExecAutoIndex(true);
 			return true;
 		}
-
-		if (!location.getAutoIndex())
-		{
-			Logger::debug("Autoindex desabilitado e nenhum index encontrado.");
-			this->response.setResponseByStatus(403, &serverBlock);
-			return false;
-		}
-
-		Logger::debug("Autoindex habilitado.");
-		this->response.setExecAutoIndex(true);
 		return true;
 	}
 
-	// GET simples sempre permitido — existência e permissão são tratadas no handleGet
+	if (access(path.c_str(), R_OK) != 0)
+	{
+		Logger::debug("Acesso ao recurso " + path + " negado.");
+		this->response.setResponseByStatus(403, &serverBlock);
+		return false;
+	}
+
 	return true;
 }
 
