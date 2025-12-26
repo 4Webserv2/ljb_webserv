@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:36 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/25 15:42:13 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/25 23:12:38 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,56 +96,40 @@ void HttpResponse::generateAutoIndexHTML(const HttpRequest &req, const ServerBlo
 
 void HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &serverBlock, const LocationBlock &location)
 {
-	std::string normalizedUri = StringUtils::extractUriWithoutQuery(req.getUri());
-
-	Logger::debug("handleGet: req.uri = " + req.getUri() + " normalizedUri = " + normalizedUri + " serverRoot = " + serverBlock.getRoot().second + " locationUri = " + location.getUri() + " locationReturn = " + location.getReturn());
-
-	if (!location.getReturn().empty() && normalizedUri == location.getUri() && location.getUri() != "/") {
-		Logger::debug("Redirecting (location.return present and exact match): " + location.getReturn());
-		return (setResponseByStatus(302, &serverBlock, location.getReturn()));
+	if (!location.getReturn().empty()) {
+		return setResponseByStatus(302, &serverBlock, location.getReturn());
 	}
 
-	std::string path = location.getPath(serverBlock.getRoot().second, normalizedUri);
+	std::string path = location.getPath(serverBlock.getRoot().second, req.getUri());
+	path = extractUriWithoutQuery(path);
 	Logger::debug("Path in delete (handleGet): " + path);
+
 	if (path.empty()) {
 		return setResponseByStatus(404, &serverBlock);
 	}
 
-	struct stat st;
-	if (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
-		std::vector<std::string> locationIndexes = location.getIndex();
-
-		for (size_t i = 0; i < locationIndexes.size(); ++i) {
-			std::string candidate = path;
-			if (candidate.empty() || candidate[candidate.size() - 1] != '/') {
-				candidate += '/';
-			}
-			candidate += locationIndexes[i];
-
-			if (access(candidate.c_str(), R_OK) == 0) {
-				path = candidate;
-				break;
-			}
-		}
-		if (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
-			if (this->getExecAutoIndex()) {
-				this->generateAutoIndexHTML(req, serverBlock, location);
-				return;
-			}
-			return setResponseByStatus(403, &serverBlock);
+	if (this->getExecAutoIndex()) {
+		Logger::debug("EXECUTANDO AUTOINDEX....");
+		this->generateAutoIndexHTML(req, serverBlock, location);
+		return ;
+	}
+	std::vector<std::string> locationIndexes = location.getIndex();
+	for (std::vector<std::string>::iterator it = locationIndexes.begin(); it != locationIndexes.end(); it++) {
+		if (access((path + *it).c_str(), R_OK) == 0) {
+			// rootOrAliasPlusUri += *it;
+			// this->request.setUri(this->request.getUri() + *it);
+			path += *it;
 		}
 	}
-
-	// Verify file last read in file
+	Logger::debug("Path executado no GET: " + path);
 	if (access(path.c_str(), R_OK) != 0) {
 		return setResponseByStatus(403, &serverBlock);
 	}
 
 	std::ifstream file(path.c_str(), std::ios::binary);
-	if (!file) {
-		return setResponseByStatus(404, &serverBlock);
-	}
+	if (!file) return setResponseByStatus(404, &serverBlock);
 
+	Logger::debug("EXECUTANDO O GET METODO....");
 	std::ostringstream buffer;
 	buffer << file.rdbuf();
 

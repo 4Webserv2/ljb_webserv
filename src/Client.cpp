@@ -6,7 +6,7 @@
 /*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/25 23:06:28 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/25 23:14:59 by lraggio          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -327,39 +327,39 @@ bool Client::validatingUriWithLocation(ServerBlock &serverBlock, LocationBlock &
 bool Client::validateGet(ServerBlock &serverBlock, LocationBlock &location) {
 	std::string path = serverBlock.getRoot().second + this->request.getUri();
 	path = StringUtils::extractUriWithoutQuery(path);
-	Logger::debug("String contendo alias + uri para o GET: " + path);
+	Logger::debug("GET validation path (root + uri): "  + path);
 
 	if (access(path.c_str(), R_OK) != 0) {
-		Logger::debug("Acesso ao recurso " + path + " negado.");
+		Logger::debug("Access denied to resource: " + path + ".");
 		this->response.setResponseByStatus(403, &serverBlock);
-		return false;
+		return (false);
 	}
 
 	if (!path.empty() && path[path.size() - 1] == '/') {
 		std::vector<std::string> indexes = location.getIndex();
 		for (size_t i = 0; i < indexes.size(); i++) {
 			if (access((path + indexes[i]).c_str(), R_OK) == 0)
-				return true;
+				return (true);
 		}
 
 		if (!location.getAutoIndex()) {
-			Logger::debug("Autoindex desabilitado e nenhum index encontrado.");
+			Logger::debug("Autoindex disabled and no index file found.");
 			this->response.setResponseByStatus(403, &serverBlock);
-			return false;
+			return (false);
 		}
 
-		Logger::debug("Autoindex habilitado.");
+		Logger::debug("Autoindex enabled.");
 		this->response.setExecAutoIndex(true);
-		return true;
+		return (true);
 	}
 
 	if (isDirectory(path)) {
-		Logger::debug("Acesso ao diretorio " + path + " negado.");
+		Logger::debug("Access to directory denied: "+ path + ".");
 		this->response.setResponseByStatus(403, &serverBlock);
-		return false;
+		return (false);
 	}
 
-	return true;
+	return (true);
 }
 
 bool Client::validatePost(ServerBlock &serverBlock, LocationBlock &location)
