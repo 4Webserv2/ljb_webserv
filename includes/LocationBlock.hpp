@@ -1,57 +1,67 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   LocationBlock.hpp                                  :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/27 11:44:56 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/12/27 11:44:57 by jbergfel         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #pragma once
 
-# include "Webserv.hpp"
+#include "Webserv.hpp"
 
 class ConfigFile;
 
-class LocationBlock {
-    private:
-        ConfigFile                  &_config;
-        bool                        _autoIndex;
-        bool                        _canUpload;
-        std::string                 _uri;
-        std::string                 _alias;
-        std::pair<int, std::string> _return;
-        std::string                 _uploadPath;
-        std::vector<std::string>    _index;
-        std::vector<std::string>    _cgiExtensions;
-        std::vector<std::string>    _allowMethods;
-        bool                        _cookiesEnabled;
+class LocationBlock
+{
+	private:
+		ConfigFile &_config;
+		bool _autoIndex;
+		bool _canUpload;
+		std::string _uri;
+		std::string _alias;
+		std::pair<int, std::string> _return;
+		std::string _uploadPath;
+		std::vector<std::string> _index;
+		std::vector<std::string> _cgiExtensions;
+		std::vector<std::string> _allowMethods;
+		bool _cookiesEnabled;
 
-        
-        void addAutoIndex();
-        void addCanUpload();
-        void addUri();
-        void addAlias();
-        void addReturn();
-        void addUploadPath();
-        void addIndex();
-        void addCgiExtensions();
-        void addAllowMethods();
-        void addCookiesEnabled();
-        
-    public:
-        LocationBlock(ConfigFile &config);
-        ~LocationBlock();
+		void addAutoIndex();
+		void addCanUpload();
+		void addUri();
+		void addAlias();
+		void addReturn();
+		void addUploadPath();
+		void addIndex();
+		void addCgiExtensions();
+		void addAllowMethods();
+		void addCookiesEnabled();
 
-        LocationBlock &operator=(const LocationBlock &src);
-        
-        void printLocationBlock();
-        void addLocationBlock();
-        bool validatePath(const std::string &path) const;
+	public:
+		LocationBlock(ConfigFile &config);
+		~LocationBlock();
 
-        //| Getters
-        bool getAutoIndex() const;
-        bool getCanUpload() const;
-        std::string getUri() const;
-        std::string getAlias() const;
-        std::pair<int, std::string> getReturn() const;
-        std::string getUploadPath() const;
-        std::vector<std::string> getIndex() const;
-        std::vector<std::string> getCgiExtensions() const;
-        std::vector<std::string> getAllowMethods() const;
-        bool getCookiesEnabled() const;
-        std::string getPath(const std::string &root, const std::string &requestUri) const;
+		LocationBlock &operator=(const LocationBlock &src);
 
-        bool checkHttpMethodInLocation(std::string method);
+		void printLocationBlock();
+		void addLocationBlock();
+		bool validatePath(const std::string &path) const;
+		bool getAutoIndex() const;
+		bool getCanUpload() const;
+		std::string getUri() const;
+		std::string getAlias() const;
+		std::pair<int, std::string> getReturn() const;
+		std::string getUploadPath() const;
+		std::vector<std::string> getIndex() const;
+		std::vector<std::string> getCgiExtensions() const;
+		std::vector<std::string> getAllowMethods() const;
+		bool getCookiesEnabled() const;
+		std::string getPath(const std::string &root, const std::string &requestUri) const;
+
+		bool checkHttpMethodInLocation(std::string method);
 };

@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   ServerConfig.cpp                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/27 11:51:16 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/12/27 12:29:11 by jbergfel         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../includes/Webserv.hpp"
 
 ConfigFile::ConfigFile(void) {}
@@ -5,11 +17,12 @@ ConfigFile::ConfigFile(void) {}
 ConfigFile::~ConfigFile(void) {}
 
 // ConfigFile(char **av, int ac);
-ConfigFile::ConfigFile(int ac, char **av) {
+ConfigFile::ConfigFile(int ac, char **av)
+{
 	if (ac == 2)
-        this->parser(av[1]);
-    else //| Caso não passem nenhum argumento, vamos usar nosso arquivo padrão
-        this->parser("configs/default.conf");
+		this->parser(av[1]);
+	else //| Caso não passem nenhum argumento, vamos usar nosso arquivo padrão
+		this->parser("config/default.conf");
 }
 
 void ConfigFile::readFile(const std::string &filename, std::string &content)
@@ -29,9 +42,9 @@ void ConfigFile::trim(std::string &content)
 		content.clear();
 		return;
 	}
-	
+
 	size_t end = content.find_last_not_of(" \t\n\r\f\v");
-	
+
 	content = content.substr(start, end - start + 1);
 }
 
@@ -40,28 +53,28 @@ void ConfigFile::removeComments(std::string &content)
 	std::string result;
 	std::istringstream iss(content);
 	std::string line;
-	
+
 	while (std::getline(iss, line))
 	{
 		size_t commentPos = line.find('#');
-		
+
 		if (commentPos != std::string::npos)
 			line = line.substr(0, commentPos);
-		
+
 		result += line + "\n";
 	}
-	
+
 	if (!result.empty() && result[result.length() - 1] == '\n')
 		result.erase(result.length() - 1);
-	
+
 	content = result;
 }
 
 void ConfigFile::cleanFile(const std::string &filename, std::string &content)
 {
 	readFile(filename, content); //| Arquivo completo
-	removeComments(content);     //| Remover comentários (linhas com '#')
-	trim(content);               //| Remover os whitespaces do começo e do final do content.
+	removeComments(content);	 //| Remover comentários (linhas com '#')
+	trim(content);				 //| Remover os whitespaces do começo e do final do content.
 }
 
 std::vector<std::string> ConfigFile::tokenizeContent(const std::string &content)
@@ -70,7 +83,7 @@ std::vector<std::string> ConfigFile::tokenizeContent(const std::string &content)
 	bool inQuotes = false;
 	char quoteChar = '\0';
 	int braceCount = 0;
-	
+
 	for (size_t i = 0; i < content.length(); ++i)
 	{
 		char c = content[i];
@@ -123,13 +136,13 @@ std::vector<std::string> ConfigFile::tokenizeContent(const std::string &content)
 		else //| Se não for um espaço, adiciona o caractere ao token atual
 			currentToken += c;
 	}
-	
+
 	if (!currentToken.empty()) //| Adiciona o token atual ao vetor de tokens
 		this->_tokens.push_back(currentToken);
-	
+
 	if (braceCount != 0) //| Verifica se as chaves estão balanceadas
 		throw std::runtime_error("Configuração inválida: chaves não balanceadas");
-	
+
 	return this->_tokens;
 }
 
@@ -166,20 +179,20 @@ void ConfigFile::verifyToken(TypeValidation type, const std::string &message)
 
 	switch (type)
 	{
-		case EMPTY:
-			shouldThrow = this->_tokens.empty();
-			break;
-		case SEMICOLON:
-			shouldThrow = this->_tokens.empty() || this->_tokens[0] == ";";
-			break;
-		case DIFF_SEMICOLON:
-			shouldThrow = this->_tokens.empty() || this->_tokens[0] != ";";
-			break;
-		case END_OF_FILE:
-			shouldThrow = this->_tokens[0] == this->_tokens.back();
-			break;
-		default:
-			throw std::runtime_error("Configuração inválida: tipo de validação desconhecido");
+	case EMPTY:
+		shouldThrow = this->_tokens.empty();
+		break;
+	case SEMICOLON:
+		shouldThrow = this->_tokens.empty() || this->_tokens[0] == ";";
+		break;
+	case DIFF_SEMICOLON:
+		shouldThrow = this->_tokens.empty() || this->_tokens[0] != ";";
+		break;
+	case END_OF_FILE:
+		shouldThrow = this->_tokens[0] == this->_tokens.back();
+		break;
+	default:
+		throw std::runtime_error("Configuração inválida: tipo de validação desconhecido");
 	}
 
 	if (shouldThrow)

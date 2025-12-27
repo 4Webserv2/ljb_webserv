@@ -1,69 +1,67 @@
-// #include "../includes/Webserv.hpp"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   FileLogHandler.cpp                                 :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/11/19 22:17:45 by lraggio           #+#    #+#             */
+/*   Updated: 2025/12/27 12:23:32 by jbergfel         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-// FileLogHandler::FileLogHandler(std::string filename) : LogHandler(), _logFile(filename.c_str(), std::ofstream::out | std::ofstream::app) {}
+#include "../includes/FileLogHandler.hpp"
 
-// FileLogHandler::~FileLogHandler(void) {_logFile.close();}
+/**
+ * @file FileLogHandler.hpp
+ * @brief Defines the FileLogHandler class responsible for writing log events to a file.
+ *
+ * The FileLogHandler implements the LogHandler interface and provides a concrete
+ * output strategy that writes logs to a filesystem target. This handler is useful
+ * for persistent log storage, auditing, and debugging scenarios where terminal
+ * output is insufficient or too volatile.
+ *
+ * Key responsibilities:
+ * - Open and manage a log file output stream.
+ * - Format and write log messages based on severity.
+ * - Handle file-access or I/O issues gracefully.
+ *
+ * Usage:
+ * Instantiate a FileLogHandler with the desired filename and register it in the
+ * Logger or CompositeLogHandler to enable file-based logging.
+ *
+ * This handler is typically combined with ConsoleLogHandler using
+ * CompositeLogHandler when logs need to be duplicated to multiple outputs.
+ */
 
-// // virtual void handleDebug(t_logEvent event);
-// void FileLogHandler::handleDebug(t_logEvent event) {
-//     std::time_t timestamp = std::time(NULL);
-//     std::string result = std::ctime(&timestamp);
-//     long unsigned int pos = result.find("\n");
 
-//     if (pos == std::string::npos) {
-//         _logFile << "[DEBUG] " << event.message << std::endl;
-//     }
-//     else {
-//         // Usado para retirar o `\n` do final da string result
-//         std::string aux = result.erase(pos, 1);
-//         _logFile << aux << " [DEBUG] " << event.message << std::endl;
-//     }
-// }
+FileLogHandler::FileLogHandler(const std::string &filename)
+{
+	_file.open(filename.c_str(), std::ios::out | std::ios::app);
+}
 
-// // virtual void handleError(t_logEvent event);
-// void FileLogHandler::handleError(t_logEvent event) {
-//     std::time_t timestamp = std::time(NULL);
-//     std::string result = std::ctime(&timestamp);
-//     long unsigned int pos = result.find("\n");
+FileLogHandler::~FileLogHandler()
+{
+	if (_file.is_open())
+		_file.close();
+}
 
-//     if (pos == std::string::npos) {
-//         _logFile << "[ERROR] " << event.message << std::endl;
-//     }
-//     else {
-//         // Usado para retirar o `\n` do final da string result
-//         std::string aux = result.erase(pos, 1);
-//         _logFile << aux << " [ERROR] " << event.message << std::endl;
-//     }
-// }
+void FileLogHandler::handleDebug(t_event event)
+{
+	_file << BLUE_COLOR << Logger::getTimestamp() << " [DEBUG] " << event.message << RESET_COLOR << std::endl;
+}
 
-// // virtual void handleInfo(t_logEvent event);
-// void FileLogHandler::handleInfo(t_logEvent event) {
-//     std::time_t timestamp = std::time(NULL);
-//     std::string result = std::ctime(&timestamp);
-//     long unsigned int pos = result.find("\n");
+void FileLogHandler::handleInfo(t_event event)
+{
+	_file << GREEN_COLOR << Logger::getTimestamp() << " [INFO] " << event.message << RESET_COLOR << std::endl;
+}
 
-//     if (pos == std::string::npos) {
-//         _logFile << "[INFO] " << event.message << std::endl;
-//     }
-//     else {
-//         // Usado para retirar o `\n` do final da string result
-//         std::string aux = result.erase(pos, 1);
-//         _logFile << aux << " [INFO] " << event.message << std::endl;
-//     }
-// }
+void FileLogHandler::handleWarning(t_event event)
+{
+	_file << YELLOW_COLOR << Logger::getTimestamp() << " [WARNING] " << event.message << RESET_COLOR << std::endl;
+}
 
-// // virtual void handleWarning(t_logEvent event);
-// void FileLogHandler::handleWarning(t_logEvent event) {
-//     std::time_t timestamp = std::time(NULL);
-//     std::string result = std::ctime(&timestamp);
-//     long unsigned int pos = result.find("\n");
-
-//     if (pos == std::string::npos) {
-//         _logFile << "[WARNING] " << event.message << std::endl;
-//     }
-//     else {
-//         // Usado para retirar o `\n` do final da string result
-//         std::string aux = result.erase(pos, 1);
-//         _logFile << aux << " [WARNING] " << event.message << std::endl;
-//     }
-// }
+void FileLogHandler::handleError(t_event event)
+{
+	_file << RED_COLOR << Logger::getTimestamp() << " [ERROR] " << event.message << RESET_COLOR << std::endl;
+}

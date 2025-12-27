@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   StdLogHandler.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/10 23:03:49 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/02 13:55:22 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/27 12:12:17 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,14 +29,14 @@
 
 class StdLogHandler : public LogHandler
 {
-  public:
-	StdLogHandler();
-	virtual ~StdLogHandler();
+	public:
+		StdLogHandler();
+		virtual ~StdLogHandler();
 
-	virtual void handleDebug(t_event event);
-	virtual void handleInfo(t_event event);
-	virtual void handleWarning(t_event event);
-	virtual void handleError(t_event event);
+		virtual void handleDebug(t_event event);
+		virtual void handleInfo(t_event event);
+		virtual void handleWarning(t_event event);
+		virtual void handleError(t_event event);
 };
 
 #endif

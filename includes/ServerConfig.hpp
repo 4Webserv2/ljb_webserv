@@ -1,21 +1,23 @@
 #pragma once
 
-# include "Webserv.hpp"
+#include "Webserv.hpp"
 
 enum TypeValidation
 {
-	EMPTY = 0,          //| Verifica se tokens está vazio
-	SEMICOLON = 1,      //| Verifica se está vazio OU é ponto e vírgula
+	EMPTY = 0,			//| Verifica se tokens está vazio
+	SEMICOLON = 1,		//| Verifica se está vazio OU é ponto e vírgula
 	DIFF_SEMICOLON = 2, //| Verifica se está vazio OU não é ponto e vírgula
-	END_OF_FILE = 3     //| Verifica se é o final do arquivo
+	END_OF_FILE = 3		//| Verifica se é o final do arquivo
 };
 
 class ServerBlock;
 
-class ConfigFile {
+class ConfigFile
+{
 	private:
-		std::vector<std::string>    _tokens;
-		std::vector<ServerBlock>    _serverBlocks;
+		std::vector<std::string> _tokens;
+		std::vector<ServerBlock> _serverBlocks;
+
 	public:
 		ConfigFile(void);
 		~ConfigFile(void);
