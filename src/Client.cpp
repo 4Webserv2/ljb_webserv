@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:47:38 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/27 12:52:27 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/27 13:01:09 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -391,7 +391,8 @@ bool Client::validateGet(ServerBlock &serverBlock, LocationBlock &location)
 
 bool Client::validatePost(ServerBlock &serverBlock, LocationBlock &location)
 {
-	std::string path = serverBlock.getRoot().second + this->request.getUri();
+	// Resolver path corretamente via LocationBlock
+	std::string path = location.getPath(serverBlock.getRoot().second, this->request.getUri());
 	path = extractAndDecodeUri(path);
 	std::string uri = this->request.getUri();
 	uri = extractAndDecodeUri(uri);
@@ -467,7 +468,6 @@ bool Client::validateDelete(ServerBlock &serverBlock, LocationBlock &location)
 		return (this->response.setResponseByStatus(404, &serverBlock), false);
 
 	size_t filePos = uri.rfind('/');
-	uri = extractAndDecodeUri(uri);
 	std::string fileName = uri.substr(filePos);
 	std::string newUri;
 	if ((filePos + 1) <= uri.size())
@@ -478,9 +478,6 @@ bool Client::validateDelete(ServerBlock &serverBlock, LocationBlock &location)
 	{
 		newUri = uri.substr(0, filePos);
 	}
-
-	// std::string uri = this->request.getUri();
-	// uri = extractAndDecodeUri(uri);
 
 	Logger::debug("client uri: " + newUri);
 	Logger::debug("location uri: " + location.getUri());
@@ -498,23 +495,13 @@ bool Client::validateDelete(ServerBlock &serverBlock, LocationBlock &location)
 		return (false);
 	}
 
-	(void)serverBlock; // Unused parameter
-
-	// if (uri.empty() ||
-	//     uri[uri.size() - 1] == '/') {
-	//     this->response.setResponseByStatus(403, &serverBlock, "Forbidden", "<h1>Forbidden</h1>");
-	//     return false;
-	// }
+	(void)serverBlock;
 
 	std::string base;
 	if (this->request.getIsCgi())
-	{
-		base = serverBlock.getRoot().second;
-	}
+		base = location.getPath(serverBlock.getRoot().second, this->request.getUri());
 	else
-	{
 		base = location.getUploadPath();
-	}
 	std::string fullPath = "";
 
 	Logger::debug("Base path for DELETE: " + base);
