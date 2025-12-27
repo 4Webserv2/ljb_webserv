@@ -1,80 +1,64 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   EpollHandler.cpp                                   :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/31 07:47:56 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/24 09:19:08 by btaveira         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+#include "../includes/Webserv.hpp"
 
-#include "../includes/EpollHandler.hpp"
-#include "../includes/EpollInstance.hpp"
 
-EpollHandler::~EpollHandler(void) {}
+EpollHandler::EpollHandler(uint32_t interestedEvents, int socketFd, int maxTimeoutSecs) : _socketFd(socketFd), _interestedEvents(interestedEvents), _maxTimeoutSecs(maxTimeoutSecs), _lastActiveTime(time(NULL)) {}
 
-EpollHandler::EpollHandler(uint32_t activeEvents)
-{
-	this->_socketFd = -1;
-	this->_activeEvents = activeEvents;
-	this->_eventsTimeout = -1;
+EpollHandler::~EpollHandler() {}
+
+int EpollHandler::handleEvent(struct epoll_event &event) {
+    // Tratar eventos múltiplos (EPOLLIN | EPOLLOUT podem ocorrer simultaneamente)
+    if (event.events & (EPOLLIN | EPOLLRDHUP)) {
+        this->handleEpollIn();
+    }
+    if (event.events & EPOLLOUT) {
+        this->handleEpollOut();
+    }
+    // EPOLLHUP indica que o peer fechou a conexão/pipe
+    if (event.events & EPOLLHUP) {
+        this->handleEpollIn(); // Processar como leitura para detectar EOF
+    }
+    return (0);
 }
 
-EpollHandler::EpollHandler(uint32_t activeEvents, int socketFd, int eventsTimeout)
-{
-	this->_socketFd = socketFd;
-	this->_activeEvents = activeEvents;
-	this->_eventsTimeout = eventsTimeout;
-	this->_epollTime = time(NULL);
+void EpollHandler::checkTimeout(void) {
+    if (this->_maxTimeoutSecs < 0) {
+        return;
+    }
+
+    time_t currentTime = time(NULL);
+    if (currentTime - this->_lastActiveTime > this->_maxTimeoutSecs) {
+        EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
+    }
 }
 
-int EpollHandler::EpollEventHandler(struct epoll_event &event)
-{
-	this->_epollTime = time(NULL);
-	if (event.events & (EPOLLIN | EPOLLRDHUP))
-		this->EpollInHandler();
-	else if (event.events & EPOLLOUT)
-		this->EpollOutHandler();
-	return (0);
+void EpollHandler::setSocketFd(int socketFd) {
+    this->_socketFd = socketFd;
 }
 
-void EpollHandler::handleTimeout(void)
-{
-	if (this->_eventsTimeout < 0)
-		return;
-	time_t currentTime = time(NULL);
-	if (currentTime - this->_epollTime > this->_eventsTimeout)
-		EpollInstance::deleteElementFromHandlers(this->_socketFd);
+int EpollHandler::getSocketFd() const {
+    return (this->_socketFd);
 }
 
-void EpollHandler::setSocketFd(int socketFd)
-{
-	this->_socketFd = socketFd;
+uint32_t EpollHandler::getInterestedEvents() const {
+    return (this->_interestedEvents);
 }
 
-void EpollHandler::setEventsTimeout(int eventsTimeout)
-{
-	this->_eventsTimeout = eventsTimeout;
+int EpollHandler::getMaxTimeoutSecs() const {
+    return (this->_maxTimeoutSecs);
 }
 
-void EpollHandler::setActiveEvents(uint32_t event)
-{
-	this->_activeEvents = event;
+void EpollHandler::setInterestedEvents(uint32_t events) {
+    this->_interestedEvents = events;
 }
 
-int EpollHandler::getSocketFd(void) const
-{
-	return (this->_socketFd);
+void EpollHandler::setMaxTimeoutSecs(int maxTimeoutSecs) {
+    this->_maxTimeoutSecs = maxTimeoutSecs;
 }
 
-uint32_t EpollHandler::getActiveEvents(void) const
-{
-	return (this->_activeEvents);
+time_t EpollHandler::getLastActiveTime() const {
+    return (this->_lastActiveTime);
 }
 
-int EpollHandler::getEventsTimeout(void) const
-{
-	return (this->_eventsTimeout);
+void EpollHandler::setLastActiveTime(time_t lastActiveTime) {
+    this->_lastActiveTime = lastActiveTime;
 }

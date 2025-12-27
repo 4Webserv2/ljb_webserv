@@ -1,20 +1,11 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   Webserv.hpp                                        :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/14 16:50:29 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/23 20:54:57 by btaveira         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+#pragma once
 
-#ifndef WEBSERV_HPP
-# define WEBSERV_HPP
+# define MAX_EVENTS 10
+# define MAX_BUFFER_SIZE 4096
 
-# include <iostream>
+# include <iostream> //| Para testes, remover depois
 # include <sys/socket.h>
+# include <sys/stat.h>
 # include <netinet/in.h>
 # include <netinet/tcp.h>
 # include <unistd.h>
@@ -30,38 +21,41 @@
 # include <cstddef>
 # include <cstdlib>
 # include <ctime>
+# include <cstring>
 # include <fstream>
 # include <sstream>
 # include <cctype>
 # include <set>
 # include <csignal>
-# include <sys/types.h>
 # include <sys/wait.h>
-# include <clocale>
-# include <cstring>
+# include <dirent.h>
 
 
-
-// # include "HttpParser.hpp"
-// # include "HttpResponse.hpp"
-// # include "Client.hpp"
-// # include "EpollInstance.hpp"
-// # include "ConfigFile.hpp"
-// # include "Runtime.hpp"
-// # include "ServerInstance.hpp"
-// # include "ServerBlock.hpp"
-// # include "ServerConfig.hpp"
-// # include "LocationBlock.hpp"
-
-# define PORT 8080
-# define BACKLOG 10
-# define MAX_EVENTS 10
-# define MAX_BUFFER_SIZE 4096
-
-enum e_status {
-	E_ERROR = -1,
-	NO_ERROR = 0
+enum    LogLevel {
+    DEBUG,
+    INFO,
+    WARNING,
+    ERROR
 };
+
+typedef struct s_logEvent {
+    enum LogLevel   level;
+    std::string     message;
+}t_logEvent;
+
+# include "HttpRequest.hpp"
+# include "HttpResponse.hpp"
+# include "ServerBlock.hpp"
+# include "ServerConfig.hpp"
+# include "EpollHandler.hpp"
+# include "EpollInstance.hpp"
+# include "LocationBlock.hpp"
+# include "ServerManage.hpp"
+# include "Client.hpp"
+# include "Logger.hpp"
+# include "StdLogHandler.hpp"
+# include "CompositeLogHandler.hpp"
+# include "CgiHandler.hpp"
 
 enum clientBufferState {
     READING_HEADER = 9, //Lendo o header da request ainda
@@ -75,7 +69,11 @@ enum cgiBufferState {
     FAILED = 26,
     COMPLETED = 27
 };
-int test();
 
-#endif
-
+// void initAllLogHandlers(void);
+void setNonBlocking(int sockfd);
+std::string intToString(int n);
+std::string extractUriWithoutQuery(const std::string &uri);
+std::string extractAndDecodeUri(const std::string &uri);
+std::string extractQueryFromUri(const std::string &uri);
+std::string extractUriPathInfo(const std::string &uri, const LocationBlock &location);

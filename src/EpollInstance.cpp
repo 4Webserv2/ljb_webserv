@@ -1,254 +1,201 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   EpollInstance.cpp                                  :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/13 20:46:14 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/24 15:36:44 by jbergfel         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+#include "../includes/Webserv.hpp"
+#include <cstring>
 
-#include "../includes/EpollInstance.hpp"
-#include "../includes/EpollHandler.hpp"
-#include "../includes/Logger.hpp"
-#include "../includes/StringUtils.hpp"
+EpollInstance *EpollInstance::_instance = NULL;
 
-EpollInstance *EpollInstance::_run = NULL;
+EpollInstance::EpollInstance(void) {}
 
-EpollInstance::EpollInstance() {}
-
-EpollInstance::~EpollInstance()
-{
-	for (std::map<int, EpollHandler *>::iterator it = _epollHandlers.begin(); it != _epollHandlers.end(); ++it)
-	{
-		delete it->second;
-	}
-	_epollHandlers.clear();
-
-	if (_epollFd != -1)
-	{
-		close(_epollFd);
-	}
+EpollInstance::EpollInstance(const EpollInstance &src) {
+    *this = src;
 }
 
-EpollInstance::EpollInstance(const EpollInstance &src)
-{
-	*this = src;
+EpollInstance::~EpollInstance(void) {
+    close(this->_epollFd);
+    for (std::map<int, EpollHandler*>::iterator it = this->_handlers.begin(); it != this->_handlers.end(); ++it) {
+        delete it->second;
+    }
 }
 
-EpollInstance &EpollInstance::operator=(const EpollInstance &src)
-{
-	if (this != &src)
-	{
-		this->_epollFd = src._epollFd;
-		this->_epollEvents = src._epollEvents;
-		for (size_t i = 0; i < MAX_EVENTS; i++)
-		{
-			this->_eventsList[i].data.fd = src._eventsList[i].data.fd;
-			this->_eventsList[i].events = src._eventsList[i].events;
-		}
-	}
-	return (*this);
+EpollInstance &EpollInstance::operator=(const EpollInstance &src) {
+    if (this != &src) {
+        this->_epollFd = src._epollFd;
+        this->_configEpollEvents = src._configEpollEvents;
+        for (int i = 0; i < MAX_EVENTS; i++) {
+            this->_readyList[i].data.fd = src._readyList[i].data.fd;
+            this->_readyList[i].events = src._readyList[i].events;
+        }
+    }
+    return (*this);
 }
 
-void EpollInstance::initEpollRun(void)
-{
-	if (_run == NULL)
-	{
-		_run = new EpollInstance();
-		_run->_epollFd = epoll_create(1);
-		if (_run->_epollFd == -1)
-			throw(std::runtime_error("Cannot Init Epoll!"));
-		Logger::info("Epoll created!");
-	}
+void EpollInstance::initializeInstance(void) {
+    if (_instance == NULL) {
+        _instance = new EpollInstance();
+        _instance->_epollFd = epoll_create(1);
+        if (_instance->_epollFd == -1) {
+            throw(EpollInstance::CannotInitEpollInstance());
+        }
+    }
 }
 
-void EpollInstance::deleteElementFromHandlers(int socketFd)
-{
-	std::map<int, EpollHandler *>::iterator it = _run->_epollHandlers.find(socketFd);
-	if (it != _run->_epollHandlers.end())
-	{
-		it->second->deleteHandler();
-		_run->_epollHandlers.erase(it);
-	}
+void EpollInstance::deleteInstance(void) {
+    if (_instance != NULL) {
+        delete _instance;
+        _instance = NULL;
+    }
 }
 
-void EpollInstance::manipInterestList(int operation, EpollHandler *handler)
-{
-	if (_run == NULL)
-		throw std::runtime_error("EpollInstance is not initialized.");
+struct epoll_event &EpollInstance::getElementFromReadyList(int index) {
+    if (_instance == NULL) {
+        throw std::runtime_error("EpollInstance is not initialized.");
+    }
 
-	if (!handler)
-		throw std::invalid_argument("manipInterestList: handler is null");
-
-	int socketFd = handler->getSocketFd();
-
-	if (operation != EPOLL_CTL_ADD && operation != EPOLL_CTL_DEL && operation != EPOLL_CTL_MOD)
-		throw(EpollInstance::CannotManipulate());
-
-	struct epoll_event data;
-	data.events = handler->getActiveEvents();
-	Logger::info("Inside manipInterest. FD: " + StringUtils::intToString(socketFd));
-	data.data.ptr = handler;
-	if (operation == EPOLL_CTL_DEL)
-	{
-		if (std::find(_run->_pendingRemovals.begin(), _run->_pendingRemovals.end(), socketFd) != _run->_pendingRemovals.end())
-		{
-			Logger::debug("manipInterestList: fd=" + StringUtils::intToString(socketFd) + " already pending removal");
-			return;
-		}
-		if (_run->_epollHandlers.find(socketFd) == _run->_epollHandlers.end())
-		{
-			Logger::debug("manipInterestList: skip EPOLL_CTL_DEL for unknown fd=" + StringUtils::intToString(socketFd));
-			return;
-		}
-		_run->_pendingRemovals.push_back(socketFd);
-	}
-	else if (operation == EPOLL_CTL_ADD || operation == EPOLL_CTL_MOD)
-	{
-		_run->_epollHandlers[socketFd] = handler;
-	}
-	if (epoll_ctl(_run->_epollFd, operation, socketFd, &data) == -1)
-	{
-		if (errno == ENOENT || errno == EBADF)
-		{
-			Logger::debug("epoll_ctl returned ENOENT/EBADF for fd=" + StringUtils::intToString(socketFd) + " op=" + StringUtils::intToString(operation) + " (ignoring)");
-			if (operation == EPOLL_CTL_DEL)
-			{
-				std::map<int, EpollHandler *>::iterator it = _run->_epollHandlers.find(socketFd);
-				if (it != _run->_epollHandlers.end())
-					_run->_epollHandlers.erase(it);
-			}
-			return;
-		}
-		StringUtils::errorAndCerr("epoll_ctl failed: op=" + StringUtils::intToString(operation) + " fd=" + StringUtils::intToString(socketFd) + " errno=" + StringUtils::intToString(errno) + " (" + std::string(strerror(errno)) + ")");
-		throw(EpollInstance::CannotManipulate());
-	}
-	Logger::info("Epoll Manipulation ompleted successfully!");
+    return (_instance->_readyList[index]);
 }
 
-void EpollInstance::replaceHandlerFd(EpollHandler *handler, int newFd, uint32_t newEvents)
-{
-	if (_run == NULL)
-		throw std::runtime_error("EpollInstance is not initialized.");
-	if (!handler)
-		throw std::invalid_argument("replaceHandlerFd: handler is null");
+void EpollInstance::manipInterestList(int operation, EpollHandler *handler) {
+    if (_instance == NULL) {
+        throw std::runtime_error("EpollInstance is not initialized.");
+    }
 
-	int oldFd = handler->getSocketFd();
-	int epfd = _run->_epollFd;
-	if (epfd == -1)
-		throw std::runtime_error("replaceHandlerFd: invalid epoll fd");
-	if (newEvents == 0)
-		newEvents = handler->getActiveEvents();
+    int socketFd = handler->getSocketFd();
 
-	if (oldFd == newFd && oldFd != -1)
-	{
-		struct epoll_event ev;
-		ev.events = newEvents;
-		ev.data.ptr = handler;
-		if (epoll_ctl(epfd, EPOLL_CTL_MOD, oldFd, &ev) == -1)
-		{
-			std::cerr << "replaceHandlerFd: EPOLL_CTL_MOD failed: fd=" << oldFd << " errno=" << errno << " (" << strerror(errno) << ")\n";
-		}
-		handler->setActiveEvents(newEvents);
-		_run->_epollHandlers[oldFd] = handler;
-		return;
-	}
+    if (operation != EPOLL_CTL_ADD && operation != EPOLL_CTL_DEL && operation != EPOLL_CTL_MOD) {
+        throw(EpollInstance::CannotManipulateEpollInstance());
+    }
+    struct epoll_event data;
+    data.events = handler->getInterestedEvents();
 
-	if (oldFd != -1)
-	{
-		if (epoll_ctl(epfd, EPOLL_CTL_DEL, oldFd, NULL) == -1)
-		{
-			if (errno != ENOENT && errno != EBADF)
-				std::cerr << "replaceHandlerFd: EPOLL_CTL_DEL failed for oldFd=" << oldFd << " errno=" << errno << " (" << strerror(errno) << ")\n";
-			else
-				Logger::debug("replaceHandlerFd: EPOLL_CTL_DEL returned ENOENT/EBADF for oldFd=" + StringUtils::intToString(oldFd) + " (continuing)");
-		}
-
-		std::map<int, EpollHandler *>::iterator it = _run->_epollHandlers.find(oldFd);
-		if (it != _run->_epollHandlers.end())
-			_run->_epollHandlers.erase(it);
-	}
-
-	struct epoll_event ev;
-	ev.events = newEvents;
-	ev.data.ptr = handler;
-
-	if (epoll_ctl(epfd, EPOLL_CTL_ADD, newFd, &ev) == -1)
-	{
-		std::cerr << "replaceHandlerFd: EPOLL_CTL_ADD failed for newFd=" << newFd << " errno=" << errno << " (" << strerror(errno) << ")\n";
-		handler->setSocketFd(-1);
-	}
-	handler->setSocketFd(newFd);
-	handler->setActiveEvents(newEvents);
-	_run->_epollHandlers[newFd] = handler;
+    data.data.ptr = handler;
+    if (operation == EPOLL_CTL_ADD || operation == EPOLL_CTL_MOD) {
+        _instance->_handlers[socketFd] = handler;
+    } else if (operation == EPOLL_CTL_DEL) {
+        _instance->_pendingRemovals.push_back(socketFd);
+    }
+    if (epoll_ctl(_instance->_epollFd, operation, socketFd, &data) == -1) {
+        Logger::debug("EpollInstance::manipInterestList - epoll_ctl failed: op=" + intToString(operation) + " fd=" + intToString(socketFd));
+    }
 }
 
-int EpollInstance::manipEpollWait(void)
-{
-	if (_run == NULL)
-		throw std::runtime_error("EpollInstance is not initialized.");
-	int numberOfReadyFds = 0;
-	numberOfReadyFds = epoll_wait(_run->_epollFd, _run->_eventsList, MAX_EVENTS, -1);
-	return (numberOfReadyFds);
+void EpollInstance::replaceHandlerFd(EpollHandler *handler, int newFd, uint32_t newEvents) {
+    if (_instance == NULL) {
+        throw std::runtime_error("EpollInstance is not initialized.");
+    }
+    if (!handler) {
+        throw std::invalid_argument("replaceHandlerFd: handler is null");
+    }
+
+    int oldFd = handler->getSocketFd();
+    int epfd = _instance->_epollFd;
+    if (epfd == -1) {
+        throw std::runtime_error("replaceHandlerFd: invalid epoll fd");
+    }
+
+    if (newEvents == 0) {
+        newEvents = handler->getInterestedEvents();
+    }
+
+    if (oldFd == newFd && oldFd != -1) {
+        struct epoll_event ev;
+        ev.events = newEvents;
+        ev.data.ptr = handler;
+        if (epoll_ctl(epfd, EPOLL_CTL_MOD, oldFd, &ev) == -1) {
+            Logger::debug("replaceHandlerFd: EPOLL_CTL_MOD failed: fd=" + intToString(oldFd));
+        }
+        handler->setInterestedEvents(newEvents);
+        _instance->_handlers[oldFd] = handler;
+        return;
+    }
+
+    if (oldFd != -1) {
+        if (epoll_ctl(epfd, EPOLL_CTL_DEL, oldFd, NULL) == -1) {
+            Logger::debug("replaceHandlerFd: EPOLL_CTL_DEL failed for oldFd=" + intToString(oldFd));
+        }
+
+        std::map<int, EpollHandler*>::iterator it = _instance->_handlers.find(oldFd);
+        if (it != _instance->_handlers.end())
+            _instance->_handlers.erase(it);
+    }
+
+    struct epoll_event ev;
+    ev.events = newEvents;
+    ev.data.ptr = handler;
+
+    if (epoll_ctl(epfd, EPOLL_CTL_ADD, newFd, &ev) == -1) {
+        Logger::debug("replaceHandlerFd: EPOLL_CTL_ADD failed for newFd=" + intToString(newFd));
+        handler->setSocketFd(-1);
+    }
+
+    handler->setSocketFd(newFd);
+    handler->setInterestedEvents(newEvents);
+    _instance->_handlers[newFd] = handler;
 }
 
-void EpollInstance::deletePendingRemovals()
-{
-	if (_run == NULL)
-	{
-		throw std::runtime_error("EpollInstance is not initialized.");
-	}
-	for (size_t i = 0; i < _run->_pendingRemovals.size(); i++)
-	{
-		int fd = _run->_pendingRemovals[i];
 
-		std::map<int, EpollHandler *>::iterator it =
-			_run->_epollHandlers.find(fd);
+int EpollInstance::manipEpollWait(void) {
+    if (_instance == NULL) {
+        throw std::runtime_error("EpollInstance is not initialized.");
+    }
 
-		if (it != _run->_epollHandlers.end())
-		{
-			delete it->second;
-			_run->_epollHandlers.erase(it);
-		}
-	}
-	_run->_pendingRemovals.clear();
+    int numberOfReadyFds = 0;
+    numberOfReadyFds = epoll_wait(_instance->_epollFd, _instance->_readyList, MAX_EVENTS, -1);
+    return (numberOfReadyFds);
 }
 
-int EpollInstance::getEpollFd(void)
-{
-	return (_run->_epollFd);
+void EpollInstance::deletePendingRemovals() {
+    if (_instance == NULL) {
+        throw std::runtime_error("EpollInstance is not initialized.");
+    }
+    for (size_t i = 0; i < _instance->_pendingRemovals.size(); i++) {
+        int fd = _instance->_pendingRemovals[i];
+
+        std::map<int, EpollHandler*>::iterator it =
+             _instance->_handlers.find(fd);
+
+        if (it != _instance->_handlers.end()) {
+            delete it->second;
+            _instance->_handlers.erase(it);
+        }
+    }
+    _instance->_pendingRemovals.clear();
 }
 
-std::map<int, EpollHandler *> &EpollInstance::getEpollHandlers(void)
-{
-	if (_run == NULL)
-		throw(std::runtime_error("Erro"));
-	return (_run->_epollHandlers);
+int EpollInstance::getEpollFd(void) {
+    if (_instance == NULL) {
+        throw std::runtime_error("EpollInstance is not initialized.");
+    }
+
+    return (_instance->_epollFd);
 }
 
-struct epoll_event EpollInstance::getEpollEvents()
-{
-	return (_run->_epollEvents);
+struct epoll_event EpollInstance::getConfigEpollEvents(void) {
+    if (_instance == NULL) {
+        throw std::runtime_error("EpollInstance is not initialized.");
+    }
+
+    return (_instance->_configEpollEvents);
 }
 
-struct epoll_event &EpollInstance::getEpollEventsList()
-{
-	return (*_run->_eventsList);
+std::map<int, EpollHandler*> &EpollInstance::getHandlers(void) {
+    if (_instance == NULL) {
+        throw std::runtime_error("EpollInstance is not initialized.");
+    }
+
+    return (_instance->_handlers);
 }
 
-struct epoll_event &EpollInstance::getElementFromEventsList(int i)
-{
-	if (_run == NULL)
-		throw(std::runtime_error("Epoll unitialized!"));
-	return (_run->_eventsList[i]);
+struct epoll_event &EpollInstance::getReadyList(void) {
+    if (_instance == NULL) {
+        throw std::runtime_error("EpollInstance is not initialized.");
+    }
+
+    return (*_instance->_readyList);
 }
 
-const char *EpollInstance::CannotManipulate::what() const throw()
-{
-	static const char msg[] = "Failed to manipulate epoll instance with epoll_ctl().";
-	Logger::error(msg);
-	return msg;
+const char * EpollInstance::CannotInitEpollInstance::what() const throw() {
+    return ("Error: error in creating epoll instance with epoll_create().");
+}
+
+const char * EpollInstance::CannotManipulateEpollInstance::what() const throw() {
+    return ("Error: error in controling the epoll instance with epoll_ctl().");
 }

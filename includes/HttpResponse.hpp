@@ -1,29 +1,7 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   HttpResponse.hpp                                   :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 20:39:08 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/23 21:42:23 by btaveira         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
-# pragma once
+#pragma once
 
 # include "Webserv.hpp"
-# include "HttpRequest.hpp"
-# include "LocationBlock.hpp"
-# include "StringUtils.hpp"
-# include <sys/stat.h>
-# include <sys/types.h>
-# include <unistd.h>
-# include <dirent.h>
-//# include "Client.hpp"
-# include <ctime>
 
-// Forward declaration
 class Client;
 class LocationBlock;
 class ServerBlock;
@@ -37,6 +15,8 @@ class HttpResponse {
 		std::string 												_body;
 		bool																_execAutoIndex;
 	public:
+		bool																sended;
+
 		HttpResponse();
 		~HttpResponse();
 
@@ -51,7 +31,6 @@ class HttpResponse {
 	void setBody(const std::string &b, const std::string &contentType);
 	void setErrorPage(int code, const ServerBlock *serverBlock = NULL);
 	void setResponseByStatus(int statusCode, const ServerBlock *serverBlock = NULL, const std::string &bodyContent="", const std::string &contentType="text/html");
-	void processCookies(const HttpRequest &req, const LocationBlock &location);
 	void parseCgiOutput(const std::string& cgiRawOutput); // Adicionado
 
 	std::string		toString() const;

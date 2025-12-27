@@ -1,19 +1,6 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ServerConfig.hpp                                   :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 20:38:12 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/23 19:57:27 by jbergfel         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #pragma once
 
 # include "Webserv.hpp"
-# include "ServerBlock.hpp"
 
 enum TypeValidation
 {
@@ -25,14 +12,14 @@ enum TypeValidation
 
 class ServerBlock;
 
-class ServerConfig {
+class ConfigFile {
 	private:
-		std::vector<std::string>	_tokens;
-		std::vector<ServerBlock*>	_serverBlocks;
+		std::vector<std::string>    _tokens;
+		std::vector<ServerBlock>    _serverBlocks;
 	public:
-		ServerConfig(void);
-		ServerConfig(int ac, char **av);
-		~ServerConfig(void);
+		ConfigFile(void);
+		~ConfigFile(void);
+		ConfigFile(int ac, char **av);
 
 		std::vector<std::string> tokenizeContent(const std::string &content);
 		void parser(const std::string &filename);
@@ -45,7 +32,9 @@ class ServerConfig {
 		static void cleanFile(const std::string &filename, std::string &content);
 
 		std::vector<std::string> getTokens(void);
-		std::vector<ServerBlock*> getServerBlocks(void) const;
+		const std::vector<ServerBlock> &getServerBlocks(void) const;
 
-		// void initServerSockets(int socketDomain, int socketType);
+		void validateDuplicateListensAcrossServers() const;
+
+		void initServerSockets(int socketDomain, int socketType);
 };

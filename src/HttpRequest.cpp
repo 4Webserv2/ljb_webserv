@@ -1,18 +1,4 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   HttpRequest.cpp                                    :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 20:39:32 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/23 20:39:42 by btaveira         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
-# include "../includes/HttpRequest.hpp"
-# include "../includes/StringUtils.hpp"
-# include "../includes/Logger.hpp"
+#include "../includes/Webserv.hpp"
 
 HttpRequest::HttpRequest(){
 	this->isMultipart = false;
