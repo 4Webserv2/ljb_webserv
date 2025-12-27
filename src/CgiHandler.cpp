@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:47:30 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/27 11:47:31 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/27 19:07:01 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,9 @@
 CgiHandler::CgiHandler(
 	const HttpRequest &request,
 	const ServerBlock &serverBlock,
-	const LocationBlock &location) : EpollHandler(0, -1, 10), _scriptPath(""), _cgiOutput(""), _childPid(-1), _request(request), _serverBlock(serverBlock), _location(location), status(IN_PROGRESS)
+	const LocationBlock &location) : EpollHandler(0, -1, 10), _scriptPath(""),
+	_cgiOutput(""), _childPid(-1), _request(request), _serverBlock(serverBlock),
+	_location(location), status(IN_PROGRESS)
 {
 	this->_scriptPath = extractCgiScriptPath(request.getUri());
 	this->_env = buildEnvironment();
@@ -57,9 +59,7 @@ void CgiHandler::handleEpollIn()
 		ssize_t bytesRead = read(getSocketFd(), buffer, sizeof(buffer));
 
 		if (bytesRead > 0)
-		{
 			_cgiOutput.append(buffer, bytesRead);
-		}
 		else if (bytesRead == 0)
 		{
 			status = COMPLETED;
@@ -96,12 +96,9 @@ void CgiHandler::handleEpollOut()
 			status = FAILED;
 			return;
 		}
-
 		return;
 	}
-
 	Logger::debug("Cgi: request body fully sent to CGI script.");
-
 	if (_fdIn[1] != -1)
 	{
 		close(_fdIn[1]);
@@ -124,7 +121,6 @@ void CgiHandler::handleEpollOut()
 		status = COMPLETED;
 		return;
 	}
-
 	Logger::debug("Cgi: switched to read fd" + intToString(readFd));
 }
 
@@ -140,7 +136,7 @@ bool CgiHandler::start()
 		if (pipe(_fdIn) == -1 || pipe(_fdOut) == -1)
 		{
 			Logger::error("CGI: Failed to create pipes");
-			return false;
+			return (false);
 		}
 		Logger::debug("Cgi: Pipes created successfully.");
 
@@ -152,15 +148,12 @@ bool CgiHandler::start()
 			close(_fdIn[1]);
 			close(_fdOut[0]);
 			close(_fdOut[1]);
-			return false;
+			return (false);
 		}
-
 		if (pid == 0)
 		{
 			dup2(_fdIn[0], STDIN_FILENO);
 			dup2(_fdOut[1], STDOUT_FILENO);
-
-			// close parent fds
 			if (_fdIn[0] != -1)
 				close(_fdIn[0]);
 			if (_fdIn[1] != -1)
@@ -169,12 +162,9 @@ bool CgiHandler::start()
 				close(_fdOut[0]);
 			if (_fdOut[1] != -1)
 				close(_fdOut[1]);
-
 			std::vector<char *> envp;
 			for (size_t i = 0; i < _env.size(); i++)
-			{
 				envp.push_back(const_cast<char *>(_env[i].c_str()));
-			}
 			envp.push_back(NULL);
 
 			std::string interpretterPath = getInterpretterPath(_scriptPath);
@@ -207,7 +197,7 @@ bool CgiHandler::start()
 			if (epfd == -1)
 			{
 				Logger::error("CgiHandler::start - invalid epoll fd");
-				return false;
+				return (false);
 			}
 
 			if (_request.getMethod() == "POST" && !_requestBody.empty())
@@ -226,7 +216,6 @@ bool CgiHandler::start()
 					close(_fdIn[1]);
 					_fdIn[1] = -1;
 				}
-
 				this->setSocketFd(_fdOut[0]);
 				this->setInterestedEvents(EPOLLIN | EPOLLET | EPOLLRDHUP);
 				EpollInstance::manipInterestList(EPOLL_CTL_ADD, this);
@@ -236,9 +225,9 @@ bool CgiHandler::start()
 	catch (const std::exception &e)
 	{
 		std::cerr << "CGI: Exception in start(): " << e.what() << std::endl;
-		return false;
+		return (false);
 	}
-	return true;
+	return (true);
 }
 
 std::vector<std::string> CgiHandler::buildEnvironment()
@@ -253,9 +242,7 @@ std::vector<std::string> CgiHandler::buildEnvironment()
 
 	std::string queryString = extractQueryFromUri(_request.getUri());
 	if (!queryString.empty())
-	{
 		env.push_back("QUERY_STRING=" + queryString);
-	}
 
 	if (_request.hasHeader("Content-Type"))
 		env.push_back("CONTENT_TYPE=" + _request.getHeaderValue("Content-Type"));
@@ -264,14 +251,11 @@ std::vector<std::string> CgiHandler::buildEnvironment()
 
 	std::vector<t_listen> listens = _serverBlock.getListen();
 	if (!listens.empty())
-	{
 		env.push_back("SERVER_PORT=" + intToString(listens[0].port));
-	}
 	std::vector<std::string> serverNames = _serverBlock.getServerNames();
 	env.push_back("SERVER_NAME=" + (serverNames.empty() ? "localhost" : serverNames[0]));
 	env.push_back("SERVER_PROTOCOL=HTTP/1.1");
 	env.push_back("SERVER_SOFTWARE=WebServ/1.0");
-
 	env.push_back("GATEWAY_INTERFACE=CGI/1.1");
 
 	std::map<std::string, std::string> headers = _request.getHeaders();
@@ -281,9 +265,7 @@ std::vector<std::string> CgiHandler::buildEnvironment()
 
 		std::string lowerKey = it->first;
 		for (size_t i = 0; i < lowerKey.size(); i++)
-		{
 			lowerKey[i] = std::tolower(lowerKey[i]);
-		}
 
 		if (lowerKey != "content-type" && lowerKey != "content-length")
 		{
@@ -292,7 +274,7 @@ std::vector<std::string> CgiHandler::buildEnvironment()
 		}
 	}
 
-	return env;
+	return (env);
 }
 
 std::string CgiHandler::extractCgiScriptPath(
@@ -305,9 +287,7 @@ std::string CgiHandler::extractCgiScriptPath(
 	{
 		std::string locationPath = this->_location.getUri();
 		if (path.find(locationPath) == 0)
-		{
 			path = path.substr(locationPath.size());
-		}
 
 		if (path[0] != '/')
 		{
@@ -321,13 +301,11 @@ std::string CgiHandler::extractCgiScriptPath(
 		std::string root = rootPair.second;
 
 		if (path[0] != '/')
-		{
 			path = "/" + path;
-		}
 		path = root + path;
 	}
 
-	return path;
+	return (path);
 }
 
 std::string CgiHandler::normalizeHeaderName(const std::string &header)
@@ -335,9 +313,7 @@ std::string CgiHandler::normalizeHeaderName(const std::string &header)
 	std::string result = header;
 
 	for (size_t i = 0; i < result.size(); i++)
-	{
 		result[i] = std::toupper(result[i]);
-	}
 
 	for (size_t i = 0; i < result.size(); i++)
 	{
@@ -345,7 +321,7 @@ std::string CgiHandler::normalizeHeaderName(const std::string &header)
 			result[i] = '_';
 	}
 
-	return result;
+	return (result);
 }
 
 bool CgiHandler::isCgiScript(const std::string &uri, const LocationBlock &location)
@@ -354,7 +330,7 @@ bool CgiHandler::isCgiScript(const std::string &uri, const LocationBlock &locati
 
 	size_t dotPos = path.find_last_of('.');
 	if (dotPos == std::string::npos)
-		return false;
+		return (false);
 
 	std::string extension = path.substr(dotPos);
 	std::vector<std::string> cgiExtensions = location.getCgiExtensions();
@@ -362,36 +338,25 @@ bool CgiHandler::isCgiScript(const std::string &uri, const LocationBlock &locati
 	for (size_t i = 0; i < cgiExtensions.size(); i++)
 	{
 		if (cgiExtensions[i] == extension)
-			return true;
+			return (true);
 	}
-
-	return false;
+	return (false);
 }
 
 std::string CgiHandler::getInterpretterPath(const std::string &scriptPath)
 {
 	size_t dotPos = scriptPath.find_last_of('.');
 	if (dotPos == std::string::npos)
-	{
-		return scriptPath;
-	}
+		return (scriptPath);
 
 	std::string extension = scriptPath.substr(dotPos);
 
 	if (extension == ".py")
-	{
-		return "/usr/bin/python3";
-	}
+		return ("/usr/bin/python3");
 	else if (extension == ".pl")
-	{
-		return "/usr/bin/perl";
-	}
+		return ("/usr/bin/perl");
 	else if (extension == ".sh")
-	{
-		return "/bin/bash";
-	}
+		return ("/bin/bash");
 	else
-	{
-		return scriptPath;
-	}
+		return (scriptPath);
 }

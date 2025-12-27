@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:47:38 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/27 13:01:09 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/27 19:02:30 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,17 +52,13 @@ Client::~Client(void)
 		close(this->getSocketFd());
 	}
 	if (this->cgiHandler)
-	{
 		this->cgiHandler = NULL;
-	}
 }
 
 void Client::handleEpollIn(void)
 {
 	if (this->_state == WAITING_CGI)
-	{
 		return;
-	}
 
 	char buffer[MAX_BUFFER_SIZE] = {0};
 	int count = 0;
@@ -75,9 +71,7 @@ void Client::handleEpollIn(void)
 			ServerBlock serverBlock = this->_serverManage.getServerBlock();
 			const LocationBlock *locationPtr = serverBlock.getValidLocation(this->request.getUri(), this->request.getMethod());
 			if (!locationPtr)
-			{
 				this->response.setErrorPage(404, &serverBlock);
-			}
 			else
 			{
 				this->request.setIsCgi(CgiHandler::isCgiScript(this->request.getUri(), *locationPtr));
@@ -93,16 +87,12 @@ void Client::handleEpollIn(void)
 			{
 				std::string responseStr = this->response.toString();
 				if (!sendResponse(responseStr))
-				{
 					return;
-				}
 			}
 		}
 	}
 	else if (count <= 0)
-	{
 		EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
-	}
 }
 
 void Client::handleEpollOut(void)
@@ -115,7 +105,6 @@ void Client::handleEpollOut(void)
 			std::string cgiOutput = this->cgiHandler->getCgiOutput();
 			this->response.parseCgiOutput(cgiOutput);
 			this->_state = COMPLETE;
-
 			EpollInstance::manipInterestList(EPOLL_CTL_DEL, this->cgiHandler);
 			this->cgiHandler = NULL;
 		}
@@ -128,10 +117,7 @@ void Client::handleEpollOut(void)
 			this->cgiHandler = NULL;
 		}
 		else if (this->cgiHandler)
-		{
-			// CGI still running, do nothing and wait.
 			return;
-		}
 		else
 		{
 			Logger::error("Client: In WAITING_CGI state but cgiHandler is NULL. Sending 500.");
@@ -144,29 +130,18 @@ void Client::handleEpollOut(void)
 	if (!this->_pendingResponse.empty())
 	{
 		if (!sendResponse(this->_pendingResponse))
-		{
-			// sendResponse returning false means the client was closed/deleted.
 			return;
-		}
 		if (!this->_pendingResponse.empty())
-		{
-			// Partial send, wait for next EPOLLOUT.
 			return;
-		}
 	}
 
 	if (this->isRequestComplete() && this->_pendingResponse.empty())
 	{
 		std::string responseStr = this->response.toString();
 		if (!sendResponse(responseStr))
-		{
-			// Client was closed/deleted.
 			return;
-		}
 		if (this->_pendingResponse.empty())
-		{
 			EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
-		}
 	}
 }
 
@@ -189,8 +164,6 @@ bool Client::sendResponse(const std::string &responseStr)
 
 	const char *data = this->_pendingResponse.c_str() + this->_responseOffset;
 	size_t remaining = this->_pendingResponse.size() - this->_responseOffset;
-
-	// send() com flags MSG_NOSIGNAL para evitar SIGPIPE
 	ssize_t sent = send(this->getSocketFd(), data, remaining, MSG_NOSIGNAL);
 
 	if (sent < 0)
@@ -198,20 +171,18 @@ bool Client::sendResponse(const std::string &responseStr)
 		EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
 		Logger::debug("Client: Error sending response, closing client.");
 		this->response.sended = true;
-		return true;
+		return (true);
 	}
 	else if (sent == 0)
 	{
 		Logger::debug("Client: Connection closed by peer during send, closing client.");
 		EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
 		this->response.sended = true;
-		return false;
+		return (false);
 	}
 	else
 	{
-		// send() enviou alguns bytes (pode ser parcial)
 		this->_responseOffset += sent;
-
 		if (this->_responseOffset < this->_pendingResponse.size())
 		{
 			uint32_t events = this->getInterestedEvents();
@@ -219,17 +190,14 @@ bool Client::sendResponse(const std::string &responseStr)
 			this->setInterestedEvents(events);
 			EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
 		}
-
-		return true;
+		return (true);
 	}
 }
 
 void Client::concatenateRequestData(std::string data)
 {
 	if (this->_state == COMPLETE || this->_state == WAITING_CGI)
-	{
 		return;
-	}
 	this->_rawRequest.append(data);
 
 	if (this->_state == READING_HEADER && this->_rawRequest.find("\r\n\r\n") != std::string::npos)
@@ -273,8 +241,6 @@ void Client::concatenateRequestData(std::string data)
 		}
 		else if (this->_rawRequest.find("0\r\n\r\n") != std::string::npos)
 		{
-			// caso tenha outro encoding (chunked)
-			//  caso entre aqui, o body da request ja ta todo pronto.
 			size_t bodyStartPos = this->_rawRequest.find("\r\n\r\n") + 4;
 			size_t bodyEndPos = this->_rawRequest.find("0\r\n\r\n") + 4;
 			std::string onlyBody = this->_rawRequest.substr(bodyStartPos, bodyEndPos);
@@ -282,9 +248,7 @@ void Client::concatenateRequestData(std::string data)
 			this->setState(COMPLETE);
 		}
 		else
-		{
 			this->setState(COMPLETE);
-		}
 	}
 }
 
@@ -292,11 +256,8 @@ bool isDirectory(const std::string &path)
 {
 	struct stat path_stat;
 	if (stat(path.c_str(), &path_stat) != 0)
-	{
-		// Erro ao acessar as informacoes do arquivo.
-		return false;
-	}
-	return S_ISDIR(path_stat.st_mode);
+		return (false);
+	return (S_ISDIR(path_stat.st_mode));
 }
 
 bool Client::validateMethodAllowed(LocationBlock &location)
@@ -306,15 +267,15 @@ bool Client::validateMethodAllowed(LocationBlock &location)
 		Logger::debug("Metodo nao permitido na location...");
 		ServerBlock serverBlock = this->_serverManage.getServerBlock();
 		this->response.setResponseByStatus(405, &serverBlock);
-		return false;
+		return (false);
 	}
-	return true;
+	return (true);
 }
 
 bool Client::validatingUriWithLocation(ServerBlock &serverBlock, LocationBlock &location)
 {
 	if (!validateMethodAllowed(location))
-		return false;
+		return (false);
 
 	const std::string &method = this->request.getMethod();
 
@@ -328,34 +289,31 @@ bool Client::validatingUriWithLocation(ServerBlock &serverBlock, LocationBlock &
 	{
 		Logger::debug("Metodo HTTP nao suportado...");
 		this->response.setResponseByStatus(405, &serverBlock);
-		return false;
+		return (false);
 	}
 }
 
 bool Client::validateGet(ServerBlock &serverBlock, LocationBlock &location)
 {
-	// Resolve o path usando a lógica da Location (root/alias + uri) para evitar // e inconsistências
 	std::string path = location.getPath(serverBlock.getRoot().second, this->request.getUri());
 	path = extractAndDecodeUri(path);
 	Logger::debug("String contendo alias+uri para o GET (resolved): " + path);
 
 	if (location.getReturn().first != 0)
-	{
-		return true;
-	}
+		return (true);
 
 	if (access(path.c_str(), F_OK) != 0)
 	{
 		Logger::debug("Recurso " + path + " nao encontrado.");
 		this->response.setResponseByStatus(404, &serverBlock);
-		return false;
+		return (false);
 	}
 
 	if (access(path.c_str(), R_OK) != 0)
 	{
 		Logger::debug("Acesso ao recurso " + path + " negado.");
 		this->response.setResponseByStatus(403, &serverBlock);
-		return false;
+		return (false);
 	}
 
 	if (!path.empty() && path[path.size() - 1] == '/')
@@ -364,34 +322,33 @@ bool Client::validateGet(ServerBlock &serverBlock, LocationBlock &location)
 		for (size_t i = 0; i < indexes.size(); i++)
 		{
 			if (access((path + indexes[i]).c_str(), R_OK) == 0)
-				return true;
+				return (true);
 		}
 
 		if (!location.getAutoIndex())
 		{
 			Logger::debug("Autoindex desabilitado e nenhum index encontrado.");
 			this->response.setResponseByStatus(403, &serverBlock);
-			return false;
+			return (false);
 		}
 
 		Logger::debug("Autoindex habilitado.");
 		this->response.setExecAutoIndex(true);
-		return true;
+		return (true);
 	}
 
 	if (isDirectory(path))
 	{
 		Logger::debug("Acesso ao diretorio " + path + " negado.");
 		this->response.setResponseByStatus(403, &serverBlock);
-		return false;
+		return (false);
 	}
 
-	return true;
+	return (true);
 }
 
 bool Client::validatePost(ServerBlock &serverBlock, LocationBlock &location)
 {
-	// Resolver path corretamente via LocationBlock
 	std::string path = location.getPath(serverBlock.getRoot().second, this->request.getUri());
 	path = extractAndDecodeUri(path);
 	std::string uri = this->request.getUri();
@@ -419,42 +376,31 @@ bool Client::validatePost(ServerBlock &serverBlock, LocationBlock &location)
 			return (false);
 		}
 		else
-		{
 			return (true);
-		}
 	}
 
-	(void)serverBlock; // Unused parameter
-
-	// if (uri.empty() ||
-	//     uri[uri.size() - 1] == '/') {
-	//     this->response.setResponseByStatus(400, &serverBlock);
-	//     return false;
-	// }
+	(void)serverBlock;
 
 	if (this->_serverManage.getServerBlock().getMaxBodySize().second <
 		this->request.getBody().size())
 	{
 		this->response.setResponseByStatus(413, &serverBlock);
-		return false;
+		return (false);
 	}
-
 	if (!location.getCanUpload() || location.getUploadPath().empty())
 	{
 		Logger::debug("Upload nao permitido nesta location...");
 		this->response.setResponseByStatus(403, &serverBlock);
-		return false;
+		return (false);
 	}
-
 	std::string uploadDir = location.getUploadPath();
 	if (access(uploadDir.c_str(), R_OK | W_OK) != 0)
 	{
 		Logger::debug("Acesso ao diretorio de upload negado...");
 		this->response.setResponseByStatus(403, &serverBlock);
-		return false;
+		return (false);
 	}
-
-	return true;
+	return (true);
 }
 
 bool Client::validateDelete(ServerBlock &serverBlock, LocationBlock &location)
@@ -471,13 +417,9 @@ bool Client::validateDelete(ServerBlock &serverBlock, LocationBlock &location)
 	std::string fileName = uri.substr(filePos);
 	std::string newUri;
 	if ((filePos + 1) <= uri.size())
-	{
 		newUri = uri.substr(0, (filePos + 1));
-	}
 	else
-	{
 		newUri = uri.substr(0, filePos);
-	}
 
 	Logger::debug("client uri: " + newUri);
 	Logger::debug("location uri: " + location.getUri());
@@ -485,9 +427,7 @@ bool Client::validateDelete(ServerBlock &serverBlock, LocationBlock &location)
 	std::string locationUri = location.getUri();
 	bool match = (newUri == locationUri);
 	if (!match && !locationUri.empty() && locationUri[locationUri.size() - 1] != '/')
-	{
 		match = (newUri == (locationUri + "/"));
-	}
 
 	if (newUri.empty() || !match)
 	{
@@ -506,26 +446,19 @@ bool Client::validateDelete(ServerBlock &serverBlock, LocationBlock &location)
 
 	Logger::debug("Base path for DELETE: " + base);
 	if (base.empty())
-		return false;
-
-	// size_t	filePos = uri.rfind('/');
-	// std::string fileName = uri.substr(filePos);
-
+		return (false);
 	if (base[base.size() - 1] == '/')
 		fullPath = base + fileName;
 	else
 		fullPath = base + "/" + fileName;
-
 	Logger::debug("Filename: " + fileName);
-
 	Logger::debug("Full path for DELETE: " + fullPath);
 	if (access(fullPath.c_str(), R_OK | W_OK) != 0)
 	{
 		this->response.setResponseByStatus(403, &serverBlock);
-		return false;
+		return (false);
 	}
-
-	return true;
+	return (true);
 }
 
 bool Client::isRequestComplete(void)
@@ -567,30 +500,13 @@ static std::string ipv4ToStr(unsigned int ip)
 	   << ((ip >> 8) & 0xFF) << "."
 	   << (ip & 0xFF);
 
-	return ss.str();
+	return (ss.str());
 }
 
-// std::string toString(void) const;
 std::string Client::toString(void) const
 {
 	std::ostringstream result;
-
-	// Data/hora/dia/mes/ano "Isso ja tem no logger"
-	// +
-	// [tipo] "Isso ja tem no logger"
-	// +
-	// Mensagem passada para o Logger::metodo(mensagem);
-
-	// IP do socket onde foi feito a request
-	// +
-	// Metodo http
-	// +
-	// URI desejada
-	// +
-	// Protocolo usado
-	// +
-	// Status da response
-	result << ipv4ToStr(this->_serverManage.getHost()) << ": [" // Precisamos converter esse int para o IP que o socket ouve
+	result << ipv4ToStr(this->_serverManage.getHost()) << ": ["
 		   << this->request.getMethod() << "] "
 		   << this->request.getUri() << " "
 		   << this->response.getHttpVersion() << " "
