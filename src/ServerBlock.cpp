@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerBlock.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:51:22 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/28 22:58:17 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/29 11:03:21 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -388,3 +388,4 @@ void ServerBlock::addRoot()
 	this->_config.removeTokens(1);
 	this->_config.verifyToken(DIFF_SEMICOLON, "Configuração inválida: root: esperava um ponto e vírgula no final de root");
 	this->_config.removeTokens(1);
+}
