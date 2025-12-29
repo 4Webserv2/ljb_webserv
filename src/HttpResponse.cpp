@@ -171,29 +171,53 @@ void HttpResponse::dispatchRequest(Client *client, const ServerBlock &serverBloc
 
 void HttpResponse::handlePost(const HttpRequest &req, const ServerBlock &serverBlock, const LocationBlock &location)
 {
-	std::string locationUploadDir = location.getUploadPath();
-	std::string fullPath = "";
-	if (locationUploadDir.empty())
-		return (setResponseByStatus(403, &serverBlock));
-	if (locationUploadDir[locationUploadDir.size() - 1] == '/')
-		fullPath = locationUploadDir + req.getUploadFileName();
-	else
-		fullPath = locationUploadDir + "/" + req.getUploadFileName();
-	Logger::debug("Path dentro do post: " + fullPath);
-	std::ofstream newFile(fullPath.c_str());
-	if (!newFile.is_open())
-	{
-		Logger::error("Nao foi possivel criar o arquivo.");
-		return this->setResponseByStatus(400, &serverBlock);
-	}
-	size_t endHeader = req.getBody().find("\r\n\r\n") + 4;
-	size_t endFormData = req.getBody().find(req.getEndBoudary());
-	newFile << req.getBody().substr(endHeader, endFormData - endHeader - 2);
-	newFile.close();
-	setResponseByStatus(201, &serverBlock);
-	this->setHeader("Access-Control-Allow-Origin", "*");
-	this->setBody("<h1>File named " + req.getUploadFileName() + " was uploaded successfully!</h1>", "text/html");
-};
+    std::string locationUploadDir = location.getUploadPath();
+    std::string fullPath = "";
+    if (locationUploadDir.empty())
+        return (setResponseByStatus(403, &serverBlock));
+    
+    std::string fileName = req.getUploadFileName();
+    
+    // Se não houver nome de arquivo (upload de texto simples), gerar um nome único
+    if (fileName.empty())
+    {
+        std::time_t now = std::time(NULL);
+        std::ostringstream ss;
+        ss << "upload_" << now << ".txt";
+        fileName = ss.str();
+    }
+    
+    if (locationUploadDir[locationUploadDir.size() - 1] == '/')
+        fullPath = locationUploadDir + fileName;
+    else
+        fullPath = locationUploadDir + "/" + fileName;
+    
+    Logger::debug("Path dentro do post: " + fullPath);
+    std::ofstream newFile(fullPath.c_str());
+    if (!newFile.is_open())
+    {
+        Logger::error("Nao foi possivel criar o arquivo.");
+        return this->setResponseByStatus(400, &serverBlock);
+    }
+    
+    // Se for multipart/form-data, extrair apenas o conteúdo
+    if (req.isUploadRequest())
+    {
+        size_t endHeader = req.getBody().find("\r\n\r\n") + 4;
+        size_t endFormData = req.getBody().find(req.getEndBoudary());
+        newFile << req.getBody().substr(endHeader, endFormData - endHeader - 2);
+    }
+    else
+    {
+        // Upload de texto simples (text/plain)
+        newFile << req.getBody();
+    }
+    
+    newFile.close();
+    setResponseByStatus(201, &serverBlock);
+    this->setHeader("Access-Control-Allow-Origin", "*");
+    this->setBody("<h1>File named " + fileName + " was uploaded successfully!</h1>", "text/html");
+}
 
 void HttpResponse::setStatus(int code, const std::string &message)
 {

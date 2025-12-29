@@ -37,5 +37,5 @@ class HttpRequest
 		std::string getEndBoudary() const;
 		std::string getUploadFileName() const;
 		bool getIsCgi() const;
-		bool isUploadRequest();
+		bool isUploadRequest(void) const;
 };

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:48:15 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/27 11:48:22 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/28 21:57:56 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -262,7 +262,10 @@ bool HttpRequest::getIsCgi() const
 	return (this->isCgi);
 }
 
-bool HttpRequest::isUploadRequest()
+bool HttpRequest::isUploadRequest(void) const
 {
-	return (this->isUpload);
+    std::string contentType = this->getHeaderValue("Content-Type");
+    if (contentType.find("multipart/form-data") != std::string::npos)
+        return (true);
+    return (false);
 }
