@@ -6,7 +6,7 @@
 /*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:47:38 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/28 21:52:54 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/28 22:11:33 by btaveira         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -425,60 +425,72 @@ bool Client::validatePost(ServerBlock &serverBlock, LocationBlock &location)
 
 bool Client::validateDelete(ServerBlock &serverBlock, LocationBlock &location)
 {
-	std::string locationUploadDir = location.getUploadPath();
-	if (locationUploadDir.empty())
-		return (this->response.setResponseByStatus(404, &serverBlock), false);
+    std::string locationUploadDir = location.getUploadPath();
+    if (locationUploadDir.empty())
+        return (this->response.setResponseByStatus(404, &serverBlock), false);
 
-	std::string uri = this->request.getUri();
-	if (uri[uri.size() - 1] == '/')
-		return (this->response.setResponseByStatus(404, &serverBlock), false);
+    std::string uri = this->request.getUri();
+    if (uri[uri.size() - 1] == '/')
+        return (this->response.setResponseByStatus(404, &serverBlock), false);
 
-	size_t filePos = uri.rfind('/');
-	std::string fileName = uri.substr(filePos);
-	std::string newUri;
-	if ((filePos + 1) <= uri.size())
-		newUri = uri.substr(0, (filePos + 1));
-	else
-		newUri = uri.substr(0, filePos);
+    size_t filePos = uri.rfind('/');
+    std::string fileName = uri.substr(filePos + 1);
+    std::string newUri;
+    if ((filePos + 1) <= uri.size())
+        newUri = uri.substr(0, (filePos + 1));
+    else
+        newUri = uri.substr(0, filePos);
 
-	Logger::debug("client uri: " + newUri);
-	Logger::debug("location uri: " + location.getUri());
+    Logger::debug("client uri: " + newUri);
+    Logger::debug("location uri: " + location.getUri());
 
-	std::string locationUri = location.getUri();
-	bool match = (newUri == locationUri);
-	if (!match && !locationUri.empty() && locationUri[locationUri.size() - 1] != '/')
-		match = (newUri == (locationUri + "/"));
+    std::string locationUri = location.getUri();
+    bool match = (newUri == locationUri);
+    if (!match && !locationUri.empty() && locationUri[locationUri.size() - 1] != '/')
+        match = (newUri == (locationUri + "/"));
 
-	if (newUri.empty() || !match)
-	{
-		this->response.setResponseByStatus(404, &serverBlock);
-		return (false);
-	}
+    if (newUri.empty() || !match)
+    {
+        this->response.setResponseByStatus(404, &serverBlock);
+        return (false);
+    }
 
-	(void)serverBlock;
+    (void)serverBlock;
 
-	std::string base;
-	if (this->request.getIsCgi())
-		base = location.getPath(serverBlock.getRoot().second, this->request.getUri());
-	else
-		base = location.getUploadPath();
-	std::string fullPath = "";
+    std::string base;
+    if (this->request.getIsCgi())
+        base = location.getPath(serverBlock.getRoot().second, this->request.getUri());
+    else
+        base = location.getUploadPath();
+    std::string fullPath = "";
 
-	Logger::debug("Base path for DELETE: " + base);
-	if (base.empty())
-		return (false);
-	if (base[base.size() - 1] == '/')
-		fullPath = base + fileName;
-	else
-		fullPath = base + "/" + fileName;
-	Logger::debug("Filename: " + fileName);
-	Logger::debug("Full path for DELETE: " + fullPath);
-	if (access(fullPath.c_str(), R_OK | W_OK) != 0)
-	{
-		this->response.setResponseByStatus(403, &serverBlock);
-		return (false);
-	}
-	return (true);
+    Logger::debug("Base path for DELETE: " + base);
+    if (base.empty())
+        return (false);
+    
+    if (base[base.size() - 1] == '/')
+        fullPath = base + fileName;
+    else
+        fullPath = base + "/" + fileName;
+    
+    Logger::debug("Filename: " + fileName);
+    Logger::debug("Full path for DELETE: " + fullPath);
+    
+    // Verificar se o arquivo existe antes de verificar permissões
+    if (access(fullPath.c_str(), F_OK) != 0)
+    {
+        Logger::debug("File does not exist: " + fullPath);
+        this->response.setResponseByStatus(404, &serverBlock);
+        return (false);
+    }
+    
+    if (access(fullPath.c_str(), R_OK | W_OK) != 0)
+    {
+        Logger::debug("File exists but no permission: " + fullPath);
+        this->response.setResponseByStatus(403, &serverBlock);
+        return (false);
+    }
+    return (true);
 }
 
 bool Client::isRequestComplete(void)

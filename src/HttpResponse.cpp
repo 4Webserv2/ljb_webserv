@@ -98,76 +98,36 @@ void HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &serverBl
 
 void HttpResponse::handleDelete(const HttpRequest &req, const ServerBlock &serverBlock, const LocationBlock &location)
 {
-	(void)serverBlock;
-	std::string locationUploadDir = location.getUploadPath();
-	if (locationUploadDir.empty())
-		return (setResponseByStatus(404, &serverBlock));
+    (void)serverBlock;
+    std::string locationUploadDir = location.getUploadPath();
+    if (locationUploadDir.empty())
+        return (setResponseByStatus(404, &serverBlock));
 
-	std::string uri = extractAndDecodeUri(req.getUri());
-	if (uri[uri.size() - 1] == '/')
-		return (setResponseByStatus(404, &serverBlock));
+    std::string uri = extractAndDecodeUri(req.getUri());
+    if (uri[uri.size() - 1] == '/')
+        return (setResponseByStatus(404, &serverBlock));
 
-	size_t filePos = uri.rfind('/');
-	std::string fileName = uri.substr(filePos);
-	std::string path = "";
+    size_t filePos = uri.rfind('/');
+    std::string fileName = uri.substr(filePos + 1);  // Alterado aqui também
+    std::string path = "";
 
-	if (locationUploadDir[locationUploadDir.size() - 1] == '/')
-		path = locationUploadDir + fileName;
-	else
-		path = locationUploadDir + "/" + fileName;
+    if (locationUploadDir[locationUploadDir.size() - 1] == '/')
+        path = locationUploadDir + fileName;
+    else
+        path = locationUploadDir + "/" + fileName;
 
-	// std::cout << serverBlock.getRoot().second << std::endl;
-	// std::cout << uri << std::endl;
-	// std::string path = location.getPath(location.getUploadPath(), uri);
-	Logger::debug("Path dentro do delete: " + path);
-	if (std::remove(path.c_str()) == 0)
-	{
-		setResponseByStatus(200, &serverBlock);
-	}
-	else
-	{
-		setResponseByStatus(404, &serverBlock);
-	}
-};
-
-void HttpResponse::dispatchRequest(Client *client, const ServerBlock &serverBlock, const LocationBlock &location)
-{
-	HttpRequest req = client->request;
-	if (this->_status_code != 200)
-		return;
-
-	if (location.getReturn().first != 0)
-	{
-		setResponseByStatus(location.getReturn().first, &serverBlock, location.getReturn().second);
-		return;
-	}
-	if (req.getIsCgi())
-	{
-		Logger::debug("Dispatching to CGI handler for URI: " + req.getUri());
-
-		client->cgiHandler = new CgiHandler(req, serverBlock, location);
-		if (!client->cgiHandler->start())
-		{
-			Logger::error("Failed to start CGI handler.");
-			setErrorPage(500, &serverBlock);
-
-			delete client->cgiHandler;
-			client->cgiHandler = NULL;
-			return;
-		}
-		client->setState(WAITING_CGI);
-		return;
-	}
-
-	if (req.getMethod() == "GET")
-		return handleGet(req, serverBlock, location);
-	else if (req.getMethod() == "POST")
-		return handlePost(req, serverBlock, location);
-	else if (req.getMethod() == "DELETE")
-		return handleDelete(req, serverBlock, location);
-	else
-		return setResponseByStatus(405, &serverBlock);
+    Logger::debug("Path dentro do delete: " + path);
+    if (std::remove(path.c_str()) == 0)
+    {
+        setResponseByStatus(200, &serverBlock);
+    }
+    else
+    {
+        setResponseByStatus(404, &serverBlock);
+    }
 }
+
+
 
 void HttpResponse::handlePost(const HttpRequest &req, const ServerBlock &serverBlock, const LocationBlock &location)
 {
@@ -217,6 +177,45 @@ void HttpResponse::handlePost(const HttpRequest &req, const ServerBlock &serverB
     setResponseByStatus(201, &serverBlock);
     this->setHeader("Access-Control-Allow-Origin", "*");
     this->setBody("<h1>File named " + fileName + " was uploaded successfully!</h1>", "text/html");
+}
+
+void HttpResponse::dispatchRequest(Client *client, const ServerBlock &serverBlock, const LocationBlock &location)
+{
+	HttpRequest req = client->request;
+	if (this->_status_code != 200)
+		return;
+
+	if (location.getReturn().first != 0)
+	{
+		setResponseByStatus(location.getReturn().first, &serverBlock, location.getReturn().second);
+		return;
+	}
+	if (req.getIsCgi())
+	{
+		Logger::debug("Dispatching to CGI handler for URI: " + req.getUri());
+
+		client->cgiHandler = new CgiHandler(req, serverBlock, location);
+		if (!client->cgiHandler->start())
+		{
+			Logger::error("Failed to start CGI handler.");
+			setErrorPage(500, &serverBlock);
+
+			delete client->cgiHandler;
+			client->cgiHandler = NULL;
+			return;
+		}
+		client->setState(WAITING_CGI);
+		return;
+	}
+
+	if (req.getMethod() == "GET")
+		return handleGet(req, serverBlock, location);
+	else if (req.getMethod() == "POST")
+		return handlePost(req, serverBlock, location);
+	else if (req.getMethod() == "DELETE")
+		return handleDelete(req, serverBlock, location);
+	else
+		return setResponseByStatus(405, &serverBlock);
 }
 
 void HttpResponse::setStatus(int code, const std::string &message)
