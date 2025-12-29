@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CompositeLogHandler.hpp                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/19 22:14:00 by lraggio           #+#    #+#             */
-/*   Updated: 2025/11/19 22:15:49 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/27 12:12:54 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,19 +19,19 @@
 
 class CompositeLogHandler : public LogHandler
 {
-private:
-	std::vector<LogHandler*> _handlers;
+	private:
+		std::vector<LogHandler*> _handlers;
 
-public:
-	CompositeLogHandler();
-	virtual ~CompositeLogHandler();
+	public:
+		CompositeLogHandler();
+		virtual ~CompositeLogHandler();
 
-	void addHandler(LogHandler *handler);
+		void addHandler(LogHandler *handler);
 
-	virtual void handleDebug(t_event event);
-	virtual void handleInfo(t_event event);
-	virtual void handleWarning(t_event event);
-	virtual void handleError(t_event event);
+		virtual void handleDebug(t_event event);
+		virtual void handleInfo(t_event event);
+		virtual void handleWarning(t_event event);
+		virtual void handleError(t_event event);
 };
 
 #endif

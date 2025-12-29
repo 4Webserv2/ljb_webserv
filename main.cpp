@@ -5,88 +5,33 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/14 16:51:24 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/20 12:28:50 by jbergfel         ###   ########.fr       */
+/*   Created: 2025/12/27 11:55:34 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/12/27 12:25:43 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "includes/Webserv.hpp"
-#include "includes/Runtime.hpp"
-#include "includes/HttpRequest.hpp"
-#include "includes/HttpResponse.hpp"
-#include "includes/ServerManage.hpp"
-#include "includes/SignalHandler.hpp"
-#include "includes/Logger.hpp"
-#include "includes/CompositeLogHandler.hpp"
-#include "includes/StdLogHandler.hpp"
-#include "includes/FileLogHandler.hpp"
-#include "includes/StringUtils.hpp"
 
-int	clientLoop(const int& clientFd) {
-	char	buffer[BUFFER_SIZE];
-	HttpRequest request;
-	std::string rawRequest;
-	int bytesRead;
-
-	do
+void signalHandler(int signum)
+{
+	if (signum == SIGINT)
 	{
-		bytesRead = recv(clientFd, buffer, BUFFER_SIZE - 1, 0);
-		if (bytesRead <= 0)
-		{
-			if (bytesRead == 0) {
-
-				Logger::info("Client disconnected");
-			}
-			else {
-
-				Logger::error("Error: client read");
-				close(clientFd);
-			}
-			return (bytesRead == 0 ? NO_ERROR : E_ERROR);
-		}
-		buffer[bytesRead] = '\0';
-		rawRequest += buffer;
-		if (rawRequest.find("\r\n\r\n") != std::string::npos) {
-			break;
-		}
-	} while (bytesRead == BUFFER_SIZE - 1);
-	Logger::info("Request received, processing...");
-	try
-	{
-
-		request.setPar(request.httpParse(rawRequest));
-		HttpResponse response;
-		response = response.dispatchRequest(request);
-		std::string responseStr = response.toString();
-		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
-		Logger::info("Response sent successfully (status " + response.intToString(response.status_code) + ")");
+		Logger::debug("[Signal] SIGINT received, shutting down gracefully...");
+		RunTime::deleteInstance();
+		Logger::shutdownLogger();
 	}
-	catch (std::exception& e)
-	{
-		HttpResponse errorResponse;
-		errorResponse.setErrorPage(400);
-		std::string responseStr = errorResponse.toString();
-		send(clientFd, responseStr.c_str(), responseStr.length(), 0);
-		Logger::error(std::string("Error while processing request: ") + e.what());
-	}
-	close(clientFd);
-	return NO_ERROR;
+	else if (signum == SIGPIPE)
+		Logger::debug("[Signal] SIGPIPE received and ignored (client disconnected during write)");
 }
 
-void epollValidationLoop()
+int verifyArgs(int ac, char **av)
 {
-	// Verificar se deve fazer shutdown
-	if (SignalHandler::isShutdownRequested()) {
-		Logger::info("[MAIN] Shutdown requested, stopping loop...");
-		return;
-	}
-
-	std::map<int, EpollHandler *> &handlers = EpollInstance::getEpollHandlers();
-	for (std::map<int, EpollHandler *>::iterator it = handlers.begin();
-		 it != handlers.end(); ++it)
+	if (ac > 2)
 	{
-		it->second->handleTimeout();
+		Logger::error("Usage: " + std::string(av[0]) + " <config_file>\n\tOR\nUsage: " + std::string(av[0]));
+		return (0);
 	}
+	return (1);
 }
 
 void epollReadyListLoop(int numberOfReadySockets)
@@ -95,79 +40,66 @@ void epollReadyListLoop(int numberOfReadySockets)
 	{
 		for (int i = 0; i < numberOfReadySockets; i++)
 		{
-			struct epoll_event &data = EpollInstance::getElementFromEventsList(i);
+			struct epoll_event &data = EpollInstance::getElementFromReadyList(i);
+
 			EpollHandler *handler = static_cast<EpollHandler *>(data.data.ptr);
 			if (handler)
-				handler->EpollEventHandler(data);
+				handler->handleEvent(data);
 		}
 	}
 }
 
-void serverLoop()
+void epollValidationLoop()
 {
-	Logger::info("[MAIN] Server started. Press Ctrl+C to stop.");
-	while (RunTime::isRunning() && !SignalHandler::isShutdownRequested())
+	std::map<int, EpollHandler *> &handlers = EpollInstance::getHandlers();
+	for (std::map<int, EpollHandler *>::iterator it = handlers.begin(); it != handlers.end(); ++it)
+		it->second->checkTimeout();
+}
+
+void serverMainLoop()
+{
+	while (true)
 	{
-		int sockets = EpollInstance::manipEpollWait();
-		if (sockets == -1)
+		int numberOfReadySockets = EpollInstance::manipEpollWait();
+		if (numberOfReadySockets == -1)
 		{
-			if (errno == EINTR) {
-				if (SignalHandler::isShutdownRequested()) {
-					SignalHandler::handleShutdownMessage();
-					Logger::info("[MAIN] epoll_wait interrupted by shutdown signal");
-					break;
-				}
-				continue;
-			}
-			StringUtils::errorAndCerr("[ERROR] Error in epoll_wait: " + std::string(strerror(errno)));
+			Logger::error("Error: erro ao manipular o epoll_wait().");
 			break;
 		}
 		else
 		{
-			epollReadyListLoop(sockets);
-			EpollInstance::deletePendingRemovals();
+			epollReadyListLoop(numberOfReadySockets);
 			epollValidationLoop();
+			EpollInstance::deletePendingRemovals();
 		}
 	}
-
-	Logger::info("[MAIN] Server loop terminated");
-}
-
-bool checkArguments(int argc, char **argv) {
-	if (argc > 2) {
-		std::cerr << "Wrong number of arguments. It must be: " << argv[0] <<
-			" <config_file>\n\tOR\nUsage: " << argv[0] << std::endl;
-		return (false);
-	}
-	return (true);
 }
 
 int main(int ac, char **av)
 {
-	if (!checkArguments(ac, av)) {
+	if (!verifyArgs(ac, av))
 		return (1);
-	}
 
-	CompositeLogHandler* compositeHandler = new CompositeLogHandler();
+	signal(SIGINT, signalHandler);
+	signal(SIGPIPE, signalHandler);
+
+	CompositeLogHandler *compositeHandler = new CompositeLogHandler();
 	compositeHandler->addHandler(new StdLogHandler());
 	compositeHandler->addHandler(new FileLogHandler("app.log"));
 	Logger::initializeLogger(DEBUG, compositeHandler);
-
-	SignalHandler::setupSignalHandlers();
-
-	try {
-		RunTime::createRuntime(ac, av);
-		serverLoop();
+	try
+	{
+		RunTime::initializeRuntime(ac, av);
+		serverMainLoop();
 	}
-	catch (const std::exception &e) {
-		Logger::error(std::string("Caught exception: ") + e.what());
-		RunTime::gracefulShutdown();
+	catch (const std::exception &e)
+	{
+		Logger::error("Exception caught in main: " + std::string(e.what()));
+		RunTime::deleteInstance();
 		Logger::shutdownLogger();
-
-		return (1);
+		return (-1);
 	}
-	RunTime::gracefulShutdown();
-	Logger::info("Server finished. Bye, see you! 👋");
+	RunTime::deleteInstance();
 	Logger::shutdownLogger();
 
 	return (0);

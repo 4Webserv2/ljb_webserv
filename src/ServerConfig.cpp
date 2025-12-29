@@ -3,38 +3,28 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 20:40:04 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/09 15:12:10 by lraggio          ###   ########.fr       */
+/*   Created: 2025/12/27 11:51:16 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/12/28 22:59:57 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/ServerConfig.hpp"
-#include "../includes/Logger.hpp"
-#include "../includes/StringUtils.hpp"
+#include "../includes/Webserv.hpp"
 
-ServerConfig::ServerConfig(void) {}
+ConfigFile::ConfigFile(void) {}
 
-ServerConfig::~ServerConfig(void) {}
+ConfigFile::~ConfigFile(void) {}
 
-ServerConfig::ServerConfig(int ac, char **av) {
-	std::string configFile;
-
+ConfigFile::ConfigFile(int ac, char **av)
+{
 	if (ac == 2)
-		configFile = av[1];
+		this->parser(av[1]);
 	else
-		configFile = "config/default.conf";
-
-	Logger::info("Attempting to read configuration file: " + configFile);
-
-	this->parser(configFile);
-
-	Logger::info("Configuration successfully read! Servers found: " +
-                 StringUtils::size_tToString(this->_serverBlocks.size()));
+		this->parser("config/default.conf");
 }
 
-void ServerConfig::readFile(const std::string &filename, std::string &content)
+void ConfigFile::readFile(const std::string &filename, std::string &content)
 {
 	std::ifstream file(filename.c_str());
 	if (!file.is_open())
@@ -43,7 +33,7 @@ void ServerConfig::readFile(const std::string &filename, std::string &content)
 	content = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 }
 
-void ServerConfig::trim(std::string &content)
+void ConfigFile::trim(std::string &content)
 {
 	size_t start = content.find_first_not_of(" \t\n\r\f\v");
 	if (start == std::string::npos)
@@ -53,11 +43,10 @@ void ServerConfig::trim(std::string &content)
 	}
 
 	size_t end = content.find_last_not_of(" \t\n\r\f\v");
-
 	content = content.substr(start, end - start + 1);
 }
 
-void ServerConfig::removeComments(std::string &content)
+void ConfigFile::removeComments(std::string &content)
 {
 	std::string result;
 	std::istringstream iss(content);
@@ -79,14 +68,14 @@ void ServerConfig::removeComments(std::string &content)
 	content = result;
 }
 
-void ServerConfig::cleanFile(const std::string &filename, std::string &content)
+void ConfigFile::cleanFile(const std::string &filename, std::string &content)
 {
-	readFile(filename, content); //| Arquivo completo
-	removeComments(content);     //| Remover comentários (linhas com '#')
-	trim(content);               //| Remover os whitespaces do começo e do final do content.
+	readFile(filename, content);
+	removeComments(content);
+	trim(content);
 }
 
-std::vector<std::string> ServerConfig::tokenizeContent(const std::string &content)
+std::vector<std::string> ConfigFile::tokenizeContent(const std::string &content)
 {
 	std::string currentToken;
 	bool inQuotes = false;
@@ -97,18 +86,18 @@ std::vector<std::string> ServerConfig::tokenizeContent(const std::string &conten
 	{
 		char c = content[i];
 
-		if ((c == '"' || c == '\'') && !inQuotes) //| Verifica se o caractere é uma aspas
+		if ((c == '"' || c == '\'') && !inQuotes)
 		{
 			inQuotes = true;
 			quoteChar = c;
-			if (!currentToken.empty()) //| Adiciona o token atual ao vetor de tokens
+			if (!currentToken.empty())
 			{
 				this->_tokens.push_back(currentToken);
 				currentToken.clear();
 			}
 			currentToken += c;
 		}
-		else if (c == quoteChar && inQuotes) //| Verifica se o caractere é a aspas que fecha
+		else if (c == quoteChar && inQuotes)
 		{
 			inQuotes = false;
 			currentToken += c;
@@ -116,81 +105,71 @@ std::vector<std::string> ServerConfig::tokenizeContent(const std::string &conten
 			currentToken.clear();
 			quoteChar = '\0';
 		}
-		else if (inQuotes) //| Verifica se o caractere está dentro de aspas, se estiver, só passa para o próximo caractere
+		else if (inQuotes)
 			currentToken += c;
-		else if (c == '{' || c == '}' || c == ';') //| Verifica se o caractere é uma chave ou ponto e vírgula
+		else if (c == '{' || c == '}' || c == ';')
 		{
-			if (!inQuotes) //| Conta a quantidade de chaves abertas e fechadas
+			if (!inQuotes)
 			{
 				if (c == '{')
 					braceCount++;
 				else if (c == '}')
 					braceCount--;
 			}
-			if (!currentToken.empty()) //| Adiciona o token atual ao vetor de tokens
+			if (!currentToken.empty())
 			{
 				this->_tokens.push_back(currentToken);
 				currentToken.clear();
 			}
 			this->_tokens.push_back(std::string(1, c));
 		}
-		else if (std::isspace(c)) //| Verifica se o caractere é um espaço
+		else if (std::isspace(c))
 		{
-			if (!currentToken.empty()) //| Adiciona o token atual ao vetor de tokens
+			if (!currentToken.empty())
 			{
 				this->_tokens.push_back(currentToken);
 				currentToken.clear();
 			}
 		}
-		else //| Se não for um espaço, adiciona o caractere ao token atual
+		else
 			currentToken += c;
 	}
 
-	if (!currentToken.empty()) //| Adiciona o token atual ao vetor de tokens
+	if (!currentToken.empty())
 		this->_tokens.push_back(currentToken);
 
-	if (braceCount != 0) //| Verifica se as chaves estão balanceadas
-		throw std::runtime_error("Invalid configuration: unbalanced braces");
+	if (braceCount != 0)
+		throw std::runtime_error("Configuração inválida: chaves não balanceadas");
 
 	return this->_tokens;
 }
 
-void ServerConfig::parser(const std::string &filename)
+void ConfigFile::parser(const std::string &filename)
 {
 	std::string content;
 	cleanFile(filename, content);
-
-	Logger::info("DEBUG: Cleaned file. Content size: " +
-			StringUtils::size_tToString(content.size()));
-
 	tokenizeContent(content);
 
-	Logger::info("DEBUG: Tokens generated: " +
-				StringUtils::size_tToString(this->_tokens.size()));
-	if (this->_tokens.size() > 0)
-		Logger::info("DEBUG: First token: " + this->_tokens[0]);
-
 	if (this->_tokens.size() == 0)
-		throw std::runtime_error("Invalid configuration: no server found");
+		throw std::runtime_error("Configuração inválida: não foi encontrado nenhum servidor");
 
 	while (this->_tokens.size() > 0)
 	{
-		Logger::info("DEBUG: Processing token: " + this->_tokens[0]);
-
 		if (this->_tokens[0] == "server" && this->_tokens[1] == "{")
 			this->_serverBlocks.push_back(ServerBlock(*this));
 		else
-			throw std::runtime_error("Invalid configuration: server not found");
+			throw std::runtime_error("Configuração inválida: servidor não encontrado");
 	}
+	this->validateDuplicateListensAcrossServers();
 }
 
-void ServerConfig::removeTokens(size_t amount)
+void ConfigFile::removeTokens(size_t amount)
 {
 	if (!this->_tokens.empty())
 		this->_tokens.erase(this->_tokens.begin(), this->_tokens.begin() + amount);
 }
 
-void ServerConfig::verifyToken(TypeValidation type, const std::string &message)
+void ConfigFile::verifyToken(TypeValidation type, const std::string &message)
 {
 	bool shouldThrow = false;
 
@@ -209,19 +188,30 @@ void ServerConfig::verifyToken(TypeValidation type, const std::string &message)
 			shouldThrow = this->_tokens[0] == this->_tokens.back();
 			break;
 		default:
-			throw std::runtime_error("Invalid configuration: unknown validation type");
+			throw std::runtime_error("Configuração inválida: tipo de validação desconhecido");
 	}
-
 	if (shouldThrow)
 		throw std::runtime_error(message);
 }
 
-std::vector<std::string> ServerConfig::getTokens(void)
+std::vector<std::string> ConfigFile::getTokens(void)
 {
-	return this->_tokens;
+	return (this->_tokens);
 }
 
-std::vector<ServerBlock> ServerConfig::getServerBlocks(void) const
+const std::vector<ServerBlock> &ConfigFile::getServerBlocks(void) const
 {
-	return this->_serverBlocks;
+	return (this->_serverBlocks);
+}
+
+void ConfigFile::validateDuplicateListensAcrossServers() const
+{
+	for (size_t i = 0; i < this->_serverBlocks.size(); i++)
+	{
+		for (size_t j = i + 1; j < this->_serverBlocks.size(); j++)
+		{
+			if (this->_serverBlocks[i].hasListenDuplicateWith(this->_serverBlocks[j]))
+				throw std::runtime_error("Configuração inválida: listen duplicado entre diferentes server blocks");
+		}
+	}
 }

@@ -1,38 +1,27 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ServerConfig.hpp                                   :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 20:38:12 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/27 11:36:57 by btaveira         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #pragma once
 
-# include "Webserv.hpp"
-# include "ServerBlock.hpp"
+#include "Webserv.hpp"
 
 enum TypeValidation
 {
-	EMPTY = 0,          //| Verifica se tokens está vazio
-	SEMICOLON = 1,      //| Verifica se está vazio OU é ponto e vírgula
-	DIFF_SEMICOLON = 2, //| Verifica se está vazio OU não é ponto e vírgula
-	END_OF_FILE = 3     //| Verifica se é o final do arquivo
+	EMPTY = 0,
+	SEMICOLON = 1,
+	DIFF_SEMICOLON = 2,
+	END_OF_FILE = 3
 };
 
 class ServerBlock;
 
-class ServerConfig {
+class ConfigFile
+{
 	private:
-		std::vector<std::string>	_tokens;
-		std::vector<ServerBlock>	 _serverBlocks;
+		std::vector<std::string> _tokens;
+		std::vector<ServerBlock> _serverBlocks;
+
 	public:
-		ServerConfig(void);
-		ServerConfig(int ac, char **av);
-		~ServerConfig(void);
+		ConfigFile(void);
+		~ConfigFile(void);
+		ConfigFile(int ac, char **av);
 
 		std::vector<std::string> tokenizeContent(const std::string &content);
 		void parser(const std::string &filename);
@@ -45,7 +34,9 @@ class ServerConfig {
 		static void cleanFile(const std::string &filename, std::string &content);
 
 		std::vector<std::string> getTokens(void);
-		std::vector<ServerBlock> getServerBlocks(void) const;
+		const std::vector<ServerBlock> &getServerBlocks(void) const;
 
-		// void initServerSockets(int socketDomain, int socketType);
+		void validateDuplicateListensAcrossServers() const;
+
+		void initServerSockets(int socketDomain, int socketType);
 };

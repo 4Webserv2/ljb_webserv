@@ -5,57 +5,54 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 20:39:18 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 09:52:09 by jbergfel         ###   ########.fr       */
+/*   Created: 2025/12/27 11:42:19 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/12/28 23:04:15 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 # include "Webserv.hpp"
-# include "HttpRequest.hpp"
-# include "HttpResponse.hpp"
-# include "EpollHandler.hpp"
 
+class CgiHandler; // Forward declaration
 class ServerManage;
 
-// Estados do cliente
-enum ClientState {
-	STATE_READING_HEADER = 0,
-	STATE_READING_BODY = 1,
-	STATE_COMPLETE = 2
-};
-
-class Client: public EpollHandler
-{
+class Client : public EpollHandler {
 	private:
-		int _state;
-		std::string _rawRequest;
-		ServerManage &_server;
-		std::string _pendingResponse;
-		size_t _responseOffset;
+		int             _state;
+		std::string     _rawRequest;
+		size_t          _responseOffset;
+		std::string     _pendingResponse;
+		ServerManage    &_serverManage;
+		public:
+		HttpRequest     request;
+		HttpResponse    response;
+		CgiHandler    *cgiHandler;
+		bool            logged;
 
-	public:
-		HttpResponse	response;
-		HttpRequest		request;
-
-		~Client();
-		Client(int clientFd, ServerManage &server);
+		Client(int clientFd, ServerManage &serverManage);
 		Client(const Client &src);
 		Client &operator=(const Client &src);
+		~Client(void);
 
-		virtual void EpollInHandler(void);
-		virtual void EpollOutHandler(void);
-		virtual void deleteHandler(void);
+		virtual void handleEpollIn(void);
+		virtual void handleEpollOut(void);
 
-		void concatenateRequestData(const std::string &data);
+		void concatenateRequestData(std::string data);
 		bool isRequestComplete(void);
 		bool sendResponse(const std::string &responseStr);
-		void processRequest(void);
 
 		int getState(void) const;
 		std::string &getRawRequest(void);
 		HttpRequest &getRequest(void);
 		HttpResponse &getResponse(void);
+
 		void setState(int state);
+
+		std::string toString(void) const;
+		bool validateMethodAllowed(LocationBlock &location);
+		bool validatingUriWithLocation(ServerBlock &serverBlock, LocationBlock &location);
+		bool validateGet(ServerBlock &serverBlock, LocationBlock &location);
+		bool validatePost(ServerBlock &serverBlock, LocationBlock &location);
+		bool validateDelete(ServerBlock &serverBlock, LocationBlock &location);
 };

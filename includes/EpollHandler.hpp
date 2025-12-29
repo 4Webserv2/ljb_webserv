@@ -5,40 +5,38 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/28 18:37:48 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 09:55:11 by jbergfel         ###   ########.fr       */
+/*   Created: 2025/12/27 11:42:14 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/12/27 11:42:15 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
-# include "Webserv.hpp"
 
-class EpollInstance;
+#include "Webserv.hpp"
 
-class EpollHandler
-{
+class EpollHandler {
 	private:
-		int			_socketFd;
-		int			_eventsTimeout;
-		uint32_t	_activeEvents;
-		time_t		_epollTime;
+		int         _socketFd;
+		uint32_t    _interestedEvents;
+		int         _maxTimeoutSecs;
+		time_t     _lastActiveTime;
 
 	public:
+		EpollHandler(uint32_t interestedEvents, int socketFd=-1, int maxTimeoutSecs=-1);
 		virtual ~EpollHandler();
-		EpollHandler(uint32_t activeEvents);
-		EpollHandler(int fd, uint32_t activeEvents, int eventsTimeout);
 
-		int		EpollEventHandler(struct epoll_event &event);
-		void	handleTimeout();
+		int handleEvent(struct epoll_event &event);
+		void checkTimeout(void);
 
-		virtual void	EpollOutHandler() {};
-		virtual void	deleteHandler() {};
-		virtual void	EpollInHandler() {};
+		virtual void handleEpollIn(void) {};
+		virtual void handleEpollOut(void) {};
 
-		virtual void		setSocketFd(int socketFd);
-		virtual void		setEventsTimeout(int eventsTimeout);
-		virtual void		setActiveEvents(uint32_t event);
-		virtual int			getSocketFd() const;
-		virtual uint32_t	getActiveEvents() const;
-		virtual int			getEventsTimeout() const;
+		virtual void setSocketFd(int socketFd);
+		virtual int getSocketFd() const;
+		virtual uint32_t getInterestedEvents() const;
+		virtual void setInterestedEvents(uint32_t events);
+		virtual int getMaxTimeoutSecs() const;
+		virtual void setMaxTimeoutSecs(int maxTimeoutSecs);
+		virtual time_t getLastActiveTime() const;
+		virtual void setLastActiveTime(time_t lastActiveTime);
 };

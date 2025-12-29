@@ -5,48 +5,37 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/31 07:47:56 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/11/29 09:56:35 by jbergfel         ###   ########.fr       */
+/*   Created: 2025/12/27 11:47:42 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/12/28 22:33:22 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/EpollHandler.hpp"
-#include "../includes/EpollInstance.hpp"
+#include "../includes/Webserv.hpp"
 
-EpollHandler::~EpollHandler(void) {}
+EpollHandler::EpollHandler(uint32_t interestedEvents, int socketFd, int maxTimeoutSecs)
+		: _socketFd(socketFd), _interestedEvents(interestedEvents), _maxTimeoutSecs(maxTimeoutSecs),
+		_lastActiveTime(time(NULL)) {}
 
-EpollHandler::EpollHandler(uint32_t activeEvents)
+EpollHandler::~EpollHandler() {}
+
+int EpollHandler::handleEvent(struct epoll_event &event)
 {
-	this->_socketFd = -1;
-	this->_activeEvents = activeEvents;
-	this->_eventsTimeout = -1;
-}
-
-EpollHandler::EpollHandler(int socketFd, uint32_t activeEvents, int eventsTimeout)
-{
-	this->_socketFd = socketFd;
-	this->_activeEvents = activeEvents;
-	this->_eventsTimeout = eventsTimeout;
-	this->_epollTime = time(NULL);
-}
-
-int EpollHandler::EpollEventHandler(struct epoll_event &event)
-{
-	this->_epollTime = time(NULL);
 	if (event.events & (EPOLLIN | EPOLLRDHUP))
-		this->EpollInHandler();
-	else if (event.events & EPOLLOUT)
-		this->EpollOutHandler();
+		this->handleEpollIn();
+	if (event.events & EPOLLOUT)
+		this->handleEpollOut();
+	if (event.events & EPOLLHUP)
+		this->handleEpollIn();
 	return (0);
 }
 
-void EpollHandler::handleTimeout(void)
+void EpollHandler::checkTimeout(void)
 {
-	if (this->_eventsTimeout < 0)
+	if (this->_maxTimeoutSecs < 0)
 		return;
 	time_t currentTime = time(NULL);
-	if (currentTime - this->_epollTime > this->_eventsTimeout)
-		EpollInstance::deleteElementFromHandlers(this->_socketFd);
+	if (currentTime - this->_lastActiveTime > this->_maxTimeoutSecs)
+		EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
 }
 
 void EpollHandler::setSocketFd(int socketFd)
@@ -54,27 +43,37 @@ void EpollHandler::setSocketFd(int socketFd)
 	this->_socketFd = socketFd;
 }
 
-void EpollHandler::setEventsTimeout(int eventsTimeout)
-{
-	this->_eventsTimeout = eventsTimeout;
-}
-
-void EpollHandler::setActiveEvents(uint32_t event)
-{
-	this->_activeEvents = event;
-}
-
-int EpollHandler::getSocketFd(void) const
+int EpollHandler::getSocketFd() const
 {
 	return (this->_socketFd);
 }
 
-uint32_t EpollHandler::getActiveEvents(void) const
+uint32_t EpollHandler::getInterestedEvents() const
 {
-	return (this->_activeEvents);
+	return (this->_interestedEvents);
 }
 
-int EpollHandler::getEventsTimeout(void) const
+int EpollHandler::getMaxTimeoutSecs() const
 {
-	return (this->_eventsTimeout);
+	return (this->_maxTimeoutSecs);
+}
+
+void EpollHandler::setInterestedEvents(uint32_t events)
+{
+	this->_interestedEvents = events;
+}
+
+void EpollHandler::setMaxTimeoutSecs(int maxTimeoutSecs)
+{
+	this->_maxTimeoutSecs = maxTimeoutSecs;
+}
+
+time_t EpollHandler::getLastActiveTime() const
+{
+	return (this->_lastActiveTime);
+}
+
+void EpollHandler::setLastActiveTime(time_t lastActiveTime)
+{
+	this->_lastActiveTime = lastActiveTime;
 }

@@ -1,38 +1,53 @@
-# pragma once
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   HttpRequest.hpp                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/28 23:06:32 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/12/28 23:06:33 by jbergfel         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-# include "Webserv.hpp"
+#pragma once
 
-typedef struct e_HttpParse {
-	std::string	method;
-	std::string	uri;
-	std::string	version;
-	std::map<std::string, std::string> headers;
-	std::string	body;
-} HttpParse;
+#include "Webserv.hpp"
 
-class HttpRequest {
+class HttpRequest
+{
 	private:
-		HttpParse _par;
-		
-		void parseHeaders(std::istringstream &stream, HttpParse &parse);
-		void parseBody(std::istringstream &stream, HttpParse &parse);
-		std::string unfoldHeader(const std::string &value);
-		std::string decodeChunked(const std::string &chunkedBody);
+		std::string method;
+		std::string uri;
+		std::string version;
+		std::map<std::string, std::string> headers;
+		std::string body;
+		std::string startBoundary;
+		std::string endBoundary;
+		std::string uploadFileName;
+		bool isMultipart;
+		bool isUpload;
+		bool isCgi;
 
 	public:
-		HttpParse httpParse(const std::string &rawParse);
 		HttpRequest();
+		HttpRequest(const std::string &rawRequest);
 		~HttpRequest();
 
-		void setPar(HttpParse parse);
+		void parseRequestLine(const std::string &rawRequest);
+		void parseHeaders(const std::string &rawRequest);
+		void parseBody(const std::string &rawRequest, std::string onlyBody);
+
 		std::string getMethod() const;
 		std::string getUri() const;
-		std::string getVersion() const;
 		std::map<std::string, std::string> getHeaders() const;
+		std::string getHeaderValue(const std::string &key) const;
+		bool hasHeader(const std::string &key) const;
+		void setIsCgi(bool val);
 		std::string getBody() const;
-		void parseRequestLine(std::istringstream &stream, HttpParse &parse);
-
-		std::string getHeader(const std::string &name) const;
-		bool hasHeader(const std::string &name) const;
-
+		std::string getStartBoudary() const;
+		std::string getEndBoudary() const;
+		std::string getUploadFileName() const;
+		bool getIsCgi() const;
+		bool isUploadRequest(void) const;
 };

@@ -5,34 +5,26 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 20:39:24 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/20 12:33:09 by jbergfel         ###   ########.fr       */
+/*   Created: 2025/12/27 11:47:38 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/12/28 22:32:17 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/Client.hpp"
-#include "../includes/ServerManage.hpp"
-#include "../includes/EpollInstance.hpp"
-#include "../includes/Runtime.hpp"
-#include "../includes/Logger.hpp"
-#include "../includes/StringUtils.hpp"
+#include "../includes/Webserv.hpp"
 
-Client::~Client() {}
-
-Client::Client(int clientFd, ServerManage &server)
-	: EpollHandler(clientFd, EPOLLIN | EPOLLRDHUP, 30), _server(server)
+Client::Client(int clientFd, ServerManage &serverManage) : EpollHandler(EPOLLIN | EPOLLOUT, clientFd, 10), _serverManage(serverManage)
 {
-	this->_state = STATE_READING_HEADER;
+	this->_state = READING_HEADER;
 	this->_rawRequest = "";
 	this->request = HttpRequest();
 	this->response = HttpResponse();
 	this->_pendingResponse = "";
 	this->_responseOffset = 0;
+	this->cgiHandler = NULL;
+	this->logged = false;
 }
 
-Client::Client(const Client &src)
-	: EpollHandler(src.getActiveEvents(), src.getSocketFd(), src.getEventsTimeout()),
-	  _server(src._server)
+Client::Client(const Client &src) : EpollHandler(src.getInterestedEvents(), src.getSocketFd(), src.getMaxTimeoutSecs()), _serverManage(src._serverManage)
 {
 	*this = src;
 }
@@ -44,12 +36,461 @@ Client &Client::operator=(const Client &src)
 		this->request = src.request;
 		this->response = src.response;
 		this->_state = src._state;
-		this->_rawRequest = src._rawRequest;
 		this->_pendingResponse = src._pendingResponse;
 		this->_responseOffset = src._responseOffset;
-		this->setSocketFd(src.getSocketFd());
+		this->cgiHandler = NULL;
 	}
 	return (*this);
+}
+
+Client::~Client(void)
+{
+	if (this->getSocketFd() != -1)
+	{
+		this->response.setErrorPage(504);
+		sendResponse(this->response.toString());
+		close(this->getSocketFd());
+	}
+	if (this->cgiHandler)
+		this->cgiHandler = NULL;
+}
+
+void Client::handleEpollIn(void)
+{
+	if (this->_state == WAITING_CGI)
+		return;
+
+	char buffer[MAX_BUFFER_SIZE] = {0};
+	int count = 0;
+	if ((count = read(this->getSocketFd(), buffer, sizeof(buffer))) > 0)
+	{
+		this->concatenateRequestData(std::string(buffer, count));
+		if (this->isRequestComplete())
+		{
+			Logger::debug("Client: Request Header:\n" + this->getRawRequest());
+			ServerBlock serverBlock = this->_serverManage.getServerBlock();
+			const LocationBlock *locationPtr = serverBlock.getValidLocation(this->request.getUri(), this->request.getMethod());
+			if (!locationPtr)
+				this->response.setErrorPage(404, &serverBlock);
+			else
+			{
+				this->request.setIsCgi(CgiHandler::isCgiScript(this->request.getUri(), *locationPtr));
+				if (!validatingUriWithLocation(serverBlock, const_cast<LocationBlock &>(*locationPtr)))
+				{
+					Logger::debug("Erro nas validacoes dos metodos da request...");
+					return;
+				}
+				this->response.dispatchRequest(this, this->_serverManage.getServerBlock(), *locationPtr);
+			}
+
+			if (this->_state != WAITING_CGI)
+			{
+				std::string responseStr = this->response.toString();
+				if (!sendResponse(responseStr))
+					return;
+			}
+		}
+	}
+	else if (count <= 0)
+		EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
+}
+
+void Client::handleEpollOut(void)
+{
+	if (this->_state == WAITING_CGI)
+	{
+		if (this->cgiHandler && this->cgiHandler->status == COMPLETED)
+		{
+			Logger::debug("Client: CGI handler finished, processing output.");
+			std::string cgiOutput = this->cgiHandler->getCgiOutput();
+			this->response.parseCgiOutput(cgiOutput);
+			this->_state = COMPLETE;
+			EpollInstance::manipInterestList(EPOLL_CTL_DEL, this->cgiHandler);
+			this->cgiHandler = NULL;
+		}
+		else if (this->cgiHandler && this->cgiHandler->status == FAILED)
+		{
+			Logger::debug("Client: CGI handler failed");
+			const ServerBlock serverBlock = _serverManage.getServerBlock();
+			this->response.setResponseByStatus(500, &serverBlock);
+			EpollInstance::manipInterestList(EPOLL_CTL_DEL, this->cgiHandler);
+			this->cgiHandler = NULL;
+		}
+		else if (this->cgiHandler)
+			return;
+		else
+		{
+			Logger::error("Client: In WAITING_CGI state but cgiHandler is NULL. Sending 500.");
+			ServerBlock serverBlock = this->_serverManage.getServerBlock();
+			this->response.setErrorPage(500, &serverBlock);
+			this->_state = COMPLETE;
+		}
+	}
+
+	if (!this->_pendingResponse.empty())
+	{
+		if (!sendResponse(this->_pendingResponse))
+			return;
+		if (!this->_pendingResponse.empty())
+			return;
+	}
+
+	if (this->isRequestComplete() && this->_pendingResponse.empty())
+	{
+		std::string responseStr = this->response.toString();
+		if (!sendResponse(responseStr))
+			return;
+		if (this->_pendingResponse.empty())
+			EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
+	}
+}
+
+bool Client::sendResponse(const std::string &responseStr)
+{
+	if (this->response.sended || this->request.getMethod().empty())
+		return (true);
+
+	if (!this->logged)
+	{
+		Logger::info(this->toString());
+		this->logged = true;
+	}
+
+	if (this->_pendingResponse.empty())
+	{
+		this->_pendingResponse = responseStr;
+		this->_responseOffset = 0;
+	}
+
+	const char *data = this->_pendingResponse.c_str() + this->_responseOffset;
+	size_t remaining = this->_pendingResponse.size() - this->_responseOffset;
+	ssize_t sent = send(this->getSocketFd(), data, remaining, MSG_NOSIGNAL);
+	if (sent < 0)
+	{
+		EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
+		Logger::debug("Client: Error sending response, closing client.");
+		this->response.sended = true;
+		return (true);
+	}
+	else if (sent == 0)
+	{
+		Logger::debug("Client: Connection closed by peer during send, closing client.");
+		EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
+		this->response.sended = true;
+		return (false);
+	}
+	else
+	{
+		this->_responseOffset += sent;
+		if (this->_responseOffset < this->_pendingResponse.size())
+		{
+			uint32_t events = this->getInterestedEvents();
+			events |= EPOLLOUT;
+			this->setInterestedEvents(events);
+			EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
+		}
+		return (true);
+	}
+}
+
+void Client::concatenateRequestData(std::string data)
+{
+	if (this->_state == COMPLETE || this->_state == WAITING_CGI)
+		return;
+	this->_rawRequest.append(data);
+
+	if (this->_state == READING_HEADER && this->_rawRequest.find("\r\n\r\n") != std::string::npos)
+	{
+		this->request.parseRequestLine(this->_rawRequest);
+		this->request.parseHeaders(this->_rawRequest);
+
+		ServerBlock serverBlockRef = this->_serverManage.getServerBlock();
+		if (!serverBlockRef.isUriValid(this->request.getUri()))
+		{
+			this->response.setErrorPage(404, &serverBlockRef);
+			this->setState(COMPLETE);
+			return;
+		}
+		if (
+			!serverBlockRef.getValidLocation(this->request.getUri(), this->request.getMethod()))
+		{
+			this->response.setErrorPage(405, &serverBlockRef);
+			this->setState(COMPLETE);
+			return;
+		}
+		this->setState(READING_BODY);
+	}
+	if (this->_state == READING_BODY)
+	{
+		std::string contentLengthStr = this->request.getHeaderValue("Content-Length");
+
+		if (!contentLengthStr.empty())
+		{
+			int contentLength = std::atoi(contentLengthStr.c_str());
+			size_t bodyStartPos = this->_rawRequest.find("\r\n\r\n") + 4;
+			size_t bodyLength = this->_rawRequest.size() - bodyStartPos;
+			std::string onlyBody = this->_rawRequest.substr(bodyStartPos, bodyLength);
+
+			if (bodyLength >= static_cast<size_t>(contentLength))
+			{
+				this->request.parseBody(this->_rawRequest, onlyBody);
+				this->setState(COMPLETE);
+			}
+		}
+		else if (this->_rawRequest.find("0\r\n\r\n") != std::string::npos)
+		{
+			size_t bodyStartPos = this->_rawRequest.find("\r\n\r\n") + 4;
+			size_t bodyEndPos = this->_rawRequest.find("0\r\n\r\n") + 4;
+			std::string onlyBody = this->_rawRequest.substr(bodyStartPos, bodyEndPos);
+			this->request.parseBody(this->_rawRequest, onlyBody);
+			this->setState(COMPLETE);
+		}
+		else
+			this->setState(COMPLETE);
+	}
+}
+
+bool isDirectory(const std::string &path)
+{
+	struct stat path_stat;
+	if (stat(path.c_str(), &path_stat) != 0)
+		return (false);
+	return (S_ISDIR(path_stat.st_mode));
+}
+
+bool Client::validateMethodAllowed(LocationBlock &location)
+{
+	if (!location.checkHttpMethodInLocation(this->request.getMethod()))
+	{
+		Logger::debug("Metodo nao permitido na location...");
+		ServerBlock serverBlock = this->_serverManage.getServerBlock();
+		this->response.setResponseByStatus(405, &serverBlock);
+		return (false);
+	}
+	return (true);
+}
+
+bool Client::validatingUriWithLocation(ServerBlock &serverBlock, LocationBlock &location)
+{
+	if (!validateMethodAllowed(location))
+		return (false);
+
+	const std::string &method = this->request.getMethod();
+
+	if (method == "GET")
+		return validateGet(serverBlock, location);
+	else if (method == "POST")
+		return validatePost(serverBlock, location);
+	else if (method == "DELETE")
+		return validateDelete(serverBlock, location);
+	else
+	{
+		Logger::debug("Metodo HTTP nao suportado...");
+		this->response.setResponseByStatus(405, &serverBlock);
+		return (false);
+	}
+}
+
+bool Client::validateGet(ServerBlock &serverBlock, LocationBlock &location)
+{
+	std::string path = location.getPath(serverBlock.getRoot().second, this->request.getUri());
+	path = extractAndDecodeUri(path);
+	Logger::debug("String contendo alias+uri para o GET (resolved): " + path);
+
+	if (location.getReturn().first != 0)
+		return (true);
+
+	if (access(path.c_str(), F_OK) != 0)
+	{
+		Logger::debug("Recurso " + path + " nao encontrado.");
+		this->response.setResponseByStatus(404, &serverBlock);
+		return (false);
+	}
+
+	if (access(path.c_str(), R_OK) != 0)
+	{
+		Logger::debug("Acesso ao recurso " + path + " negado.");
+		this->response.setResponseByStatus(403, &serverBlock);
+		return (false);
+	}
+
+	if (!path.empty() && path[path.size() - 1] == '/')
+	{
+		std::vector<std::string> indexes = location.getIndex();
+		for (size_t i = 0; i < indexes.size(); i++)
+		{
+			if (access((path + indexes[i]).c_str(), R_OK) == 0)
+				return (true);
+		}
+
+		if (!location.getAutoIndex())
+		{
+			Logger::debug("Autoindex desabilitado e nenhum index encontrado.");
+			this->response.setResponseByStatus(403, &serverBlock);
+			return (false);
+		}
+
+		Logger::debug("Autoindex habilitado.");
+		this->response.setExecAutoIndex(true);
+		return (true);
+	}
+
+	if (isDirectory(path))
+	{
+		Logger::debug("Acesso ao diretorio " + path + " negado.");
+		this->response.setResponseByStatus(403, &serverBlock);
+		return (false);
+	}
+	return (true);
+}
+
+bool Client::validatePost(ServerBlock &serverBlock, LocationBlock &location)
+{
+	std::string uri = this->request.getUri();
+	uri = extractAndDecodeUri(uri);
+
+	Logger::debug("client uri: " + uri);
+	Logger::debug("location uri: " + location.getUri());
+
+	if (!this->request.getIsCgi())
+	{
+		std::string locationUri = location.getUri();
+		bool match = (uri.compare(0, locationUri.size(), locationUri) == 0);
+
+		if (!match || uri.empty())
+		{
+			this->response.setResponseByStatus(404, &serverBlock);
+			return (false);
+		}
+
+		if (!location.getCanUpload() || location.getUploadPath().empty())
+		{
+			Logger::debug("Upload nao permitido nesta location...");
+			this->response.setResponseByStatus(403, &serverBlock);
+			return (false);
+		}
+
+		std::string uploadDir = location.getUploadPath();
+		Logger::debug("Upload directory: " + uploadDir);
+
+		if (access(uploadDir.c_str(), F_OK) != 0)
+		{
+			Logger::debug("Diretorio de upload nao existe, tentando criar...");
+			if (mkdir(uploadDir.c_str(), 0755) != 0)
+			{
+				Logger::debug("Falha ao criar diretorio de upload...");
+				this->response.setResponseByStatus(500, &serverBlock);
+				return (false);
+			}
+		}
+
+		if (access(uploadDir.c_str(), R_OK | W_OK) != 0)
+		{
+			Logger::debug("Acesso ao diretorio de upload negado...");
+			this->response.setResponseByStatus(403, &serverBlock);
+			return (false);
+		}
+	}
+	else if (this->request.getIsCgi())
+	{
+		std::string path = location.getPath(serverBlock.getRoot().second, this->request.getUri());
+		path = extractAndDecodeUri(path);
+
+		Logger::debug("Validating POST for CGI script at path: " + path);
+		if (access(path.c_str(), F_OK) != 0)
+		{
+			this->response.setResponseByStatus(404, &serverBlock);
+			return (false);
+		}
+		else if (access(path.c_str(), R_OK) != 0)
+		{
+			this->response.setResponseByStatus(403, &serverBlock);
+			return (false);
+		}
+		return (true);
+	}
+
+	if (this->_serverManage.getServerBlock().getMaxBodySize().second <
+		this->request.getBody().size())
+	{
+		this->response.setResponseByStatus(413, &serverBlock);
+		return (false);
+	}
+	return (true);
+}
+
+bool Client::validateDelete(ServerBlock &serverBlock, LocationBlock &location)
+{
+	std::string locationUploadDir = location.getUploadPath();
+	if (locationUploadDir.empty())
+		return (this->response.setResponseByStatus(404, &serverBlock), false);
+
+	std::string uri = this->request.getUri();
+	if (uri[uri.size() - 1] == '/')
+		return (this->response.setResponseByStatus(404, &serverBlock), false);
+
+	size_t filePos = uri.rfind('/');
+	std::string fileName = uri.substr(filePos + 1);
+	std::string newUri;
+	if ((filePos + 1) <= uri.size())
+		newUri = uri.substr(0, (filePos + 1));
+	else
+		newUri = uri.substr(0, filePos);
+
+	Logger::debug("client uri: " + newUri);
+	Logger::debug("location uri: " + location.getUri());
+
+	std::string locationUri = location.getUri();
+	bool match = (newUri == locationUri);
+	if (!match && !locationUri.empty() && locationUri[locationUri.size() - 1] != '/')
+		match = (newUri == (locationUri + "/"));
+
+	if (newUri.empty() || !match)
+	{
+		this->response.setResponseByStatus(404, &serverBlock);
+		return (false);
+	}
+
+	(void)serverBlock;
+
+	std::string base;
+	if (this->request.getIsCgi())
+		base = location.getPath(serverBlock.getRoot().second, this->request.getUri());
+	else
+		base = location.getUploadPath();
+	std::string fullPath = "";
+
+	Logger::debug("Base path for DELETE: " + base);
+	if (base.empty())
+		return (false);
+
+	if (base[base.size() - 1] == '/')
+		fullPath = base + fileName;
+	else
+		fullPath = base + "/" + fileName;
+
+	Logger::debug("Filename: " + fileName);
+	Logger::debug("Full path for DELETE: " + fullPath);
+
+	if (access(fullPath.c_str(), F_OK) != 0)
+	{
+		Logger::debug("File does not exist: " + fullPath);
+		this->response.setResponseByStatus(404, &serverBlock);
+		return (false);
+	}
+
+	if (access(fullPath.c_str(), R_OK | W_OK) != 0)
+	{
+		Logger::debug("File exists but no permission: " + fullPath);
+		this->response.setResponseByStatus(403, &serverBlock);
+		return (false);
+	}
+	return (true);
+}
+
+bool Client::isRequestComplete(void)
+{
+	return (this->_state == COMPLETE);
 }
 
 int Client::getState(void) const
@@ -77,296 +518,26 @@ void Client::setState(int state)
 	this->_state = state;
 }
 
-void Client::concatenateRequestData(const std::string &data)
+static std::string ipv4ToStr(unsigned int ip)
 {
-	this->_rawRequest += data;
+	std::ostringstream ss;
 
-	std::cout << "[Client] Dados recebidos: +" << data.size() << " bytes (total: " << this->_rawRequest.size() << ")" << std::endl;
+	ss << ((ip >> 24) & 0xFF) << "."
+	   << ((ip >> 16) & 0xFF) << "."
+	   << ((ip >> 8) & 0xFF) << "."
+	   << (ip & 0xFF);
 
-	if (this->_state == STATE_READING_HEADER)
-	{
-		size_t headerEnd = this->_rawRequest.find("\r\n\r\n");
-		if (headerEnd != std::string::npos)
-		{
-			this->setState(STATE_READING_BODY);
-			std::cout << "[Client] ✅ Headers completos! Mudando para STATE_READING_BODY" << std::endl;
-		}
-	}
-
-	if (this->_state == STATE_READING_BODY)
-	{
-		// Encontrar fim dos headers
-		size_t headerEnd = this->_rawRequest.find("\r\n\r\n");
-		if (headerEnd == std::string::npos) {
-			std::cerr << "[Client] ❌ ERRO: STATE_READING_BODY mas headers não encontrados!" << std::endl;
-			return;
-		}
-
-		// Extrair apenas a parte de headers para parsing rápido
-		std::string headersOnly = this->_rawRequest.substr(0, headerEnd + 4);
-
-		// Procurar manualmente por Content-Length nos headers
-		std::string contentLengthStr;
-		std::string transferEncoding;
-
-		std::istringstream headerStream(headersOnly);
-		std::string line;
-
-		// Pular primeira linha (request line)
-		std::getline(headerStream, line);
-
-		// Ler headers
-		while (std::getline(headerStream, line)) {
-			// Remover \r se existir
-			if (!line.empty() && line[line.size() - 1] == '\r')
-				line.erase(line.size() - 1);
-
-			if (line.empty())
-				break;
-
-			// Procurar por Content-Length ou Transfer-Encoding
-			if (line.find("content-length:") == 0 || line.find("Content-Length:") == 0) {
-				size_t colonPos = line.find(':');
-				contentLengthStr = line.substr(colonPos + 1);
-				// Trim
-				while (!contentLengthStr.empty() && std::isspace(contentLengthStr[0]))
-					contentLengthStr.erase(0, 1);
-				while (!contentLengthStr.empty() && std::isspace(contentLengthStr[contentLengthStr.length() - 1]))
-					contentLengthStr.erase(contentLengthStr.length() - 1);
-			}
-
-			if (line.find("transfer-encoding:") == 0 || line.find("Transfer-Encoding:") == 0) {
-				size_t colonPos = line.find(':');
-				transferEncoding = line.substr(colonPos + 1);
-				// Trim
-				while (!transferEncoding.empty() && std::isspace(transferEncoding[0]))
-					transferEncoding.erase(0, 1);
-				while (!transferEncoding.empty() && std::isspace(transferEncoding[transferEncoding.length() - 1]))
-					transferEncoding.erase(transferEncoding.length() - 1);
-			}
-		}
-
-		// Verificar se é chunked
-		bool isChunked = (transferEncoding.find("chunked") != std::string::npos);
-
-		if (isChunked) {
-			std::cout << "[Client] Transfer-Encoding: chunked" << std::endl;
-			// Para chunked, verificar se termina com "0\r\n\r\n"
-			if (this->_rawRequest.find("\r\n0\r\n\r\n") != std::string::npos ||
-				this->_rawRequest.find("\n0\n\n") != std::string::npos) {
-				std::cout << "[Client] ✅ Chunked encoding completo!" << std::endl;
-				this->setState(STATE_COMPLETE);
-			} else {
-				std::cout << "[Client] ⏳ Chunked: aguardando último chunk (0)..." << std::endl;
-			}
-		} else if (!contentLengthStr.empty()) {
-			// Usar Content-Length
-			int contentLength = std::atoi(contentLengthStr.c_str());
-			size_t bodyStart = headerEnd + 4;
-			size_t currentBodySize = this->_rawRequest.size() - bodyStart;
-
-			std::cout << "[Client] 📊 Content-Length: " << contentLength << " bytes" << std::endl;
-			std::cout << "[Client] 📊 Body atual: " << currentBodySize << " bytes" << std::endl;
-			std::cout << "[Client] 📊 Progresso: " << (currentBodySize * 100 / (contentLength > 0 ? contentLength : 1)) << "%" << std::endl;
-
-			if (currentBodySize >= (size_t)contentLength)
-			{
-				std::cout << "[Client] ✅ Body completo recebido!" << std::endl;
-				this->setState(STATE_COMPLETE);
-			}
-			else
-			{
-				std::cout << "[Client] ⏳ Faltam " << (contentLength - currentBodySize) << " bytes..." << std::endl;
-			}
-		}
-		else
-		{
-			// Sem Content-Length e sem chunked - assumir completo
-			std::cout << "[Client] ℹ️ Sem Content-Length/chunked, assumindo completo" << std::endl;
-			this->setState(STATE_COMPLETE);
-		}
-	}
+	return (ss.str());
 }
 
-bool Client::isRequestComplete(void)
+std::string Client::toString(void) const
 {
-	return (this->_state == STATE_COMPLETE);
-}
+	std::ostringstream result;
+	result << ipv4ToStr(this->_serverManage.getHost()) << ": ["
+		   << this->request.getMethod() << "] "
+		   << this->request.getUri() << " "
+		   << this->response.getHttpVersion() << " "
+		   << this->response.getStatusCode();
 
-void Client::processRequest(void)
-{
-	try
-	{
-		HttpRequest req;
-		req.setPar(this->request.httpParse(this->_rawRequest));
-
-		// Configurar error pages do ServerBlock
-		ServerBlock block = this->_server.getBlock();
-		std::map<int, std::string> errorPages = block.getErrorPages();
-		std::string rootPath = block.getRoot().second;
-
-		this->response.setErrorPageConfig(&errorPages, rootPath);
-
-		// Validar URI
-		if (req.getUri().empty() || req.getUri()[0] != '/')
-		{
-			this->response.setErrorPage(404);
-			return;
-		}
-
-		// Validar método (retorna 405 se não suportado)
-		if (req.getMethod() != "GET" &&
-			req.getMethod() != "POST" &&
-			req.getMethod() != "DELETE")
-		{
-			std::string reqMethod = StringUtils::ostreamToString(req.getMethod());
-			Logger::error("Method not allowed: " + reqMethod);
-			this->response.setErrorPage(405);
-			return;
-		}
-
-		// Processar requisição
-		this->response = this->response.dispatchRequest(req);
-
-		// Manter a configuração de error pages após dispatch
-		this->response.setErrorPageConfig(&errorPages, rootPath);
-	}
-	catch (std::exception &error)
-	{
-		Logger::error(std::string("Error processing request: ") + error.what());
-		// Garantir que error page config está disponível
-		ServerBlock block = this->_server.getBlock();
-		std::map<int, std::string> errorPages = block.getErrorPages();
-		std::string rootPath = block.getRoot().second;
-		this->response.setErrorPageConfig(&errorPages, rootPath);
-
-		this->response.setErrorPage(400);
-	}
-}
-
-bool Client::sendResponse(const std::string &responseStr)
-{
-	if (this->_pendingResponse.empty())
-	{
-		this->_pendingResponse = responseStr;
-		this->_responseOffset = 0;
-	}
-
-	ssize_t bytesSent = send(
-		this->getSocketFd(),
-		this->_pendingResponse.c_str() + this->_responseOffset,
-		this->_pendingResponse.size() - this->_responseOffset,
-		MSG_NOSIGNAL
-	);
-
-	if (bytesSent < 0)
-	{
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-		{
-			uint32_t events = this->getActiveEvents();
-			events |= EPOLLOUT;
-			this->setActiveEvents(events);
-			EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
-			return false;
-		}
-		Logger::error("Error sending response: " + std::string(strerror(errno)));
-		return false;
-	}
-
-	this->_responseOffset += bytesSent;
-	if (this->_responseOffset >= this->_pendingResponse.size())
-	{
-		this->_pendingResponse.clear();
-		this->_responseOffset = 0;
-		return true;
-	}
-	uint32_t events = this->getActiveEvents();
-	events |= EPOLLOUT;
-	this->setActiveEvents(events);
-	EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
-	return false;
-}
-
-void Client::EpollInHandler(void)
-{
-	char buffer[4096] = {0};
-	int count = 0;
-
-	if ((count = read(this->getSocketFd(), buffer, sizeof(buffer))) > 0)
-	{
-		this->concatenateRequestData(std::string(buffer, count));
-		if (this->isRequestComplete())
-		{
-			try {
-				this->request.setPar(this->request.httpParse(this->_rawRequest));
-			}
-			catch (std::exception &error) {
-				Logger::error("Failed to parse HTTP request");
-				this->response.setErrorPage(400);
-				std::string responseStr = this->response.toString();
-				if (!sendResponse(responseStr))
-					return;
-				if (this->_pendingResponse.empty())
-					RunTime::deleteClient(this->getSocketFd());
-				return;
-			}
-			Logger::debug("===== REQUEST COMPLETE =====");
-			Logger::debug(this->request.getMethod() + " " + this->request.getUri());
-
-			std::map<std::string, std::string> headers = this->request.getHeaders();
-			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
-				Logger::debug(it->first + ": " + it->second);
-
-			//Logger::debug("Body: " + this->request.getBody());
-			Logger::debug("============================");
-
-			this->response = this->response.dispatchRequest(this->request);
-			std::string responseStr = this->response.toString();
-
-			Logger::debug("===== RESPONSE SEND =====");
-			//Logger::debug(responseStr);
-			Logger::debug("=========================");
-			if (!sendResponse(responseStr))
-				return;
-			if (this->_pendingResponse.empty())
-				RunTime::deleteClient(this->getSocketFd());
-		}
-	}
-	else if (count == 0)
-	{
-		Logger::info("Client closed the connection.");
-		std::cout << this->getRawRequest() << std::endl;
-		RunTime::deleteClient(this->getSocketFd());
-	}
-}
-
-void Client::EpollOutHandler(void)
-{
-	if (this->_pendingResponse.empty() || this->_responseOffset >= this->_pendingResponse.size())
-	{
-		uint32_t events = this->getActiveEvents();
-		events &= ~EPOLLOUT;
-		this->setActiveEvents(events);
-		EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
-		return;
-	}
-	if (!sendResponse(this->_pendingResponse))
-		return;
-	if (this->_responseOffset >= this->_pendingResponse.size())
-	{
-		uint32_t events = this->getActiveEvents();
-		events &= ~EPOLLOUT;
-		this->setActiveEvents(events);
-		EpollInstance::manipInterestList(EPOLL_CTL_MOD, this);
-		RunTime::deleteClient(this->getSocketFd());
-	}
-}
-
-void Client::deleteHandler(void)
-{
-	Logger::info("Removing client (fd=" + StringUtils::intToString(this->getSocketFd()) + ")");
-
-	epoll_ctl(EpollInstance::getEpollFd(), EPOLL_CTL_DEL, this->getSocketFd(), NULL);
-	close(this->getSocketFd());
-	RunTime::getClients().erase(this->getSocketFd());
+	return (result.str());
 }

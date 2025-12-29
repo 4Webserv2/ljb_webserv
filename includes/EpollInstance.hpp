@@ -5,57 +5,56 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 20:39:15 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/20 12:20:16 by jbergfel         ###   ########.fr       */
+/*   Created: 2025/12/28 23:06:37 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/12/28 23:06:38 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-# include "Webserv.hpp"
-// # include "EpollHandler.hpp"
-
-class EpollHandler;
+#include "Webserv.hpp"
 
 class EpollInstance
 {
 	private:
-		static EpollInstance			*_run;
-		int								_epollFd;
-		std::map<int, EpollHandler*>	_epollHandlers;
-		struct epoll_event				_epollEvents;
-		std::vector<int>				_pendingRemovals;
-		struct epoll_event				_eventsList[MAX_EVENTS];
+		static EpollInstance *_instance;
+		int _epollFd;
+		struct epoll_event _configEpollEvents;
+		std::map<int, EpollHandler *> _handlers;
+		std::vector<int> _pendingRemovals;
+		struct epoll_event _readyList[MAX_EVENTS];
 
-		EpollInstance();
+		EpollInstance(void);
 		EpollInstance(const EpollInstance &src);
 		EpollInstance &operator=(const EpollInstance &src);
 
 	public:
-		~EpollInstance();
+		~EpollInstance(void);
 
-		static void initEpollRun();
-		static void deleteElementFromHandlers(int socketFd);
+		static void initializeInstance(void);
+		static void deleteInstance(void);
+
 		static void manipInterestList(int operation, EpollHandler *handler);
-		static int	manipEpollWait();
-		static void deletePendingRemovals();
+		static int manipEpollWait(void);
 		static void replaceHandlerFd(EpollHandler *handler, int newFd, uint32_t newEvents);
+		static void deletePendingRemovals(void);
 
-		static int getEpollFd();
-		static std::map<int, EpollHandler*> &getEpollHandlers();
-		static struct epoll_event getEpollEvents();
-		static struct epoll_event &getEpollEventsList();
-		static struct epoll_event &getElementFromEventsList(int i);
+		static int getEpollFd(void);
+		static struct epoll_event getConfigEpollEvents(void);
+		static std::map<int, EpollHandler *> &getHandlers(void);
+		static struct epoll_event &getReadyList(void);
+		static struct epoll_event &getElementFromReadyList(int index);
 
-		class CannotInitEpoll : public std::exception
+		static void setConfigEpollEvents(int socketFd, uint32_t events, bool isServerSocket);
+		class CannotInitEpollInstance : public std::exception
 		{
-			public:
-				virtual const char *what() const throw();
+		public:
+			virtual const char *what() const throw();
 		};
 
-		class CannotManipulate : public std::exception
+		class CannotManipulateEpollInstance : public std::exception
 		{
-			public:
-				virtual const char *what() const throw();
+		public:
+			virtual const char *what() const throw();
 		};
 };

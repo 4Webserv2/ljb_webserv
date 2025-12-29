@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CompositeLogHandler.cpp                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lraggio <lraggio@student.42.rio>           +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/19 22:16:41 by lraggio           #+#    #+#             */
-/*   Updated: 2025/12/16 12:32:54 by lraggio          ###   ########.fr       */
+/*   Updated: 2025/12/27 11:47:25 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,11 +34,12 @@
  * scalable and modular logging architectures.
  */
 
-
 CompositeLogHandler::CompositeLogHandler() {}
 
-CompositeLogHandler::~CompositeLogHandler() {
-	for (size_t i = 0; i < _handlers.size(); i++) {
+CompositeLogHandler::~CompositeLogHandler()
+{
+	for (size_t i = 0; i < _handlers.size(); i++)
+	{
 		delete _handlers[i];
 	}
 	_handlers.clear();
