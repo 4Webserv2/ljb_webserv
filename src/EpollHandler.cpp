@@ -6,47 +6,36 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:47:42 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/27 11:47:51 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/28 22:33:22 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/Webserv.hpp"
 
-EpollHandler::EpollHandler(uint32_t interestedEvents, int socketFd, int maxTimeoutSecs) : _socketFd(socketFd), _interestedEvents(interestedEvents), _maxTimeoutSecs(maxTimeoutSecs), _lastActiveTime(time(NULL)) {}
+EpollHandler::EpollHandler(uint32_t interestedEvents, int socketFd, int maxTimeoutSecs)
+		: _socketFd(socketFd), _interestedEvents(interestedEvents), _maxTimeoutSecs(maxTimeoutSecs),
+		_lastActiveTime(time(NULL)) {}
 
 EpollHandler::~EpollHandler() {}
 
 int EpollHandler::handleEvent(struct epoll_event &event)
 {
-	// Tratar eventos múltiplos (EPOLLIN | EPOLLOUT podem ocorrer simultaneamente)
 	if (event.events & (EPOLLIN | EPOLLRDHUP))
-	{
 		this->handleEpollIn();
-	}
 	if (event.events & EPOLLOUT)
-	{
 		this->handleEpollOut();
-	}
-	// EPOLLHUP indica que o peer fechou a conexão/pipe
 	if (event.events & EPOLLHUP)
-	{
-		this->handleEpollIn(); // Processar como leitura para detectar EOF
-	}
+		this->handleEpollIn();
 	return (0);
 }
 
 void EpollHandler::checkTimeout(void)
 {
 	if (this->_maxTimeoutSecs < 0)
-	{
 		return;
-	}
-
 	time_t currentTime = time(NULL);
 	if (currentTime - this->_lastActiveTime > this->_maxTimeoutSecs)
-	{
 		EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
-	}
 }
 
 void EpollHandler::setSocketFd(int socketFd)

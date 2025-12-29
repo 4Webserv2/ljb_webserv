@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:49:13 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/27 12:19:16 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/28 22:54:31 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,9 +27,7 @@ RunTime::RunTime(const RunTime &src)
 RunTime &RunTime::operator=(const RunTime &src)
 {
 	if (this != &src)
-	{
 		this->_config = src._config;
-	}
 	return (*this);
 }
 
@@ -61,11 +59,9 @@ void RunTime::initServerSockets(void)
 	for (size_t i = 0; i < _instance->_config.getServerBlocks().size(); i++)
 	{
 		std::vector<t_listen> listens = _instance->_config.getServerBlocks()[i].getListen();
-
 		for (size_t j = 0; j < listens.size(); j++)
 		{
 			std::pair<unsigned int, int> key(listens[j].host, listens[j].port);
-
 			if (uniqueListens.insert(key).second)
 				EpollInstance::manipInterestList(EPOLL_CTL_ADD, new ServerManage(listens[j].host, listens[j].port, _instance->_config.getServerBlocks()[i]));
 		}
@@ -80,8 +76,6 @@ RunTime &RunTime::getInstance(void)
 ConfigFile &RunTime::getConfig(void)
 {
 	if (_instance == NULL)
-	{
 		throw std::runtime_error("RunTime instance is not initialized.");
-	}
 	return (_instance->_config);
 }

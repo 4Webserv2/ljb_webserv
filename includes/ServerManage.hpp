@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   ServerManage.hpp                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/28 23:06:08 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/12/28 23:06:09 by jbergfel         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #pragma once
 
 #include "Webserv.hpp"
@@ -33,31 +45,31 @@ class ServerManage : public EpollHandler
 
 		class CannotInitServerSocket : public std::exception
 		{
-		public:
-			virtual const char *what() const throw();
+			public:
+				virtual const char *what() const throw();
 		};
 
 		class CannotBindServerSocket : public std::exception
 		{
-		public:
-			virtual const char *what() const throw();
+			public:
+				virtual const char *what() const throw();
 		};
 
 		class CannotUpdateServerToNonBlocking : public std::exception
 		{
-		public:
-			virtual const char *what() const throw();
+			public:
+				virtual const char *what() const throw();
 		};
 
 		class CannotSetServerToListen : public std::exception
 		{
-		public:
-			virtual const char *what() const throw();
+			public:
+				virtual const char *what() const throw();
 		};
 
 		class CannotAllowAddrReuse : public std::exception
 		{
-		public:
-			virtual const char *what() const throw();
+			public:
+				virtual const char *what() const throw();
 		};
 };

@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:47:30 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/27 19:07:01 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/28 22:31:01 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -203,7 +203,6 @@ bool CgiHandler::start()
 			if (_request.getMethod() == "POST" && !_requestBody.empty())
 			{
 				Logger::debug("Cgi: POST request with body, registering writer fd.");
-
 				this->setSocketFd(_fdIn[1]);
 				this->setInterestedEvents(EPOLLOUT | EPOLLET | EPOLLRDHUP);
 				EpollInstance::manipInterestList(EPOLL_CTL_ADD, this);
@@ -262,18 +261,15 @@ std::vector<std::string> CgiHandler::buildEnvironment()
 	for (std::map<std::string, std::string>::const_iterator it = headers.begin();
 		 it != headers.end(); ++it)
 	{
-
 		std::string lowerKey = it->first;
 		for (size_t i = 0; i < lowerKey.size(); i++)
 			lowerKey[i] = std::tolower(lowerKey[i]);
-
 		if (lowerKey != "content-type" && lowerKey != "content-length")
 		{
 			std::string envName = "HTTP_" + normalizeHeaderName(it->first);
 			env.push_back(envName + "=" + it->second);
 		}
 	}
-
 	return (env);
 }
 
@@ -290,21 +286,17 @@ std::string CgiHandler::extractCgiScriptPath(
 			path = path.substr(locationPath.size());
 
 		if (path[0] != '/')
-		{
 			path = "/" + path;
-		}
 		path = alias + path;
 	}
 	else
 	{
 		std::pair<bool, std::string> rootPair = this->_serverBlock.getRoot();
 		std::string root = rootPair.second;
-
 		if (path[0] != '/')
 			path = "/" + path;
 		path = root + path;
 	}
-
 	return (path);
 }
 
@@ -320,7 +312,6 @@ std::string CgiHandler::normalizeHeaderName(const std::string &header)
 		if (result[i] == '-')
 			result[i] = '_';
 	}
-
 	return (result);
 }
 

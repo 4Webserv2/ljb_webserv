@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:47:38 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/28 22:11:33 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/28 22:32:17 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -165,7 +165,6 @@ bool Client::sendResponse(const std::string &responseStr)
 	const char *data = this->_pendingResponse.c_str() + this->_responseOffset;
 	size_t remaining = this->_pendingResponse.size() - this->_responseOffset;
 	ssize_t sent = send(this->getSocketFd(), data, remaining, MSG_NOSIGNAL);
-
 	if (sent < 0)
 	{
 		EpollInstance::manipInterestList(EPOLL_CTL_DEL, this);
@@ -221,7 +220,6 @@ void Client::concatenateRequestData(std::string data)
 		}
 		this->setState(READING_BODY);
 	}
-
 	if (this->_state == READING_BODY)
 	{
 		std::string contentLengthStr = this->request.getHeaderValue("Content-Length");
@@ -343,154 +341,151 @@ bool Client::validateGet(ServerBlock &serverBlock, LocationBlock &location)
 		this->response.setResponseByStatus(403, &serverBlock);
 		return (false);
 	}
-
 	return (true);
 }
 
 bool Client::validatePost(ServerBlock &serverBlock, LocationBlock &location)
 {
-    std::string uri = this->request.getUri();
-    uri = extractAndDecodeUri(uri);
+	std::string uri = this->request.getUri();
+	uri = extractAndDecodeUri(uri);
 
-    Logger::debug("client uri: " + uri);
-    Logger::debug("location uri: " + location.getUri());
+	Logger::debug("client uri: " + uri);
+	Logger::debug("location uri: " + location.getUri());
 
-    if (!this->request.getIsCgi())
-    {
-        std::string locationUri = location.getUri();
-        bool match = (uri.compare(0, locationUri.size(), locationUri) == 0);
-        
-        if (!match || uri.empty())
-        {
-            this->response.setResponseByStatus(404, &serverBlock);
-            return (false);
-        }
+	if (!this->request.getIsCgi())
+	{
+		std::string locationUri = location.getUri();
+		bool match = (uri.compare(0, locationUri.size(), locationUri) == 0);
 
-        if (!location.getCanUpload() || location.getUploadPath().empty())
-        {
-            Logger::debug("Upload nao permitido nesta location...");
-            this->response.setResponseByStatus(403, &serverBlock);
-            return (false);
-        }
+		if (!match || uri.empty())
+		{
+			this->response.setResponseByStatus(404, &serverBlock);
+			return (false);
+		}
 
-        std::string uploadDir = location.getUploadPath();
-        Logger::debug("Upload directory: " + uploadDir);
-        
-        if (access(uploadDir.c_str(), F_OK) != 0)
-        {
-            Logger::debug("Diretorio de upload nao existe, tentando criar...");
-            if (mkdir(uploadDir.c_str(), 0755) != 0)
-            {
-                Logger::debug("Falha ao criar diretorio de upload...");
-                this->response.setResponseByStatus(500, &serverBlock);
-                return (false);
-            }
-        }
-        
-        if (access(uploadDir.c_str(), R_OK | W_OK) != 0)
-        {
-            Logger::debug("Acesso ao diretorio de upload negado...");
-            this->response.setResponseByStatus(403, &serverBlock);
-            return (false);
-        }
-    }
-    else if (this->request.getIsCgi())
-    {
-        std::string path = location.getPath(serverBlock.getRoot().second, this->request.getUri());
-        path = extractAndDecodeUri(path);
-        
-        Logger::debug("Validating POST for CGI script at path: " + path);
-        if (access(path.c_str(), F_OK) != 0)
-        {
-            this->response.setResponseByStatus(404, &serverBlock);
-            return (false);
-        }
-        else if (access(path.c_str(), R_OK) != 0)
-        {
-            this->response.setResponseByStatus(403, &serverBlock);
-            return (false);
-        }
-        return (true);
-    }
+		if (!location.getCanUpload() || location.getUploadPath().empty())
+		{
+			Logger::debug("Upload nao permitido nesta location...");
+			this->response.setResponseByStatus(403, &serverBlock);
+			return (false);
+		}
 
-    if (this->_serverManage.getServerBlock().getMaxBodySize().second <
-        this->request.getBody().size())
-    {
-        this->response.setResponseByStatus(413, &serverBlock);
-        return (false);
-    }
+		std::string uploadDir = location.getUploadPath();
+		Logger::debug("Upload directory: " + uploadDir);
 
-    return (true);
+		if (access(uploadDir.c_str(), F_OK) != 0)
+		{
+			Logger::debug("Diretorio de upload nao existe, tentando criar...");
+			if (mkdir(uploadDir.c_str(), 0755) != 0)
+			{
+				Logger::debug("Falha ao criar diretorio de upload...");
+				this->response.setResponseByStatus(500, &serverBlock);
+				return (false);
+			}
+		}
+
+		if (access(uploadDir.c_str(), R_OK | W_OK) != 0)
+		{
+			Logger::debug("Acesso ao diretorio de upload negado...");
+			this->response.setResponseByStatus(403, &serverBlock);
+			return (false);
+		}
+	}
+	else if (this->request.getIsCgi())
+	{
+		std::string path = location.getPath(serverBlock.getRoot().second, this->request.getUri());
+		path = extractAndDecodeUri(path);
+
+		Logger::debug("Validating POST for CGI script at path: " + path);
+		if (access(path.c_str(), F_OK) != 0)
+		{
+			this->response.setResponseByStatus(404, &serverBlock);
+			return (false);
+		}
+		else if (access(path.c_str(), R_OK) != 0)
+		{
+			this->response.setResponseByStatus(403, &serverBlock);
+			return (false);
+		}
+		return (true);
+	}
+
+	if (this->_serverManage.getServerBlock().getMaxBodySize().second <
+		this->request.getBody().size())
+	{
+		this->response.setResponseByStatus(413, &serverBlock);
+		return (false);
+	}
+	return (true);
 }
 
 bool Client::validateDelete(ServerBlock &serverBlock, LocationBlock &location)
 {
-    std::string locationUploadDir = location.getUploadPath();
-    if (locationUploadDir.empty())
-        return (this->response.setResponseByStatus(404, &serverBlock), false);
+	std::string locationUploadDir = location.getUploadPath();
+	if (locationUploadDir.empty())
+		return (this->response.setResponseByStatus(404, &serverBlock), false);
 
-    std::string uri = this->request.getUri();
-    if (uri[uri.size() - 1] == '/')
-        return (this->response.setResponseByStatus(404, &serverBlock), false);
+	std::string uri = this->request.getUri();
+	if (uri[uri.size() - 1] == '/')
+		return (this->response.setResponseByStatus(404, &serverBlock), false);
 
-    size_t filePos = uri.rfind('/');
-    std::string fileName = uri.substr(filePos + 1);
-    std::string newUri;
-    if ((filePos + 1) <= uri.size())
-        newUri = uri.substr(0, (filePos + 1));
-    else
-        newUri = uri.substr(0, filePos);
+	size_t filePos = uri.rfind('/');
+	std::string fileName = uri.substr(filePos + 1);
+	std::string newUri;
+	if ((filePos + 1) <= uri.size())
+		newUri = uri.substr(0, (filePos + 1));
+	else
+		newUri = uri.substr(0, filePos);
 
-    Logger::debug("client uri: " + newUri);
-    Logger::debug("location uri: " + location.getUri());
+	Logger::debug("client uri: " + newUri);
+	Logger::debug("location uri: " + location.getUri());
 
-    std::string locationUri = location.getUri();
-    bool match = (newUri == locationUri);
-    if (!match && !locationUri.empty() && locationUri[locationUri.size() - 1] != '/')
-        match = (newUri == (locationUri + "/"));
+	std::string locationUri = location.getUri();
+	bool match = (newUri == locationUri);
+	if (!match && !locationUri.empty() && locationUri[locationUri.size() - 1] != '/')
+		match = (newUri == (locationUri + "/"));
 
-    if (newUri.empty() || !match)
-    {
-        this->response.setResponseByStatus(404, &serverBlock);
-        return (false);
-    }
+	if (newUri.empty() || !match)
+	{
+		this->response.setResponseByStatus(404, &serverBlock);
+		return (false);
+	}
 
-    (void)serverBlock;
+	(void)serverBlock;
 
-    std::string base;
-    if (this->request.getIsCgi())
-        base = location.getPath(serverBlock.getRoot().second, this->request.getUri());
-    else
-        base = location.getUploadPath();
-    std::string fullPath = "";
+	std::string base;
+	if (this->request.getIsCgi())
+		base = location.getPath(serverBlock.getRoot().second, this->request.getUri());
+	else
+		base = location.getUploadPath();
+	std::string fullPath = "";
 
-    Logger::debug("Base path for DELETE: " + base);
-    if (base.empty())
-        return (false);
-    
-    if (base[base.size() - 1] == '/')
-        fullPath = base + fileName;
-    else
-        fullPath = base + "/" + fileName;
-    
-    Logger::debug("Filename: " + fileName);
-    Logger::debug("Full path for DELETE: " + fullPath);
-    
-    // Verificar se o arquivo existe antes de verificar permissões
-    if (access(fullPath.c_str(), F_OK) != 0)
-    {
-        Logger::debug("File does not exist: " + fullPath);
-        this->response.setResponseByStatus(404, &serverBlock);
-        return (false);
-    }
-    
-    if (access(fullPath.c_str(), R_OK | W_OK) != 0)
-    {
-        Logger::debug("File exists but no permission: " + fullPath);
-        this->response.setResponseByStatus(403, &serverBlock);
-        return (false);
-    }
-    return (true);
+	Logger::debug("Base path for DELETE: " + base);
+	if (base.empty())
+		return (false);
+
+	if (base[base.size() - 1] == '/')
+		fullPath = base + fileName;
+	else
+		fullPath = base + "/" + fileName;
+
+	Logger::debug("Filename: " + fileName);
+	Logger::debug("Full path for DELETE: " + fullPath);
+
+	if (access(fullPath.c_str(), F_OK) != 0)
+	{
+		Logger::debug("File does not exist: " + fullPath);
+		this->response.setResponseByStatus(404, &serverBlock);
+		return (false);
+	}
+
+	if (access(fullPath.c_str(), R_OK | W_OK) != 0)
+	{
+		Logger::debug("File exists but no permission: " + fullPath);
+		this->response.setResponseByStatus(403, &serverBlock);
+		return (false);
+	}
+	return (true);
 }
 
 bool Client::isRequestComplete(void)

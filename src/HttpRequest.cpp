@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: btaveira <btaveira@student.42.rio>         +#+  +:+       +#+        */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:48:15 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/28 21:57:56 by btaveira         ###   ########.fr       */
+/*   Updated: 2025/12/28 22:39:58 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,12 +18,6 @@ HttpRequest::HttpRequest()
 	this->isUpload = false;
 	this->isCgi = false;
 }
-
-// HttpRequest::HttpRequest(const std::string &rawRequest) {
-// 	parseRequestLine(rawRequest);
-// 	parseHeaders(rawRequest);
-// 	parseBody(rawRequest, );
-// }
 
 HttpRequest::~HttpRequest() {}
 
@@ -39,7 +33,6 @@ void HttpRequest::parseRequestLine(const std::string &rawRequest)
 			line.erase(line.size() - 1);
 			std::istringstream first_line(line);
 			first_line >> this->method >> this->uri >> this->version;
-
 			if (this->method.empty() || this->uri.empty() || this->version.empty())
 				throw std::runtime_error("Request line malformada: campos ausentes");
 		}
@@ -77,9 +70,7 @@ void HttpRequest::parseHeaders(const std::string &rawRequest)
 
 			this->headers[key] = value;
 			if (value.find("multipart/form-data") != std::string::npos)
-			{
 				this->isMultipart = true;
-			}
 		}
 	}
 }
@@ -102,29 +93,19 @@ std::string decodeChunkedBody(std::string &chunkedBody)
 	std::string line;
 	while (std::getline(stream, line))
 	{
-		// Converter o chunk para inteiro.
 		std::stringstream sizeStream(line);
 		size_t chunkSize;
 		sizeStream >> std::hex >> chunkSize;
-
-		// caso chegue em 0, e o final do chunked body.
 		if (chunkSize == 0)
-		{
 			break;
-		}
 
-		// ler o pedaco do chunk body
 		std::vector<char> data(chunkSize);
 		stream.read(data.data(), chunkSize);
-
-		// discartamos as linhas em branco
 		stream.ignore(2, '\r');
 		stream.ignore(2, '\n');
-
-		// concatenando o conteudo
 		result.write(data.data(), chunkSize);
 	}
-	return result.str();
+	return (result.str());
 }
 
 void HttpRequest::parseBody(const std::string &rawRequest, std::string onlyBody)
@@ -133,9 +114,7 @@ void HttpRequest::parseBody(const std::string &rawRequest, std::string onlyBody)
 	std::string line;
 	this->body = onlyBody;
 	if (this->body.empty())
-	{
 		return;
-	}
 
 	Logger::debug("---------------PARSE BODY Raw Request-----------------");
 	Logger::debug(rawRequest);
@@ -148,9 +127,7 @@ void HttpRequest::parseBody(const std::string &rawRequest, std::string onlyBody)
 		this->isUpload = true;
 		size_t boundaryPos = rawRequest.find("boundary=");
 		if (boundaryPos == std::string::npos)
-		{
 			return;
-		}
 		size_t boundaryStartPos = rawRequest.find("boundary=") + std::strlen("boundary=");
 		size_t boundaryEndPos = rawRequest.find("\r\n", boundaryStartPos);
 		this->startBoundary = rawRequest.substr(boundaryStartPos, (boundaryEndPos - boundaryStartPos));
@@ -160,7 +137,6 @@ void HttpRequest::parseBody(const std::string &rawRequest, std::string onlyBody)
 		this->body = decodeChunkedBody(this->body);
 	if (this->isUploadRequest() && this->getMethod() == "POST")
 	{
-
 		size_t filenameStartPos = this->body.find("filename=") + std::strlen("filename=");
 		size_t filenameEndPos = this->body.find("\r\n", filenameStartPos);
 		std::string aux = this->body.substr(filenameStartPos, filenameEndPos - filenameStartPos);
@@ -171,70 +147,58 @@ void HttpRequest::parseBody(const std::string &rawRequest, std::string onlyBody)
 
 std::string HttpRequest::getMethod() const
 {
-	return method;
+	return (method);
 }
 
 std::string HttpRequest::getUri() const
 {
-	return uri;
+	return (uri);
 }
 
 std::map<std::string, std::string> HttpRequest::getHeaders() const
 {
-	return headers;
+	return (headers);
 }
 
 std::string HttpRequest::getHeaderValue(const std::string &key) const
 {
 	std::string lowerKey = key;
 	for (size_t i = 0; i < lowerKey.size(); ++i)
-	{
 		lowerKey[i] = std::tolower(lowerKey[i]);
-	}
 
 	for (std::map<std::string, std::string>::const_iterator it = headers.begin();
 		 it != headers.end(); ++it)
 	{
 		std::string lowerHeader = it->first;
 		for (size_t i = 0; i < lowerHeader.size(); ++i)
-		{
 			lowerHeader[i] = std::tolower(lowerHeader[i]);
-		}
 		if (lowerHeader == lowerKey)
-		{
-			return it->second;
-		}
+			return (it->second);
 	}
-	return "";
+	return ("");
 }
 
 bool HttpRequest::hasHeader(const std::string &key) const
 {
 	std::string lowerKey = key;
 	for (size_t i = 0; i < lowerKey.size(); ++i)
-	{
 		lowerKey[i] = std::tolower(lowerKey[i]);
-	}
 
 	for (std::map<std::string, std::string>::const_iterator it = headers.begin();
 		 it != headers.end(); ++it)
 	{
 		std::string lowerHeader = it->first;
 		for (size_t i = 0; i < lowerHeader.size(); ++i)
-		{
 			lowerHeader[i] = std::tolower(lowerHeader[i]);
-		}
 		if (lowerHeader == lowerKey)
-		{
-			return true;
-		}
+			return (true);
 	}
-	return false;
+	return (false);
 }
 
 std::string HttpRequest::getBody() const
 {
-	return body;
+	return (body);
 }
 
 std::string HttpRequest::getStartBoudary() const
@@ -264,8 +228,8 @@ bool HttpRequest::getIsCgi() const
 
 bool HttpRequest::isUploadRequest(void) const
 {
-    std::string contentType = this->getHeaderValue("Content-Type");
-    if (contentType.find("multipart/form-data") != std::string::npos)
-        return (true);
-    return (false);
+	std::string contentType = this->getHeaderValue("Content-Type");
+	if (contentType.find("multipart/form-data") != std::string::npos)
+		return (true);
+	return (false);
 }

@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:51:28 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/27 11:51:34 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/28 23:00:47 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,21 +48,15 @@ void ServerManage::handleEpollIn(void)
 		int clientFd = accept(this->getSocketFd(), (struct sockaddr *)&clientSocketAddr, &clientSocketLength);
 
 		if (clientFd == -1)
-		{
 			break;
-		}
 		else
 		{
 			try
 			{
 				setNonBlocking(clientFd);
-
-				// TCP_NODELAY: Reduz latência para requisições pequenas
 				int flag = 1;
 				if (setsockopt(clientFd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int)) < 0)
-				{
 					Logger::error("Failed to set TCP_NODELAY on client socket");
-				}
 				EpollInstance::manipInterestList(EPOLL_CTL_ADD, new Client(clientFd, *this));
 			}
 			catch (const std::exception &e)
@@ -101,17 +95,13 @@ void ServerManage::createServerSocket(int socketDomain, int socketType)
 	this->setSocketFd(socket(socketDomain, socketType, 0));
 
 	if (this->getSocketFd() == -1)
-	{
 		throw(ServerManage::CannotInitServerSocket());
-	}
 }
 
 void ServerManage::bindServerSocket(void)
 {
 	if (bind(this->getSocketFd(), (struct sockaddr *)&this->_serverAddr, sizeof(this->_serverAddr)) == -1)
-	{
 		throw(ServerManage::CannotBindServerSocket());
-	}
 }
 
 void ServerManage::updateToNonBlocking(void)
@@ -129,9 +119,8 @@ void ServerManage::updateToNonBlocking(void)
 void ServerManage::listenServerSocket(void)
 {
 	if (listen(this->getSocketFd(), MAX_EVENTS) == -1)
-	{
 		throw(ServerManage::CannotSetServerToListen());
-	}
+
 }
 
 void ServerManage::allowAddrReuse(void)
@@ -139,9 +128,8 @@ void ServerManage::allowAddrReuse(void)
 	int option = 1;
 
 	if (setsockopt(this->getSocketFd(), SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option)) == -1)
-	{
 		throw(ServerManage::CannotAllowAddrReuse());
-	}
+
 }
 
 void ServerManage::initServerSocket(int socketDomain, int socketType)

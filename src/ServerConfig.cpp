@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:51:16 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/27 12:29:11 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/28 22:59:57 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,12 +16,11 @@ ConfigFile::ConfigFile(void) {}
 
 ConfigFile::~ConfigFile(void) {}
 
-// ConfigFile(char **av, int ac);
 ConfigFile::ConfigFile(int ac, char **av)
 {
 	if (ac == 2)
 		this->parser(av[1]);
-	else //| Caso não passem nenhum argumento, vamos usar nosso arquivo padrão
+	else
 		this->parser("config/default.conf");
 }
 
@@ -44,7 +43,6 @@ void ConfigFile::trim(std::string &content)
 	}
 
 	size_t end = content.find_last_not_of(" \t\n\r\f\v");
-
 	content = content.substr(start, end - start + 1);
 }
 
@@ -72,9 +70,9 @@ void ConfigFile::removeComments(std::string &content)
 
 void ConfigFile::cleanFile(const std::string &filename, std::string &content)
 {
-	readFile(filename, content); //| Arquivo completo
-	removeComments(content);	 //| Remover comentários (linhas com '#')
-	trim(content);				 //| Remover os whitespaces do começo e do final do content.
+	readFile(filename, content);
+	removeComments(content);
+	trim(content);
 }
 
 std::vector<std::string> ConfigFile::tokenizeContent(const std::string &content)
@@ -88,18 +86,18 @@ std::vector<std::string> ConfigFile::tokenizeContent(const std::string &content)
 	{
 		char c = content[i];
 
-		if ((c == '"' || c == '\'') && !inQuotes) //| Verifica se o caractere é uma aspas
+		if ((c == '"' || c == '\'') && !inQuotes)
 		{
 			inQuotes = true;
 			quoteChar = c;
-			if (!currentToken.empty()) //| Adiciona o token atual ao vetor de tokens
+			if (!currentToken.empty())
 			{
 				this->_tokens.push_back(currentToken);
 				currentToken.clear();
 			}
 			currentToken += c;
 		}
-		else if (c == quoteChar && inQuotes) //| Verifica se o caractere é a aspas que fecha
+		else if (c == quoteChar && inQuotes)
 		{
 			inQuotes = false;
 			currentToken += c;
@@ -107,40 +105,40 @@ std::vector<std::string> ConfigFile::tokenizeContent(const std::string &content)
 			currentToken.clear();
 			quoteChar = '\0';
 		}
-		else if (inQuotes) //| Verifica se o caractere está dentro de aspas, se estiver, só passa para o próximo caractere
+		else if (inQuotes)
 			currentToken += c;
-		else if (c == '{' || c == '}' || c == ';') //| Verifica se o caractere é uma chave ou ponto e vírgula
+		else if (c == '{' || c == '}' || c == ';')
 		{
-			if (!inQuotes) //| Conta a quantidade de chaves abertas e fechadas
+			if (!inQuotes)
 			{
 				if (c == '{')
 					braceCount++;
 				else if (c == '}')
 					braceCount--;
 			}
-			if (!currentToken.empty()) //| Adiciona o token atual ao vetor de tokens
+			if (!currentToken.empty())
 			{
 				this->_tokens.push_back(currentToken);
 				currentToken.clear();
 			}
 			this->_tokens.push_back(std::string(1, c));
 		}
-		else if (std::isspace(c)) //| Verifica se o caractere é um espaço
+		else if (std::isspace(c))
 		{
-			if (!currentToken.empty()) //| Adiciona o token atual ao vetor de tokens
+			if (!currentToken.empty())
 			{
 				this->_tokens.push_back(currentToken);
 				currentToken.clear();
 			}
 		}
-		else //| Se não for um espaço, adiciona o caractere ao token atual
+		else
 			currentToken += c;
 	}
 
-	if (!currentToken.empty()) //| Adiciona o token atual ao vetor de tokens
+	if (!currentToken.empty())
 		this->_tokens.push_back(currentToken);
 
-	if (braceCount != 0) //| Verifica se as chaves estão balanceadas
+	if (braceCount != 0)
 		throw std::runtime_error("Configuração inválida: chaves não balanceadas");
 
 	return this->_tokens;
@@ -155,15 +153,13 @@ void ConfigFile::parser(const std::string &filename)
 	if (this->_tokens.size() == 0)
 		throw std::runtime_error("Configuração inválida: não foi encontrado nenhum servidor");
 
-	while (this->_tokens.size() > 0) //| While para pegar todos os servers (se tiver mais de um server)
+	while (this->_tokens.size() > 0)
 	{
 		if (this->_tokens[0] == "server" && this->_tokens[1] == "{")
 			this->_serverBlocks.push_back(ServerBlock(*this));
 		else
 			throw std::runtime_error("Configuração inválida: servidor não encontrado");
 	}
-
-	//| Verificar duplicatas de listen entre diferentes server blocks
 	this->validateDuplicateListensAcrossServers();
 }
 
@@ -179,34 +175,33 @@ void ConfigFile::verifyToken(TypeValidation type, const std::string &message)
 
 	switch (type)
 	{
-	case EMPTY:
-		shouldThrow = this->_tokens.empty();
-		break;
-	case SEMICOLON:
-		shouldThrow = this->_tokens.empty() || this->_tokens[0] == ";";
-		break;
-	case DIFF_SEMICOLON:
-		shouldThrow = this->_tokens.empty() || this->_tokens[0] != ";";
-		break;
-	case END_OF_FILE:
-		shouldThrow = this->_tokens[0] == this->_tokens.back();
-		break;
-	default:
-		throw std::runtime_error("Configuração inválida: tipo de validação desconhecido");
+		case EMPTY:
+			shouldThrow = this->_tokens.empty();
+			break;
+		case SEMICOLON:
+			shouldThrow = this->_tokens.empty() || this->_tokens[0] == ";";
+			break;
+		case DIFF_SEMICOLON:
+			shouldThrow = this->_tokens.empty() || this->_tokens[0] != ";";
+			break;
+		case END_OF_FILE:
+			shouldThrow = this->_tokens[0] == this->_tokens.back();
+			break;
+		default:
+			throw std::runtime_error("Configuração inválida: tipo de validação desconhecido");
 	}
-
 	if (shouldThrow)
 		throw std::runtime_error(message);
 }
 
 std::vector<std::string> ConfigFile::getTokens(void)
 {
-	return this->_tokens;
+	return (this->_tokens);
 }
 
 const std::vector<ServerBlock> &ConfigFile::getServerBlocks(void) const
 {
-	return this->_serverBlocks;
+	return (this->_serverBlocks);
 }
 
 void ConfigFile::validateDuplicateListensAcrossServers() const

@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:51:22 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/27 12:46:15 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/28 22:58:17 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,7 +57,7 @@ ServerBlock &ServerBlock::operator=(const ServerBlock &src)
 		this->_locations = src._locations;
 		this->_errorPages = src._errorPages;
 	}
-	return *this;
+	return (*this);
 }
 
 bool ServerBlock::operator==(const ServerBlock &other) const
@@ -68,21 +68,21 @@ bool ServerBlock::operator==(const ServerBlock &other) const
 			this->_errorPages == other._errorPages);
 }
 
-std::vector<std::string> ServerBlock::getServerNames() const { return this->_serverNames; }
-std::vector<t_listen> ServerBlock::getListen() const { return this->_listen; }
-std::pair<bool, size_t> ServerBlock::getMaxBodySize() const { return this->_maxBodySize; }
-std::pair<bool, std::string> ServerBlock::getRoot() const { return this->_root; }
-std::map<int, std::string> ServerBlock::getErrorPages() const { return this->_errorPages; }
-std::map<std::string, LocationBlock> ServerBlock::getLocations() const { return this->_locations; }
+std::vector<std::string> ServerBlock::getServerNames() const { return (this->_serverNames); }
+std::vector<t_listen> ServerBlock::getListen() const { return (this->_listen); }
+std::pair<bool, size_t> ServerBlock::getMaxBodySize() const { return (this->_maxBodySize); }
+std::pair<bool, std::string> ServerBlock::getRoot() const { return (this->_root); }
+std::map<int, std::string> ServerBlock::getErrorPages() const { return (this->_errorPages); }
+std::map<std::string, LocationBlock> ServerBlock::getLocations() const { return (this->_locations); }
 
 bool ServerBlock::hasListenDuplicate(const t_listen &listen) const
 {
 	for (size_t i = 0; i < this->_listen.size(); i++)
 	{
 		if (this->_listen[i].host == listen.host && this->_listen[i].port == listen.port)
-			return true;
+			return (true);
 	}
-	return false;
+	return (false);
 }
 
 bool ServerBlock::hasListenDuplicateWith(const ServerBlock &other) const
@@ -90,9 +90,9 @@ bool ServerBlock::hasListenDuplicateWith(const ServerBlock &other) const
 	for (size_t i = 0; i < this->_listen.size(); i++)
 	{
 		if (other.hasListenDuplicate(this->_listen[i]))
-			return true;
+			return (true);
 	}
-	return false;
+	return (false);
 }
 
 void ServerBlock::printServerBlock()
@@ -112,23 +112,15 @@ void ServerBlock::printServerBlock()
 
 bool ServerBlock::isUriValid(const std::string uri)
 {
-	// Verificar se URI exato existe
 	std::map<std::string, LocationBlock>::iterator it = this->_locations.find(uri);
 	if (it != this->_locations.end())
 		return (true);
-
-	// Verificar se URI começa com alguma location válida
-	// Ex: /test.css deve casar com location /
 	for (it = this->_locations.begin(); it != this->_locations.end(); ++it)
 	{
 		std::string locationPath = it->first;
-		// Verificar se URI começa com este location path
 		if (uri.find(locationPath) == 0)
-		{
 			return (true);
-		}
 	}
-
 	return (false);
 }
 
@@ -137,32 +129,24 @@ const LocationBlock *ServerBlock::getValidLocation(const std::string uri, const 
 	const LocationBlock *location = NULL;
 
 	if (method != "GET" && method != "POST" && method != "DELETE")
-		return location;
-
-	// Verificar se URI exato existe
+		return (location);
 	std::map<std::string, LocationBlock>::const_iterator it = this->_locations.find(uri);
 	if (it != this->_locations.end())
 	{
 		std::vector<std::string> allowedMethods = it->second.getAllowMethods();
 		if (allowedMethods.empty())
-		{
 			return &(it->second);
-		}
 		for (size_t i = 0; i < allowedMethods.size(); i++)
 		{
 			if (allowedMethods[i] == method)
 				return &(it->second);
 		}
-		return NULL;
+		return (NULL);
 	}
-
-	// Verificar se URI começa com alguma location válida
-	// Ex: /test.css deve casar com location /
 	std::string bestMatch = "";
 	for (std::map<std::string, LocationBlock>::const_iterator it = this->_locations.begin(); it != this->_locations.end(); ++it)
 	{
 		std::string locationPath = it->first;
-		// Verificar se URI começa com este location path
 		if (uri.compare(0, locationPath.size(), locationPath) == 0)
 		{
 			if (locationPath.size() > bestMatch.size())
@@ -173,9 +157,7 @@ const LocationBlock *ServerBlock::getValidLocation(const std::string uri, const 
 
 				std::vector<std::string> allowedMethods = it->second.getAllowMethods();
 				if (allowedMethods.empty())
-				{
 					methodAllowed = true;
-				}
 				else
 				{
 					for (size_t i = 0; i < allowedMethods.size(); i++)
@@ -196,7 +178,7 @@ const LocationBlock *ServerBlock::getValidLocation(const std::string uri, const 
 		}
 	}
 
-	return location;
+	return (location);
 }
 
 static bool isAllNumber(std::string s)
@@ -224,13 +206,11 @@ static unsigned int strToIpv4(std::string s)
 		unsigned int octet = std::atoi(octet_str.c_str());
 		if (octet > 255)
 			throw std::runtime_error("Configuração inválida: listen: host: o octeto é inválido, é maior que 255");
-
 		octets.push_back(octet);
 	}
 
 	if (octets.size() != 4) //| Verificando se tem mais de 4 octetos
 		throw std::runtime_error("Configuração inválida: listen: host: o host inválido, possui mais de 4 octetos");
-
 	return ((octets[0] << 24) | (octets[1] << 16) | (octets[2] << 8) | octets[3]);
 }
 
@@ -257,7 +237,6 @@ void ServerBlock::addListens()
 	{
 		if (isAllNumber(after) == false)
 			throw std::runtime_error("Configuração inválida: listen: port: é inválido, deve ser um número");
-
 		port = std::atoi(after.c_str());
 		if (port < 1 || port > 65535)
 			throw std::runtime_error("Configuração inválida: listen: port: é inválido, deve ser um número entre 1 e 65535");
@@ -266,12 +245,10 @@ void ServerBlock::addListens()
 	t_listen listen;
 	listen.host = host;
 	listen.port = port;
-
 	if (this->hasListenDuplicate(listen))
 		throw std::runtime_error("Configuração inválida: listen: listen duplicado no mesmo server block");
 
 	this->_listen.push_back(listen);
-
 	if (this->_config.getTokens()[0] != ";")
 		this->_config.removeTokens(1);
 	this->_config.verifyToken(DIFF_SEMICOLON, "Configuração inválida: listen: esperava um ponto e vírgula no final de listen");
@@ -284,7 +261,7 @@ void ServerBlock::addServerNames()
 	this->_config.verifyToken(SEMICOLON, "Configuração inválida: server_name: não foi encontrado nenhum server_name");
 
 	std::vector<std::string> names;
-	while (this->_config.getTokens()[0] != ";") //| Enquanto não encontrar o ponto e vírgula, todos os argumentos devem ser nomes de servidor
+	while (this->_config.getTokens()[0] != ";")
 	{
 		this->_config.verifyToken(END_OF_FILE, "Configuração inválida: server_name: final do arquivo encontrado");
 		names.push_back(this->_config.getTokens()[0]);
@@ -294,7 +271,7 @@ void ServerBlock::addServerNames()
 	for (std::vector<std::string>::iterator it = names.begin(); it != names.end(); ++it)
 		this->_serverNames.push_back(*it);
 
-	for (std::vector<std::string>::iterator it = this->_serverNames.begin(); it != this->_serverNames.end(); ++it) //| Removendo duplicatas
+	for (std::vector<std::string>::iterator it = this->_serverNames.begin(); it != this->_serverNames.end(); ++it)
 	{
 		for (std::vector<std::string>::iterator jt = it + 1; jt != this->_serverNames.end();)
 		{
@@ -306,21 +283,21 @@ void ServerBlock::addServerNames()
 	}
 
 	this->_config.verifyToken(DIFF_SEMICOLON, "Configuração inválida: server_name: esperava um ponto e vírgula no final de server_name");
-	this->_config.removeTokens(1); //| Removendo o ponto e vírgula
+	this->_config.removeTokens(1);
 }
 
 void ServerBlock::addMaxBodySize()
 {
-	this->_config.removeTokens(1); //| Removendo o token 'client_max_body_size'
+	this->_config.removeTokens(1);
 	this->_config.verifyToken(SEMICOLON, "Configuração inválida: client_max_body_size: não foi encontrado nenhum client_max_body_size");
 
-	if (this->_maxBodySize.first == true) //| Verifica se o client_max_body_size já está definido
+	if (this->_maxBodySize.first == true)
 		throw std::runtime_error("Configuração inválida: client_max_body_size: client_max_body_size já foi definido");
 	this->_maxBodySize.first = true;
 
 	std::string value = this->_config.getTokens()[0];
 	size_t i = 0;
-	while (i < value.size() - 1) //| Para verificar se todos os caracteres, menos o último, é numérico
+	while (i < value.size() - 1)
 	{
 		if (!isdigit(value[i]))
 			throw std::runtime_error("Configuração inválida: client_max_body_size: é inválido, deve ser um número");
@@ -339,17 +316,16 @@ void ServerBlock::addMaxBodySize()
 	else
 		throw std::runtime_error("Configuração inválida: client_max_body_size: é inválido, deve ser um número seguido de unidade");
 
-	this->_config.removeTokens(1); //| Removendo o argumento de max_body_size
+	this->_config.removeTokens(1);
 	this->_config.verifyToken(DIFF_SEMICOLON, "Configuração inválida: client_max_body_size: esperava um ponto e vírgula no final de client_max_body_size");
-	this->_config.removeTokens(1); //| Removendo o ponto e vírgula
+	this->_config.removeTokens(1);
 }
 
 void ServerBlock::addErrorPages()
 {
-	this->_config.removeTokens(1); //| Removendo o token 'error_page'
+	this->_config.removeTokens(1);
 	this->_config.verifyToken(SEMICOLON, "Configuração inválida: error_page: não foi encontrado nenhum error_page");
-
-	std::vector<std::string> codes_str; //| Para armazenar todos os [codes] que possam ter. Exemplo: error_page 101 102 103 page.html
+	std::vector<std::string> codes_str;
 	while (this->_config.getTokens()[0] != ";")
 	{
 		this->_config.verifyToken(END_OF_FILE, "Configuração inválida: error_page: final do arquivo encontrado");
@@ -357,8 +333,8 @@ void ServerBlock::addErrorPages()
 		this->_config.removeTokens(1);
 	}
 
-	std::string uri = codes_str.back(); //| O último argumento deve ser a URI
-	codes_str.pop_back();               //| Removendo a URI do vetor de [codes]
+	std::string uri = codes_str.back();
+	codes_str.pop_back();
 
 	std::vector<int> codes;
 	for (std::vector<std::string>::iterator it = codes_str.begin(); it != codes_str.end(); ++it)
@@ -376,13 +352,13 @@ void ServerBlock::addErrorPages()
 	for (std::vector<int>::iterator it = codes.begin(); it != codes.end(); ++it)
 		this->_errorPages[*it] = uri;
 
-	this->_config.verifyToken(EMPTY, "Configuração inválida: error_page: esperava um ponto e vírgula no final de error_page"); //| Somente por segurança, mas não deve acontecer
-	this->_config.removeTokens(1);                                                                                             //| Removendo o ponto e vírgula
+	this->_config.verifyToken(EMPTY, "Configuração inválida: error_page: esperava um ponto e vírgula no final de error_page");
+	this->_config.removeTokens(1);
 }
 
 void ServerBlock::addLocation()
 {
-	this->_config.removeTokens(1); //| Removendo o token 'location'
+	this->_config.removeTokens(1);
 	this->_config.verifyToken(EMPTY, "Configuração inválida: location: não foi encontrado nenhum location");
 
 	std::string uri = this->_config.getTokens()[0];
@@ -398,18 +374,17 @@ void ServerBlock::addLocation()
 
 void ServerBlock::addRoot()
 {
-	this->_config.removeTokens(1); //| Removendo o token 'root'
+	this->_config.removeTokens(1);
 	this->_config.verifyToken(SEMICOLON, "Configuração inválida: root: não foi encontrado nenhuma root");
 
 	this->_config.verifyToken(END_OF_FILE, "Configuração inválida: root: final do arquivo encontrado");
 
-	if (this->_root.first == true) //| Verifica se o root já está definido
+	if (this->_root.first == true)
 		throw std::runtime_error("Configuração inválida: root: root já foi definido");
 	this->_root.first = true;
 
 	this->_root.second = this->_config.getTokens()[0];
 
-	this->_config.removeTokens(1); //| Removendo o argumento de root
+	this->_config.removeTokens(1);
 	this->_config.verifyToken(DIFF_SEMICOLON, "Configuração inválida: root: esperava um ponto e vírgula no final de root");
-	this->_config.removeTokens(1); //| Removendo o ponto e vírgula
-}
+	this->_config.removeTokens(1);

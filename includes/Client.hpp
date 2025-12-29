@@ -6,7 +6,7 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:42:19 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/27 11:42:20 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/28 23:04:15 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,8 +21,8 @@ class Client : public EpollHandler {
 	private:
 		int             _state;
 		std::string     _rawRequest;
-		size_t          _responseOffset;   // Offset atual da resposta sendo enviada
-		std::string     _pendingResponse;  // Resposta pendente de envio (caso send() parcial)
+		size_t          _responseOffset;
+		std::string     _pendingResponse;
 		ServerManage    &_serverManage;
 		public:
 		HttpRequest     request;
@@ -36,11 +36,11 @@ class Client : public EpollHandler {
 		~Client(void);
 
 		virtual void handleEpollIn(void);
-		virtual void handleEpollOut(void);  // Para envio assíncrono quando socket está pronto
+		virtual void handleEpollOut(void);
 
 		void concatenateRequestData(std::string data);
 		bool isRequestComplete(void);
-		bool sendResponse(const std::string &responseStr);  // Envia resposta com tratamento correto de erros
+		bool sendResponse(const std::string &responseStr);
 
 		int getState(void) const;
 		std::string &getRawRequest(void);
@@ -50,7 +50,6 @@ class Client : public EpollHandler {
 		void setState(int state);
 
 		std::string toString(void) const;
-		// Metodo para validar antes de executar o POST, DELETE e GET
 		bool validateMethodAllowed(LocationBlock &location);
 		bool validatingUriWithLocation(ServerBlock &serverBlock, LocationBlock &location);
 		bool validateGet(ServerBlock &serverBlock, LocationBlock &location);

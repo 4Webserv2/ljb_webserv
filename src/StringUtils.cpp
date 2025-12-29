@@ -1,33 +1,39 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   StringUtils.cpp                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/28 23:02:44 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/12/28 23:02:45 by jbergfel         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../includes/Webserv.hpp"
 
 void setNonBlocking(int sockfd)
 {
 	int flags = fcntl(sockfd, F_GETFL, 0);
 	if (flags == -1)
-	{
 		throw(ServerManage::CannotUpdateServerToNonBlocking());
-	}
 	if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == -1)
-	{
 		throw(ServerManage::CannotUpdateServerToNonBlocking());
-	}
 }
 
 std::string intToString(int n)
 {
 	std::ostringstream oss;
 	oss << n;
-	return oss.str();
+	return (oss.str());
 }
 
 std::string extractUriWithoutQuery(const std::string &uri)
 {
 	size_t pos = uri.find('?');
 	if (pos != std::string::npos)
-	{
-		return uri.substr(0, pos);
-	}
-	return uri;
+		return (uri.substr(0, pos));
+	return (uri);
 }
 
 std::string extractAndDecodeUri(const std::string &uri)
@@ -48,31 +54,23 @@ std::string extractAndDecodeUri(const std::string &uri)
 				i += 2;
 			}
 			else
-			{
 				result += uriWithoutQuery[i];
-			}
 		}
 		else if (uriWithoutQuery[i] == '+')
-		{
 			result += ' ';
-		}
 		else
-		{
 			result += uriWithoutQuery[i];
-		}
 	}
 
-	return result;
+	return (result);
 }
 
 std::string extractQueryFromUri(const std::string &uri)
 {
 	size_t pos = uri.find('?');
 	if (pos != std::string::npos && pos + 1 < uri.size())
-	{
-		return uri.substr(pos + 1);
-	}
-	return "";
+		return (uri.substr(pos + 1));
+	return ("");
 }
 
 std::string extractUriPathInfo(const std::string &uri, const LocationBlock &location)
@@ -81,10 +79,8 @@ std::string extractUriPathInfo(const std::string &uri, const LocationBlock &loca
 	size_t locUriLen = location.getUri().length();
 
 	if (path.length() > locUriLen)
-	{
-		return path.substr(locUriLen);
-	}
-	return "";
+		return (path.substr(locUriLen));
+	return ("");
 }
 
 void errorAndCerr(const std::string &msg)

@@ -4,10 +4,10 @@
 
 enum TypeValidation
 {
-	EMPTY = 0,			//| Verifica se tokens está vazio
-	SEMICOLON = 1,		//| Verifica se está vazio OU é ponto e vírgula
-	DIFF_SEMICOLON = 2, //| Verifica se está vazio OU não é ponto e vírgula
-	END_OF_FILE = 3		//| Verifica se é o final do arquivo
+	EMPTY = 0,
+	SEMICOLON = 1,
+	DIFF_SEMICOLON = 2,
+	END_OF_FILE = 3
 };
 
 class ServerBlock;

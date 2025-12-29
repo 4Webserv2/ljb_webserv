@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   HttpResponse.cpp                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/28 23:03:11 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/12/28 23:03:38 by jbergfel         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../includes/Webserv.hpp"
 
 HttpResponse::HttpResponse()
@@ -31,17 +43,10 @@ void HttpResponse::generateAutoIndexHTML(const HttpRequest &req, const ServerBlo
 		if (name != "." && name != "..")
 		{
 			output << "<li>";
-			// Checando se e um diretorio
 			if (entry->d_type == DT_DIR)
-			{
-				// se for diretorio, criar um link direto para ele
 				output << "<a href=\"" << name << "/\">" << name << " (directory)</a>";
-			}
 			else
-			{
-				// Para arquivos, gera um link para download
 				output << "<a href=\"" << name << "\">" << name << "</a>";
-			}
 			output << "</li>";
 		}
 	}
@@ -59,12 +64,9 @@ void HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &serverBl
 	path = extractAndDecodeUri(path);
 	Logger::debug("Path dentro do delete: " + path);
 	if (path.empty())
-		return setResponseByStatus(404, &serverBlock);
-
-	// validar se e autoindex.
+		return (setResponseByStatus(404, &serverBlock));
 	if (this->getExecAutoIndex())
 	{
-		// Execute autoindex...
 		Logger::debug("EXECUTANDO AUTOINDEX....");
 		this->generateAutoIndexHTML(req, serverBlock, location);
 		return;
@@ -73,110 +75,90 @@ void HttpResponse::handleGet(const HttpRequest &req, const ServerBlock &serverBl
 	for (std::vector<std::string>::iterator it = locationIndexes.begin(); it != locationIndexes.end(); it++)
 	{
 		if (access((path + *it).c_str(), R_OK) == 0)
-		{
-			// rootOrAliasPlusUri += *it;
-			// this->request.setUri(this->request.getUri() + *it);
 			path += *it;
-		}
 	}
 	Logger::debug("Path executado no GET: " + path);
 	if (access(path.c_str(), R_OK) != 0)
-	{
-		return setResponseByStatus(403, &serverBlock);
-	}
+		return (setResponseByStatus(403, &serverBlock));
 
 	std::ifstream file(path.c_str(), std::ios::binary);
 	if (!file)
-		return setResponseByStatus(404, &serverBlock);
+		return (setResponseByStatus(404, &serverBlock));
 
 	Logger::debug("EXECUTANDO O GET METODO....");
 	std::ostringstream buffer;
 	buffer << file.rdbuf();
 
 	setResponseByStatus(200, &serverBlock, buffer.str(), getMimeType(path));
-};
+}
 
 void HttpResponse::handleDelete(const HttpRequest &req, const ServerBlock &serverBlock, const LocationBlock &location)
 {
-    (void)serverBlock;
-    std::string locationUploadDir = location.getUploadPath();
-    if (locationUploadDir.empty())
-        return (setResponseByStatus(404, &serverBlock));
+	(void)serverBlock;
+	std::string locationUploadDir = location.getUploadPath();
+	if (locationUploadDir.empty())
+		return (setResponseByStatus(404, &serverBlock));
 
-    std::string uri = extractAndDecodeUri(req.getUri());
-    if (uri[uri.size() - 1] == '/')
-        return (setResponseByStatus(404, &serverBlock));
+	std::string uri = extractAndDecodeUri(req.getUri());
+	if (uri[uri.size() - 1] == '/')
+		return (setResponseByStatus(404, &serverBlock));
 
-    size_t filePos = uri.rfind('/');
-    std::string fileName = uri.substr(filePos + 1);  // Alterado aqui também
-    std::string path = "";
+	size_t filePos = uri.rfind('/');
+	std::string fileName = uri.substr(filePos + 1);
+	std::string path = "";
 
-    if (locationUploadDir[locationUploadDir.size() - 1] == '/')
-        path = locationUploadDir + fileName;
-    else
-        path = locationUploadDir + "/" + fileName;
-
-    Logger::debug("Path dentro do delete: " + path);
-    if (std::remove(path.c_str()) == 0)
-    {
-        setResponseByStatus(200, &serverBlock);
-    }
-    else
-    {
-        setResponseByStatus(404, &serverBlock);
-    }
+	if (locationUploadDir[locationUploadDir.size() - 1] == '/')
+		path = locationUploadDir + fileName;
+	else
+		path = locationUploadDir + "/" + fileName;
+	Logger::debug("Path dentro do delete: " + path);
+	if (std::remove(path.c_str()) == 0)
+		setResponseByStatus(200, &serverBlock);
+	else
+		setResponseByStatus(404, &serverBlock);
 }
-
-
 
 void HttpResponse::handlePost(const HttpRequest &req, const ServerBlock &serverBlock, const LocationBlock &location)
 {
-    std::string locationUploadDir = location.getUploadPath();
-    std::string fullPath = "";
-    if (locationUploadDir.empty())
-        return (setResponseByStatus(403, &serverBlock));
-    
-    std::string fileName = req.getUploadFileName();
-    
-    // Se não houver nome de arquivo (upload de texto simples), gerar um nome único
-    if (fileName.empty())
-    {
-        std::time_t now = std::time(NULL);
-        std::ostringstream ss;
-        ss << "upload_" << now << ".txt";
-        fileName = ss.str();
-    }
-    
-    if (locationUploadDir[locationUploadDir.size() - 1] == '/')
-        fullPath = locationUploadDir + fileName;
-    else
-        fullPath = locationUploadDir + "/" + fileName;
-    
-    Logger::debug("Path dentro do post: " + fullPath);
-    std::ofstream newFile(fullPath.c_str());
-    if (!newFile.is_open())
-    {
-        Logger::error("Nao foi possivel criar o arquivo.");
-        return this->setResponseByStatus(400, &serverBlock);
-    }
-    
-    // Se for multipart/form-data, extrair apenas o conteúdo
-    if (req.isUploadRequest())
-    {
-        size_t endHeader = req.getBody().find("\r\n\r\n") + 4;
-        size_t endFormData = req.getBody().find(req.getEndBoudary());
-        newFile << req.getBody().substr(endHeader, endFormData - endHeader - 2);
-    }
-    else
-    {
-        // Upload de texto simples (text/plain)
-        newFile << req.getBody();
-    }
-    
-    newFile.close();
-    setResponseByStatus(201, &serverBlock);
-    this->setHeader("Access-Control-Allow-Origin", "*");
-    this->setBody("<h1>File named " + fileName + " was uploaded successfully!</h1>", "text/html");
+	std::string locationUploadDir = location.getUploadPath();
+	std::string fullPath = "";
+	if (locationUploadDir.empty())
+		return (setResponseByStatus(403, &serverBlock));
+
+	std::string fileName = req.getUploadFileName();
+	if (fileName.empty())
+	{
+		std::time_t now = std::time(NULL);
+		std::ostringstream ss;
+		ss << "upload_" << now << ".txt";
+		fileName = ss.str();
+	}
+
+	if (locationUploadDir[locationUploadDir.size() - 1] == '/')
+		fullPath = locationUploadDir + fileName;
+	else
+		fullPath = locationUploadDir + "/" + fileName;
+
+	Logger::debug("Path dentro do post: " + fullPath);
+	std::ofstream newFile(fullPath.c_str());
+	if (!newFile.is_open())
+	{
+		Logger::error("Nao foi possivel criar o arquivo.");
+		return (this->setResponseByStatus(400, &serverBlock));
+	}
+	if (req.isUploadRequest())
+	{
+		size_t endHeader = req.getBody().find("\r\n\r\n") + 4;
+		size_t endFormData = req.getBody().find(req.getEndBoudary());
+		newFile << req.getBody().substr(endHeader, endFormData - endHeader - 2);
+	}
+	else
+		newFile << req.getBody();
+
+	newFile.close();
+	setResponseByStatus(201, &serverBlock);
+	this->setHeader("Access-Control-Allow-Origin", "*");
+	this->setBody("<h1>File named " + fileName + " was uploaded successfully!</h1>", "text/html");
 }
 
 void HttpResponse::dispatchRequest(Client *client, const ServerBlock &serverBlock, const LocationBlock &location)
@@ -209,25 +191,25 @@ void HttpResponse::dispatchRequest(Client *client, const ServerBlock &serverBloc
 	}
 
 	if (req.getMethod() == "GET")
-		return handleGet(req, serverBlock, location);
+		return (handleGet(req, serverBlock, location));
 	else if (req.getMethod() == "POST")
-		return handlePost(req, serverBlock, location);
+		return (handlePost(req, serverBlock, location));
 	else if (req.getMethod() == "DELETE")
-		return handleDelete(req, serverBlock, location);
+		return (handleDelete(req, serverBlock, location));
 	else
-		return setResponseByStatus(405, &serverBlock);
+		return (setResponseByStatus(405, &serverBlock));
 }
 
 void HttpResponse::setStatus(int code, const std::string &message)
 {
 	this->_status_code = code;
 	this->_status_message = message;
-};
+}
 
 void HttpResponse::setHeader(const std::string &key, const std::string &value)
 {
 	this->_headers[key] = value;
-};
+}
 
 void HttpResponse::setBody(const std::string &b, const std::string &contentType)
 {
@@ -239,42 +221,27 @@ void HttpResponse::setBody(const std::string &b, const std::string &contentType)
 std::string HttpResponse::toString() const
 {
 	std::ostringstream response;
-
-	// Status line
-	response << _http_version << " "
-			 << _status_code << " "
-			 << _status_message << "\r\n";
-
-	// Headers
-	for (std::map<std::string, std::string>::const_iterator it = _headers.begin();
-		 it != _headers.end(); ++it)
-	{
+	response << _http_version << " " << _status_code << " " << _status_message << "\r\n";
+	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
 		response << it->first << ": " << it->second << "\r\n";
-	}
-
-	// Linha em branco
 	response << "\r\n";
-
-	// Corpo
 	response << _body;
 
-	return response.str();
+	return (response.str());
 }
 
 std::string HttpResponse::intToString(int n) const
 {
 	std::ostringstream oss;
 	oss << n;
-	return oss.str();
+	return (oss.str());
 }
 
 std::string HttpResponse::getMimeType(const std::string &path) const
 {
 	size_t dotPos = path.rfind('.');
 	if (dotPos == std::string::npos)
-	{
-		return "application/octet-stream";
-	}
+		return ("application/octet-stream");
 
 	std::string ext = path.substr(dotPos);
 	if (ext == ".html" || ext == ".htm")
@@ -329,77 +296,77 @@ std::string HttpResponse::getMimeType(const std::string &path) const
 		return "audio/wav";
 	if (ext == ".ogg")
 		return "audio/ogg";
-	return "application/octet-stream";
+	return ("application/octet-stream");
 }
 
 std::string HttpResponse::getStatusMessageForCode(int code) const
 {
 	switch (code)
 	{
-	case 200:
-		return "OK";
-	case 201:
-		return "Created";
-	case 204:
-		return "No Content";
-	case 301:
-		return "Moved Permanently";
-	case 302:
-		return "Found";
-	case 303:
-		return "See Other";
-	case 304:
-		return "Not Modified";
-	case 307:
-		return "Temporary Redirect";
-	case 308:
-		return "Permanent Redirect";
-	case 400:
-		return "Bad Request";
-	case 401:
-		return "Unauthorized";
-	case 403:
-		return "Forbidden";
-	case 404:
-		return "Not Found";
-	case 405:
-		return "Method Not Allowed";
-	case 406:
-		return "Not Acceptable";
-	case 408:
-		return "Request Timeout";
-	case 409:
-		return "Conflict";
-	case 410:
-		return "Gone";
-	case 411:
-		return "Length Required";
-	case 413:
-		return "Content Too Large";
-	case 414:
-		return "URI Too Long";
-	case 415:
-		return "Unsupported Media Type";
-	case 418:
-		return "I'm a teapot";
-	case 422:
-		return "Unprocessable Content";
-	case 429:
-		return "Too Many Requests";
-	case 500:
-		return "Internal Server Error";
-	case 501:
-		return "Not Implemented";
-	case 502:
-		return "Bad Gateway";
-	case 503:
-		return "Service Unavailable";
-	case 504:
-		return "Gateway Timeout";
-	case 505:
-		return "HTTP Version Not Supported";
-	default:
-		return "Error";
+		case 200:
+			return ("OK");
+		case 201:
+			return ("Created");
+		case 204:
+			return ("No Content");
+		case 301:
+			return ("Moved Permanently");
+		case 302:
+			return ("Found");
+		case 303:
+			return ("See Other");
+		case 304:
+			return ("Not Modified");
+		case 307:
+			return ("Temporary Redirect");
+		case 308:
+			return ("Permanent Redirect");
+		case 400:
+			return ("Bad Request");
+		case 401:
+			return ("Unauthorized");
+		case 403:
+			return ("Forbidden");
+		case 404:
+			return ("Not Found");
+		case 405:
+			return ("Method Not Allowed");
+		case 406:
+			return ("Not Acceptable");
+		case 408:
+			return ("Request Timeout");
+		case 409:
+			return ("Conflict");
+		case 410:
+			return ("Gone");
+		case 411:
+			return ("Length Required");
+		case 413:
+			return ("Content Too Large");
+		case 414:
+			return ("URI Too Long");
+		case 415:
+			return ("Unsupported Media Type");
+		case 418:
+			return ("I'm a teapot");
+		case 422:
+			return ("Unprocessable Content");
+		case 429:
+			return ("Too Many Requests");
+		case 500:
+			return ("Internal Server Error");
+		case 501:
+			return ("Not Implemented");
+		case 502:
+			return ("Bad Gateway");
+		case 503:
+			return ("Service Unavailable");
+		case 504:
+			return ("Gateway Timeout");
+		case 505:
+			return ("HTTP Version Not Supported");
+		default:
+			return ("Error");
 	}
 }
 
@@ -438,7 +405,8 @@ void HttpResponse::setErrorPage(int code, const ServerBlock *serverBlock)
 			setStatus(code, statusMessage);
 			setBody("<html><head><title>" + intToString(code) + " " + statusMessage + "</title></head>"
 																					  "<body><h1>" +
-						intToString(code) + " " + statusMessage + "</h1></body></html>", "text/html");
+						intToString(code) + " " + statusMessage + "</h1></body></html>",
+					"text/html");
 			return;
 		}
 	}
@@ -485,22 +453,22 @@ std::string HttpResponse::findBestLocationMatch(const std::string &uri, const Se
 		}
 	}
 
-	return bestMatch;
+	return (bestMatch);
 }
 
 std::string HttpResponse::getHttpVersion() const
 {
-	return _http_version;
+	return (_http_version);
 }
 
 int HttpResponse::getStatusCode() const
 {
-	return _status_code;
+	return (_status_code);
 }
 
 std::string HttpResponse::getStatusMessage() const
 {
-	return _status_message;
+	return (_status_message);
 }
 
 void HttpResponse::setExecAutoIndex(bool exec)
@@ -526,7 +494,7 @@ std::string HttpResponse::getHeaderValue(const std::string &key) const
 		for (size_t i = 0; i < lowerHeader.size(); ++i)
 			lowerHeader[i] = std::tolower(lowerHeader[i]);
 		if (lowerHeader == lowerKey)
-			return it->second;
+			return (it->second);
 	}
 	return "";
 }

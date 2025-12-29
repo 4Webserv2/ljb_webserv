@@ -6,13 +6,12 @@
 /*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/27 11:51:37 by jbergfel          #+#    #+#             */
-/*   Updated: 2025/12/27 11:55:14 by jbergfel         ###   ########.fr       */
+/*   Updated: 2025/12/28 23:05:59 by jbergfel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/SignalHandler.hpp"
 #include "../includes/Logger.hpp"
-#include "../includes/StringUtils.hpp"
 
 volatile sig_atomic_t SignalHandler::_shutdownRequested = 0;
 
@@ -30,7 +29,6 @@ void SignalHandler::setupSignalHandlers()
 	sa.sa_flags = SA_RESTART;
 	if (sigaction(SIGINT, &sa, NULL) == -1)
 		errorAndCerr("Error registering handler for SIGINT: " + std::string(strerror(errno)));
-
 	if (sigaction(SIGTERM, &sa, NULL) == -1)
 		errorAndCerr("Error registering handler for SIGTERM: " + std::string(strerror(errno)));
 	signal(SIGPIPE, SIG_IGN);
@@ -39,7 +37,7 @@ void SignalHandler::setupSignalHandlers()
 
 bool SignalHandler::isShutdownRequested()
 {
-	return _shutdownRequested != 0;
+	return (_shutdownRequested != 0);
 }
 
 void SignalHandler::requestShutdown()
@@ -54,13 +52,9 @@ void SignalHandler::handleShutdownMessage()
 		std::string signalName = "UNKNOWN";
 
 		if (_shutdownRequested == SIGINT)
-		{
 			signalName = "SIGINT";
-		}
 		else if (_shutdownRequested == SIGTERM)
-		{
 			signalName = "SIGTERM";
-		}
 		std::cout << "\n";
 		Logger::info("[SIGNAL] Shutdown signal received: " + signalName);
 	}

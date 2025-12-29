@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Webserv.hpp                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jbergfel <jbergfel@student.42.rio>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/28 23:06:18 by jbergfel          #+#    #+#             */
+/*   Updated: 2025/12/28 23:06:19 by jbergfel         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #pragma once
 
 #define MAX_EVENTS 10
@@ -45,14 +57,6 @@
 #include "RunTime.hpp"
 #include "FileLogHandler.hpp"
 
-/*enum LogLevel
-{
-	DEBUG,
-	INFO,
-	WARNING,
-	ERROR
-};*/
-
 typedef struct s_logEvent
 {
 	enum LogLevel level;
@@ -63,9 +67,9 @@ typedef struct s_logEvent
 
 enum clientBufferState
 {
-	READING_HEADER = 9, // Lendo o header da request ainda
-	READING_BODY = 10,  // Lendo o conteudo da request ainda
-	WAITING_CGI = 11,   // Aguardando resposta do CGI
+	READING_HEADER = 9,
+	READING_BODY = 10,
+	WAITING_CGI = 11,
 	COMPLETE = 12,
 };
 
@@ -76,7 +80,6 @@ enum cgiBufferState
 	COMPLETED = 27
 };
 
-// void initAllLogHandlers(void);
 void setNonBlocking(int sockfd);
 std::string intToString(int n);
 std::string extractUriWithoutQuery(const std::string &uri);
